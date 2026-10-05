@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="by.intoncore.SpeechRateMeter2"
+    android:versionCode="-- %%INSERT_VERSION_CODE%% --"
+    android:versionName="-- %%INSERT_VERSION_NAME%% --"
+    android:installLocation="auto">
+
+    <!-- Microphone only. Deliberately omit %%INSERT_PERMISSIONS%% so
+         androiddeployqt does not inject Qt Core's INTERNET /
+         WRITE_EXTERNAL_STORAGE. File picker is desktop-only. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+    <uses-permission android:name="android.permission.INTERNET" tools:node="remove"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" tools:node="remove"/>
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" tools:node="remove"/>
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" tools:node="remove"/>
+    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" tools:node="remove"/>
+
+    <!-- Require a microphone -->
+    <uses-feature android:name="android.hardware.microphone" android:required="true"/>
+
+    <application
+        android:name="org.qtproject.qt.android.bindings.QtApplication"
+        android:label="Speech Rate Meter 2"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:theme="@style/AppTheme"
+        android:hardwareAccelerated="true"
+        android:supportsRtl="true"
+        android:allowBackup="false"
+        android:fullBackupOnly="false">
+
+        <activity
+            android:name="org.qtproject.qt.android.bindings.QtActivity"
+            android:label="Speech Rate Meter 2"
+            android:screenOrientation="portrait"
+            android:launchMode="singleTop"
+            android:configChanges="orientation|uiMode|screenLayout|screenSize|smallestScreenSize|layoutDirection|locale|fontScale|keyboard|keyboardHidden|navigation|mcc|mnc|density"
+            android:exported="true">
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+
+            <!-- androiddeployqt injects android.app.lib_name automatically -->
+            <meta-data android:name="android.app.lib_name" android:value="appspeech-rate-meter-2"/>
+            <meta-data android:name="android.app.extract_android_style" android:value="minimal"/>
+        </activity>
+    </application>
+</manifest>

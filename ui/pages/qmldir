@@ -1,0 +1,6 @@
+module pages
+HomePage 1.0 HomePage.qml
+SettingsPage 1.0 SettingsPage.qml
+UserGuidePage 1.0 UserGuidePage.qml
+PrivacyPolicyPage 1.0 PrivacyPolicyPage.qml
+LicensesPage 1.0 LicensesPage.qml

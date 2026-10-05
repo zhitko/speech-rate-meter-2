@@ -1,0 +1,4 @@
+module utils
+singleton AppScale 1.0 AppScale.qml
+singleton Icons 1.0 Icons.qml
+singleton Theme 1.0 Theme.qml

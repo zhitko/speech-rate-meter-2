@@ -1,0 +1,4 @@
+module components
+PlayButton 1.0 PlayButton.qml
+ConfirmDialog 1.0 ConfirmDialog.qml
+VadCalibrationDialog 1.0 VadCalibrationDialog.qml

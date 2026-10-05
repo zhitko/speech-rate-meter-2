@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Speech Rate Meter 2
+Comment=Record speech and save WAV files on this device
+Exec=appspeech-rate-meter-2
+Icon=by.intoncore.SpeechRateMeter2
+Terminal=false
+Categories=AudioVideo;Audio;
