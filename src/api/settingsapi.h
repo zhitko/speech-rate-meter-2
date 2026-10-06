@@ -27,9 +27,10 @@ class SettingsApi : public QObject {
     Q_PROPERTY(double autoCorrThresholdK READ autoCorrThresholdK WRITE setAutoCorrThresholdK NOTIFY autoCorrThresholdKChanged)
     Q_PROPERTY(double autoCorrMinF0 READ autoCorrMinF0 WRITE setAutoCorrMinF0 NOTIFY autoCorrMinF0Changed)
     Q_PROPERTY(double autoCorrMaxF0 READ autoCorrMaxF0 WRITE setAutoCorrMaxF0 NOTIFY autoCorrMaxF0Changed)
+    Q_PROPERTY(double autoCorrEnergyThreshold READ autoCorrEnergyThreshold WRITE setAutoCorrEnergyThreshold NOTIFY autoCorrEnergyThresholdChanged)
     Q_PROPERTY(bool advanced READ advanced WRITE setAdvanced NOTIFY advancedChanged)
-    Q_PROPERTY(int shortestPhraseSec READ shortestPhraseSec WRITE setShortestPhraseSec NOTIFY shortestPhraseSecChanged)
-    Q_PROPERTY(int longestPhraseSec READ longestPhraseSec WRITE setLongestPhraseSec NOTIFY longestPhraseSecChanged)
+    Q_PROPERTY(int analysisWindowSec READ analysisWindowSec WRITE setAnalysisWindowSec NOTIFY analysisWindowSecChanged)
+    Q_PROPERTY(int updatesPerMinute READ updatesPerMinute WRITE setUpdatesPerMinute NOTIFY updatesPerMinuteChanged)
     Q_PROPERTY(int pauseSec READ pauseSec WRITE setPauseSec NOTIFY pauseSecChanged)
     Q_PROPERTY(double slowWpm READ slowWpm WRITE setSlowWpm NOTIFY slowWpmChanged)
     Q_PROPERTY(double fastWpm READ fastWpm WRITE setFastWpm NOTIFY fastWpmChanged)
@@ -44,7 +45,6 @@ class SettingsApi : public QObject {
     Q_PROPERTY(int segmentMinLengthMs READ segmentMinLengthMs WRITE setSegmentMinLengthMs NOTIFY segmentMinLengthMsChanged)
     Q_PROPERTY(double fillerMin READ fillerMin WRITE setFillerMin NOTIFY fillerMinChanged)
     Q_PROPERTY(double fillerMax READ fillerMax WRITE setFillerMax NOTIFY fillerMaxChanged)
-    Q_PROPERTY(int metricAverageCount READ metricAverageCount WRITE setMetricAverageCount NOTIFY metricAverageCountChanged)
 
 public:
     explicit SettingsApi(QObject* parent = nullptr);
@@ -97,13 +97,16 @@ public:
     double autoCorrMaxF0() const;
     void setAutoCorrMaxF0(double maxF0);
 
+    double autoCorrEnergyThreshold() const;
+    void setAutoCorrEnergyThreshold(double threshold);
+
     bool advanced() const;
     void setAdvanced(bool advanced);
 
-    int shortestPhraseSec() const;
-    void setShortestPhraseSec(int seconds);
-    int longestPhraseSec() const;
-    void setLongestPhraseSec(int seconds);
+    int analysisWindowSec() const;
+    void setAnalysisWindowSec(int seconds);
+    int updatesPerMinute() const;
+    void setUpdatesPerMinute(int count);
     int pauseSec() const;
     void setPauseSec(int seconds);
     double slowWpm() const;
@@ -132,8 +135,6 @@ public:
     void setFillerMin(double value);
     double fillerMax() const;
     void setFillerMax(double value);
-    int metricAverageCount() const;
-    void setMetricAverageCount(int count);
 
     Q_INVOKABLE void load();
     Q_INVOKABLE void save();
@@ -156,9 +157,10 @@ signals:
     void autoCorrThresholdKChanged();
     void autoCorrMinF0Changed();
     void autoCorrMaxF0Changed();
+    void autoCorrEnergyThresholdChanged();
     void advancedChanged();
-    void shortestPhraseSecChanged();
-    void longestPhraseSecChanged();
+    void analysisWindowSecChanged();
+    void updatesPerMinuteChanged();
     void pauseSecChanged();
     void slowWpmChanged();
     void fastWpmChanged();
@@ -173,7 +175,6 @@ signals:
     void segmentMinLengthMsChanged();
     void fillerMinChanged();
     void fillerMaxChanged();
-    void metricAverageCountChanged();
 private:
     AppSettings m_settings;
     bool m_advanced = false;

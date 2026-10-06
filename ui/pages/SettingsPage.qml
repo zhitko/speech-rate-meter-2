@@ -112,14 +112,6 @@ Page {
 
     VadCalibrationDialog {
         id: vadCalibrationDialog
-        onCalibrationDoneEnergy: function(threshold) {
-            if (settingsApi)
-                settingsApi.vadThreshold = threshold;
-        }
-        onCalibrationDoneAutocorrelation: function(threshold) {
-            if (settingsApi)
-                settingsApi.autoCorrThreshold = threshold;
-        }
     }
 
     ConfirmDialog {
@@ -304,7 +296,7 @@ Page {
                     spacing: 10
 
                     Label {
-                        text: qsTr("Phrase")
+                        text: qsTr("Measurement")
                         font.bold: true
                         font.pixelSize: AppScale.fs(20)
                         color: Theme.primary(Material.theme)
@@ -316,40 +308,40 @@ Page {
                         rowSpacing: 10
                         Layout.fillWidth: true
 
-                        FieldLabel { text: qsTr("Shortest phrase (s)") }
+                        FieldLabel { text: qsTr("Analysis window (s)") }
                         SpinBox {
-                            from: 0
-                            to: 600
+                            from: 3
+                            to: 30
                             editable: true
-                            value: settingsApi ? settingsApi.shortestPhraseSec : 1
+                            value: settingsApi ? settingsApi.analysisWindowSec : 10
                             onValueModified: if (settingsApi)
-                                settingsApi.shortestPhraseSec = value
+                                settingsApi.analysisWindowSec = value
                             Layout.fillWidth: true
                         }
                         Label {
                             Layout.columnSpan: parent.columns
                             Layout.fillWidth: true
                             wrapMode: Text.Wrap
-                            text: qsTr("Shorter speech is ignored.")
+                            text: qsTr("While recording, Home shows the pace of this much recent speech. Shorter reacts faster but jumps more.")
                             color: Theme.onSurfaceVariant(Material.theme)
                             font.pixelSize: AppScale.fs(12)
                         }
 
-                        FieldLabel { text: qsTr("Longest phrase (s)") }
+                        FieldLabel { text: qsTr("Updates per minute") }
                         SpinBox {
-                            from: 1
-                            to: 600
+                            from: 6
+                            to: 240
                             editable: true
-                            value: settingsApi ? settingsApi.longestPhraseSec : 15
+                            value: settingsApi ? settingsApi.updatesPerMinute : 60
                             onValueModified: if (settingsApi)
-                                settingsApi.longestPhraseSec = value
+                                settingsApi.updatesPerMinute = value
                             Layout.fillWidth: true
                         }
                         Label {
                             Layout.columnSpan: parent.columns
                             Layout.fillWidth: true
                             wrapMode: Text.Wrap
-                            text: qsTr("A longer stretch is split even without a pause.")
+                            text: qsTr("How often the numbers on Home are recalculated while you speak.")
                             color: Theme.onSurfaceVariant(Material.theme)
                             font.pixelSize: AppScale.fs(12)
                         }
@@ -679,32 +671,6 @@ Page {
                         Layout.fillWidth: true
                         wrapMode: Text.Wrap
                         text: qsTr("The filler score between Min FS and Max FS maps to 0–100 %.")
-                        color: Theme.onSurfaceVariant(Material.theme)
-                        font.pixelSize: AppScale.fs(12)
-                    }
-                }
-
-                StageCard {
-                    stage: 6
-                    title: qsTr("Display")
-                    description: qsTr("How results are shown on Home.")
-                    columns: root.singleColumnForm ? 1 : 2
-
-                    FieldLabel { text: qsTr("Display average") }
-                    SpinBox {
-                        from: 1
-                        to: 30
-                        editable: true
-                        value: settingsApi ? settingsApi.metricAverageCount : 4
-                        onValueModified: if (settingsApi)
-                            settingsApi.metricAverageCount = value
-                        Layout.fillWidth: true
-                    }
-                    Label {
-                        Layout.columnSpan: root.singleColumnForm ? 1 : 2
-                        Layout.fillWidth: true
-                        wrapMode: Text.Wrap
-                        text: qsTr("While a phrase is open, Home averages this many recent updates.")
                         color: Theme.onSurfaceVariant(Material.theme)
                         font.pixelSize: AppScale.fs(12)
                     }

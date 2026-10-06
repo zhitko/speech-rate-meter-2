@@ -15,14 +15,13 @@ struct AppSettings {
     double fontSizeMultiplier = 1.0;
     std::string primaryColor = "blue";
     bool showNavigationMenu = false;
-    int metricAverageCount = 4;
 
     bool autoStopRecording = true;
     bool autoCalibrate = false;
     int vadCalibrationDurationMs = 2000;
     int autoStopSilenceDuration = 2000;
-    int minRecordingTimeMs = 1000;
-    int maxRecordingTimeMs = 15000;
+    int analysisWindowSec = 10; // live metrics cover this much recent speech, 3…30
+    int updatesPerMinute = 60; // live recalculations per minute, 6…240
     int vadMethod = 0; // 0: energy, 1: autocorr, 2: hybrid
     double vadThreshold = 10000.0;
     double autoCorrThreshold = 0.3;

@@ -1,17 +1,17 @@
 # Speech Rate Meter 2
 
-Speech Rate Meter 2 estimates how fast you are speaking. It does not recognize words. A phrase is measured when you pause.
+Speech Rate Meter 2 estimates how fast you are speaking. It does not recognize words. While you speak, the numbers show the pace of your last few seconds of speech.
 
 ## Record
 
 1. Open **Home**.
-2. Press **Start** and speak naturally. The microphone stays open. With **Use Speech Autodetection** on, stay quiet while background noise is measured, then speak. With it off, the numbers follow the recording from the first sample.
-3. With **Use Speech Autodetection** on, pause. That phrase is measured, and the next one starts when you speak again. With it off, the whole take starts at the first recorded sample: silence is included, pauses do not end it, and only **Stop** or the **Longest phrase** limit closes it.
-4. Press **Stop** when the session is finished.
+2. Press **Start** and speak naturally. The microphone stays open. With **Use Speech Autodetection** on, stay quiet while background noise is measured, then speak. With it off, the recording is analyzed from the first sample.
+3. With **Use Speech Autodetection** on, a pause ends the phrase; it is saved, and the next one starts when you speak again. With it off, pauses do not end the phrase and the recording is saved in 15-second parts.
+4. Press **Stop** when the session is finished. Home then shows the result of the whole session, the same as in **History**.
 
-The numbers on Home cover every phrase kept since **Start**, including the one you are speaking. **Speech** is the total time measured, not just the latest phrase.
+While recording, speech rate, articulation, fillers, and pauses come from the **Analysis window**: your most recent kept speech (10 seconds by default). A change of pace shows within a few seconds. **Speech** is the total time measured since **Start**.
 
-A phrase shorter than **Shortest phrase** is not saved. A stretch longer than **Longest phrase** is split even if you do not pause. The audio is deleted once the numbers are stored. There is no playback.
+Silence and background noise are not counted as speech. When the window holds no speech, the numbers stay and the chip reads **Listening**. A phrase shorter than one second is not saved. The audio is deleted once the numbers are stored. There is no playback.
 
 While a session is running, **Recording** stays in the toolbar on every page. Tap it to return to Home.
 
@@ -21,9 +21,16 @@ While a session is running, **Recording** stays in the toolbar on every page. Ta
 
 ## Settings
 
-Opening **Settings** stops an active recording first, applying the usual keep-or-drop rule to the open phrase. **Settings** holds language, theme, color, font size, and the navigation bar.
+Opening **Settings** stops an active recording first. An open phrase shorter than one second is dropped; a longer one is saved. **Settings** holds language, theme, color, font size, and the navigation bar.
 
-**Use Speech Autodetection** measures background noise after **Start**, then listens for speech. When it is off, **Start** measures the recording from the first sample, and a pause does not end it. **Shortest phrase**, **Longest phrase**, and **Pause** choose which stretches are kept. **Slow** and **Fast** are the ends of the speech-rate gauge. While you are speaking, Home averages the latest updates of the whole session. **Display average**, under **Advanced**, sets how many. After a pause, Home shows every phrase kept since **Start**.
+Under **Measurement**:
+
+- **Analysis window** is how many recent seconds of speech Home uses while recording. Shorter reacts faster but jumps more.
+- **Updates per minute** is how often the numbers are recalculated.
+- **Pause** is the silence that ends a phrase.
+- **Use Speech Autodetection** measures background noise after **Start**, then listens for speech. When it is off, the recording is analyzed from the first sample and a pause does not end the phrase.
+
+**Slow** and **Fast** are the ends of the speech-rate gauge.
 
 **Advanced** shows calibration and coefficients. It turns off when you leave the app. On a computer, **Open File** measures one WAV file without saving a session. It accepts only 8000 Hz, mono, signed 16-bit PCM WAV files.
 

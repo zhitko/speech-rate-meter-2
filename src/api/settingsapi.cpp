@@ -255,6 +255,20 @@ void SettingsApi::setAutoCorrMaxF0(double maxF0)
     emit autoCorrMaxF0Changed();
 }
 
+double SettingsApi::autoCorrEnergyThreshold() const
+{
+    return m_settings.autoCorrEnergyThreshold;
+}
+
+void SettingsApi::setAutoCorrEnergyThreshold(double threshold)
+{
+    if (!(threshold > 0) || m_settings.autoCorrEnergyThreshold == threshold)
+        return;
+    m_settings.autoCorrEnergyThreshold = threshold;
+    save();
+    emit autoCorrEnergyThresholdChanged();
+}
+
 bool SettingsApi::advanced() const
 {
     return m_advanced;
@@ -268,44 +282,30 @@ void SettingsApi::setAdvanced(bool advanced)
     emit advancedChanged();
 }
 
-int SettingsApi::shortestPhraseSec() const
+int SettingsApi::analysisWindowSec() const
 {
-    return m_settings.minRecordingTimeMs / 1000;
+    return m_settings.analysisWindowSec;
 }
 
-void SettingsApi::setShortestPhraseSec(int seconds)
+void SettingsApi::setAnalysisWindowSec(int seconds)
 {
-    if (seconds < 0)
-        seconds = 0;
-    const int ms = seconds * 1000;
-    const bool minChanged = assignIfChanged(m_settings.minRecordingTimeMs, ms);
-    bool maxChanged = false;
-    if (m_settings.maxRecordingTimeMs <= m_settings.minRecordingTimeMs) {
-        maxChanged = assignIfChanged(m_settings.maxRecordingTimeMs, m_settings.minRecordingTimeMs + 1000);
-    }
-    if (!minChanged && !maxChanged)
+    if (!assignIfChanged(m_settings.analysisWindowSec, std::clamp(seconds, 3, 30)))
         return;
     save();
-    if (minChanged)
-        emit shortestPhraseSecChanged();
-    if (maxChanged)
-        emit longestPhraseSecChanged();
+    emit analysisWindowSecChanged();
 }
 
-int SettingsApi::longestPhraseSec() const
+int SettingsApi::updatesPerMinute() const
 {
-    return m_settings.maxRecordingTimeMs / 1000;
+    return m_settings.updatesPerMinute;
 }
 
-void SettingsApi::setLongestPhraseSec(int seconds)
+void SettingsApi::setUpdatesPerMinute(int count)
 {
-    int ms = std::max(0, seconds) * 1000;
-    if (ms <= m_settings.minRecordingTimeMs)
-        ms = m_settings.minRecordingTimeMs + 1000;
-    if (!assignIfChanged(m_settings.maxRecordingTimeMs, ms))
+    if (!assignIfChanged(m_settings.updatesPerMinute, std::clamp(count, 6, 240)))
         return;
     save();
-    emit longestPhraseSecChanged();
+    emit updatesPerMinuteChanged();
 }
 
 int SettingsApi::pauseSec() const
@@ -456,19 +456,6 @@ void SettingsApi::setFillerMax(double value)
     emit fillerMaxChanged();
 }
 
-int SettingsApi::metricAverageCount() const
-{
-    return m_settings.metricAverageCount;
-}
-
-void SettingsApi::setMetricAverageCount(int count)
-{
-    if (!assignIfChanged(m_settings.metricAverageCount, std::clamp(count, 1, 30)))
-        return;
-    save();
-    emit metricAverageCountChanged();
-}
-
 void SettingsApi::load()
 {
     m_settings = Settings::loadSettings();
@@ -490,8 +477,9 @@ void SettingsApi::load()
     emit autoCorrThresholdKChanged();
     emit autoCorrMinF0Changed();
     emit autoCorrMaxF0Changed();
-    emit shortestPhraseSecChanged();
-    emit longestPhraseSecChanged();
+    emit autoCorrEnergyThresholdChanged();
+    emit analysisWindowSecChanged();
+    emit updatesPerMinuteChanged();
     emit pauseSecChanged();
     emit slowWpmChanged();
     emit fastWpmChanged();
@@ -506,7 +494,6 @@ void SettingsApi::load()
     emit segmentMinLengthMsChanged();
     emit fillerMinChanged();
     emit fillerMaxChanged();
-    emit metricAverageCountChanged();
     emit settingsChanged();
 }
 

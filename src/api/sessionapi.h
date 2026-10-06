@@ -16,7 +16,8 @@ class JobQueue;
 
 /**
  * Process-wide recording session. Capture, pause cutting, and analysis run
- * off the UI thread. Home reads a moving average of recent snapshots from here.
+ * off the UI thread. While recording, Home reads metrics of the most recent
+ * analysis window from here; after Stop, the whole-session result.
  */
 class SessionApi : public QObject {
     Q_OBJECT
@@ -54,7 +55,7 @@ public:
     ~SessionApi() override;
 
     bool sessionActive() const { return m_sessionActive; }
-    int phase() const { return m_phase; }
+    int phase() const { return m_phase == Measuring && m_noSpeech ? Listening : m_phase; }
     int phraseSeconds() const { return m_phraseSeconds; }
     qreal audioLevel() const { return m_audioLevel; }
     bool hasResult() const { return m_hasResult; }
@@ -102,6 +103,7 @@ private slots:
     void applyDeviceFailed();
     void applyOpenFileFinished(bool success, const QString& error);
     void applyUserDataCleared();
+    void applySessionEnded(quint64 generation);
     void notifySessions();
 
 private:
@@ -109,9 +111,9 @@ private:
     void enqueueClearUserData();
     void resetResultState();
     void setOpenFileError(const QString& error);
-    void showMetrics(const QVariantMap& metrics, bool committed);
-    void rememberShown(const QVariantMap& shown);
-    QVariantMap smoothedMetrics(const QVariantMap& metrics, bool committed);
+    void setNoSpeech(bool noSpeech);
+    void showMetrics(const QVariantMap& shown, double speechSeconds);
+    void rememberShown(const QVariantMap& shown, double speechSeconds);
 
     struct SessionAccumulator;
     std::unique_ptr<SessionAccumulator> m_accumulator;
@@ -128,8 +130,7 @@ private:
     int m_epoch = 0;
     qreal m_audioLevel = 0;
     bool m_hasResult = false;
-    bool m_showingLive = false;
-    bool m_hasCommitted = false;
+    bool m_noSpeech = false;
     double m_speechRate = 0;
     double m_articulationRate = 0;
     double m_phrasePauses = 0;
@@ -137,13 +138,9 @@ private:
     double m_fillerScore = 0;
     QString m_openFileError;
     QVariantMap m_details;
-    QVariantMap m_committed;
     QString m_shownSessionId;
     QString m_shownSessionStartedAt;
     QString m_lastShownKey;
-    QList<QVariantMap> m_metricWindow;
-    int m_metricEpoch = -1;
-    bool m_metricWindowLive = false;
     std::atomic<bool> m_alive { true };
 
     JobQueue* m_queue = nullptr;

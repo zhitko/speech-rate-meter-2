@@ -3,6 +3,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <iostream>
+#include <random>
 #include <string>
 
 namespace {
@@ -143,6 +144,48 @@ void testSpeechDurationUsesSampleCount()
         expect(true, "quiet impulse may be flat after normalization");
 }
 
+std::vector<float> noise(int count, double amplitude, unsigned seed)
+{
+    std::mt19937 rng(seed);
+    std::normal_distribution<double> dist(0, amplitude);
+    std::vector<float> samples(static_cast<std::size_t>(count));
+    for (float& sample : samples)
+        sample = static_cast<float>(dist(rng));
+    return samples;
+}
+
+void addSyllables(std::vector<float>& samples, double perSecond, double amplitude)
+{
+    const int period = static_cast<int>(8000 / perSecond);
+    const int length = 960;
+    const int count = static_cast<int>(samples.size());
+    for (int start = 0; start + length < count; start += period) {
+        for (int index = 0; index < length; ++index) {
+            const double envelope = 0.5 - 0.5 * std::cos(2 * M_PI * index / length);
+            samples[start + index] += static_cast<float>(
+                amplitude * envelope * std::sin(2 * M_PI * 150 * index / 8000.0));
+        }
+    }
+}
+
+void testSilenceIsNotSpeech()
+{
+    expect(!speechrate::analyze(noise(80000, 30, 1), {}).valid, "quiet background noise is not speech");
+    expect(!speechrate::analyze(noise(80000, 200, 2), {}).valid, "loud background noise is not speech");
+}
+
+void testSyllableRateSurvivesGate()
+{
+    for (double rate : { 2.0, 4.0, 6.0 }) {
+        std::vector<float> samples = noise(80000, 200, 3);
+        addSyllables(samples, rate, 1500);
+        const speechrate::Metrics metrics = speechrate::analyze(samples, {});
+        expect(metrics.valid, "syllable train is speech");
+        expect(metrics.vowelCount == static_cast<int>(rate * 10), "every syllable is one nucleus");
+        expectNear(speechrate::fillerPercent(metrics.fillerScore, 120, 240), 0.0, "even syllables are not fillers");
+    }
+}
+
 } // namespace
 
 int main()
@@ -156,6 +199,8 @@ int main()
     testEmptyAndFlat();
     testCollectedPhrases();
     testSpeechDurationUsesSampleCount();
+    testSilenceIsNotSpeech();
+    testSyllableRateSurvivesGate();
 
     if (g_failures != 0) {
         std::cerr << g_failures << " failure(s)\n";

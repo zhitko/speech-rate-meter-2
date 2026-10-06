@@ -70,18 +70,20 @@ Page {
     function hintText() {
         switch (phase()) {
         case SessionApi.IdleReady:
-            return qsTr("Press Start to measure again.")
+            return qsTr("Whole-session result. Press Start to measure again.")
         case SessionApi.Listening:
+            return qsTr("Listening…")
         case SessionApi.Measuring:
-            return qsTr("Speak naturally. A phrase is measured when you pause.")
+            return qsTr("The numbers follow your last %n second(s) of speech.", "",
+                        settingsApi ? settingsApi.analysisWindowSec : 10)
         case SessionApi.TooShort:
-            return qsTr("Keep speaking. This phrase is still too short to count.")
+            return qsTr("Keep speaking. There is not enough speech to measure yet.")
         case SessionApi.Dropped:
             return qsTr("That phrase was too short and was not saved.")
         case SessionApi.MicDenied:
             return qsTr("The microphone is blocked. Allow access in the system settings, then press Start again.")
         default:
-            return qsTr("Press Start and speak naturally. A phrase is measured when you pause.")
+            return qsTr("Press Start and speak naturally. The numbers follow your recent speech.")
         }
     }
 
@@ -107,15 +109,7 @@ Page {
 
     VadCalibrationDialog {
         id: startCalibrationDialog
-        onCalibrationDoneEnergy: function(threshold) {
-            if (settingsApi)
-                settingsApi.vadThreshold = threshold
-            if (sessionApi && !sessionApi.sessionActive && !sessionApi.busy)
-                sessionApi.startSession()
-        }
-        onCalibrationDoneAutocorrelation: function(threshold) {
-            if (settingsApi)
-                settingsApi.autoCorrThreshold = threshold
+        onCalibrationComplete: {
             if (sessionApi && !sessionApi.sessionActive && !sessionApi.busy)
                 sessionApi.startSession()
         }
@@ -351,8 +345,11 @@ Page {
                                                     : Math.max(200, Math.min(root.layoutWidth * 0.62, root.height * 0.36, 330))
                             Layout.minimumHeight: 170
                             Layout.maximumHeight: 480
-                            hasValue: root.hasResult
-                            value: sessionApi ? sessionApi.speechRate : 0
+                            // While recording, anything but Measuring means the user is not
+                            // speaking (or not enough yet), so the needle rests at zero.
+                            hasValue: root.hasResult || root.active
+                            value: !sessionApi || (root.active && root.phase() !== SessionApi.Measuring)
+                                   ? 0 : sessionApi.speechRate
                             minimum: root.slowWpm
                             maximum: root.fastWpm
                             cardColor: gaugeCard.color

@@ -151,58 +151,43 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/HomePage.qml" line="73"/>
-        <source>Press Start to measure again.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../ui/pages/HomePage.qml" line="78"/>
-        <source>Keep speaking. This phrase is still too short to count.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../ui/pages/HomePage.qml" line="80"/>
+        <location filename="../ui/pages/HomePage.qml" line="82"/>
         <source>That phrase was too short and was not saved.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/HomePage.qml" line="82"/>
+        <location filename="../ui/pages/HomePage.qml" line="84"/>
         <source>The microphone is blocked. Allow access in the system settings, then press Start again.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/HomePage.qml" line="84"/>
-        <source>Press Start and speak naturally. A phrase is measured when you pause.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../ui/pages/HomePage.qml" line="101"/>
-        <location filename="../ui/pages/HomePage.qml" line="491"/>
+        <location filename="../ui/pages/HomePage.qml" line="103"/>
+        <location filename="../ui/pages/HomePage.qml" line="493"/>
         <source>Open File</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/HomePage.qml" line="102"/>
+        <location filename="../ui/pages/HomePage.qml" line="104"/>
         <source>WAV files (*.wav)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/HomePage.qml" line="403"/>
+        <location filename="../ui/pages/HomePage.qml" line="405"/>
         <source>Analyzing audio</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/HomePage.qml" line="411"/>
+        <location filename="../ui/pages/HomePage.qml" line="413"/>
         <source>Analyzing audio…</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/HomePage.qml" line="434"/>
+        <location filename="../ui/pages/HomePage.qml" line="436"/>
         <source>wpm</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/HomePage.qml" line="432"/>
+        <location filename="../ui/pages/HomePage.qml" line="434"/>
         <source>Articulation</source>
         <translation type="unfinished"></translation>
     </message>
@@ -237,68 +222,91 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/HomePage.qml" line="76"/>
-        <source>Speak naturally. A phrase is measured when you pause.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../ui/pages/HomePage.qml" line="334"/>
+        <location filename="../ui/pages/HomePage.qml" line="336"/>
         <source>Phrase time %1</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/HomePage.qml" line="442"/>
+        <location filename="../ui/pages/HomePage.qml" line="444"/>
         <source>Fillers</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/HomePage.qml" line="453"/>
+        <location filename="../ui/pages/HomePage.qml" line="455"/>
         <source>Pauses</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/HomePage.qml" line="455"/>
-        <location filename="../ui/pages/HomePage.qml" line="465"/>
+        <location filename="../ui/pages/HomePage.qml" line="457"/>
+        <location filename="../ui/pages/HomePage.qml" line="467"/>
         <source>sec</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/HomePage.qml" line="463"/>
+        <location filename="../ui/pages/HomePage.qml" line="465"/>
         <source>Speech</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/HomePage.qml" line="168"/>
+        <location filename="../ui/pages/HomePage.qml" line="170"/>
         <source>Microphone level</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/HomePage.qml" line="169"/>
+        <location filename="../ui/pages/HomePage.qml" line="73"/>
+        <source>Whole-session result. Press Start to measure again.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/HomePage.qml" line="75"/>
+        <source>Listening…</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../ui/pages/HomePage.qml" line="77"/>
+        <source>The numbers follow your last %n second(s) of speech.</source>
+        <translation>
+            <numerusform>The numbers follow your last %n second of speech.</numerusform>
+            <numerusform>The numbers follow your last %n seconds of speech.</numerusform>
+        </translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/HomePage.qml" line="80"/>
+        <source>Keep speaking. There is not enough speech to measure yet.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/HomePage.qml" line="86"/>
+        <source>Press Start and speak naturally. The numbers follow your recent speech.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/HomePage.qml" line="171"/>
         <source>%1 percent</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/HomePage.qml" line="203"/>
+        <location filename="../ui/pages/HomePage.qml" line="205"/>
         <source>Stop recording</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/HomePage.qml" line="203"/>
+        <location filename="../ui/pages/HomePage.qml" line="205"/>
         <source>Start recording</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/HomePage.qml" line="234"/>
+        <location filename="../ui/pages/HomePage.qml" line="236"/>
         <source>Stop</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/HomePage.qml" line="234"/>
+        <location filename="../ui/pages/HomePage.qml" line="236"/>
         <source>Start</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/HomePage.qml" line="483"/>
+        <location filename="../ui/pages/HomePage.qml" line="485"/>
         <source>Details</source>
         <translation type="unfinished"></translation>
     </message>
@@ -466,27 +474,27 @@
 <context>
     <name>SessionApi</name>
     <message>
-        <location filename="../src/api/sessionapi.cpp" line="165"/>
-        <location filename="../src/api/sessionapi.cpp" line="169"/>
-        <location filename="../src/api/sessionapi.cpp" line="346"/>
-        <location filename="../src/api/sessionapi.cpp" line="1082"/>
+        <location filename="../src/api/sessionapi.cpp" line="148"/>
+        <location filename="../src/api/sessionapi.cpp" line="152"/>
+        <location filename="../src/api/sessionapi.cpp" line="332"/>
+        <location filename="../src/api/sessionapi.cpp" line="1102"/>
         <source>The selected file cannot be opened.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/api/sessionapi.cpp" line="172"/>
-        <location filename="../src/api/sessionapi.cpp" line="186"/>
-        <location filename="../src/api/sessionapi.cpp" line="198"/>
+        <location filename="../src/api/sessionapi.cpp" line="155"/>
+        <location filename="../src/api/sessionapi.cpp" line="169"/>
+        <location filename="../src/api/sessionapi.cpp" line="181"/>
         <source>The selected file is not a valid WAV file.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/api/sessionapi.cpp" line="210"/>
+        <location filename="../src/api/sessionapi.cpp" line="193"/>
         <source>Use a PCM WAV file: 8000 Hz, mono, signed 16-bit little-endian.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/api/sessionapi.cpp" line="358"/>
+        <location filename="../src/api/sessionapi.cpp" line="344"/>
         <source>No measurable speech was found in the file.</source>
         <translation type="unfinished"></translation>
     </message>
@@ -682,31 +690,6 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="307"/>
-        <source>Phrase</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="319"/>
-        <source>Shortest phrase (s)</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="333"/>
-        <source>Shorter speech is ignored.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="338"/>
-        <source>Longest phrase (s)</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="352"/>
-        <source>A longer stretch is split even without a pause.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <location filename="../ui/pages/SettingsPage.qml" line="357"/>
         <source>Pause (s)</source>
         <translation type="unfinished"></translation>
@@ -842,26 +825,6 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="689"/>
-        <source>Display</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="690"/>
-        <source>How results are shown on Home.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="693"/>
-        <source>Display average</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="707"/>
-        <source>While a phrase is open, Home averages this many recent updates.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <location filename="../ui/pages/SettingsPage.qml" line="611"/>
         <source>Mean value degree</source>
         <translation type="unfinished"></translation>
@@ -919,6 +882,31 @@
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="488"/>
         <source>VAD Method</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SettingsPage.qml" line="307"/>
+        <source>Measurement</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SettingsPage.qml" line="319"/>
+        <source>Analysis window (s)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SettingsPage.qml" line="333"/>
+        <source>While recording, Home shows the pace of this much recent speech. Shorter reacts faster but jumps more.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SettingsPage.qml" line="338"/>
+        <source>Updates per minute</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SettingsPage.qml" line="352"/>
+        <source>How often the numbers on Home are recalculated while you speak.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>

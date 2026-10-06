@@ -164,7 +164,7 @@ Item {
             implicitWidth: zoneText.implicitWidth + 24
             implicitHeight: zoneText.implicitHeight + 8
             radius: height / 2
-            opacity: root.hasValue ? 1 : 0
+            opacity: root.hasValue && root.value > 0 ? 1 : 0
             color: Qt.alpha(root.zoneColor, 0.16)
             Behavior on opacity { NumberAnimation { duration: 200 } }
 

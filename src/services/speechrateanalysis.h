@@ -21,6 +21,14 @@ struct Config {
     double k3 = 0.30;
     double k4 = 100.0;
     double peakMargin = 0.009;
+    // Speech gate. A nucleus counts only when its raw intensity peak reaches
+    // max(minSpeechLevel, noise floor * speechOverNoise). The noise floor is the
+    // noiseFloorPercentile of the raw intensity contour of the analyzed buffer.
+    double speechOverNoise = 3.0;
+    double minSpeechLevel = 80.0;
+    double noiseFloorPercentile = 0.10;
+    // Fewer gated nuclei than this means the buffer holds no measurable speech.
+    int minVowels = 3;
 };
 
 struct Run {
@@ -65,6 +73,11 @@ std::vector<Run> vowelNuclei(const std::vector<double>& normalized,
     double margin,
     std::uint32_t minFrames);
 std::vector<Run> interiorGaps(const std::vector<Run>& nuclei);
+/** Drops nuclei whose raw intensity peak stays below the speech gate. */
+std::vector<Run> gateNuclei(const std::vector<Run>& nuclei,
+    const std::vector<double>& contour,
+    const Config& cfg);
+double speechGateLevel(const std::vector<double>& contour, const Config& cfg);
 Moments sampleMoments(const std::vector<int>& lengths);
 
 double secondsFromFrames(double frameCount, int shift);
@@ -113,7 +126,10 @@ Metrics metricsFromLengths(const std::vector<int>& vowelLengths,
 /** Full pipeline, including the lengths a session can join later. */
 Measurement measure(const std::vector<float>& samples, const Config& cfg);
 
-/** Full pipeline. An empty or flat recording returns valid == false. */
+/**
+ * Full pipeline. An empty, flat, or speechless recording (fewer than
+ * cfg.minVowels gated nuclei) returns valid == false.
+ */
 Metrics analyze(const std::vector<float>& samples, const Config& cfg);
 
 /** 0…100 label after clamping F into [fillerMin, fillerMax]. */

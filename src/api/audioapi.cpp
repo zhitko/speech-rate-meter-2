@@ -405,17 +405,17 @@ void AudioApi::calibrateVadEnergy()
     auto calibrationService = std::make_unique<VADEnergyService>(nullptr);
     calibrationService->prepareForCalibration();
 
+    const AppSettings settings = Settings::loadSettings();
     QAudioFormat fmt = m_format;
     auto source = std::unique_ptr<QAudioSource>(new QAudioSource(m_audioDevice, fmt, this));
     QIODevice* io = source->start();
     if (!io) {
-        LOG_DEBUG() << "Finish: calibrateVad - Failed to open audio device";
-        emit calibrationFinishedEnergy(50000.0);
+        LOG_WARNING() << "Calibration could not open the audio device; keeping threshold" << settings.vadThreshold;
+        emit calibrationFinishedEnergy(settings.vadThreshold);
         return;
     }
 
-    // Record for 2 seconds synchronously using a local event loop
-    AppSettings settings = Settings::loadSettings();
+    // Record synchronously using a local event loop
     QTimer stopTimer;
     stopTimer.setSingleShot(true);
     stopTimer.setInterval(settings.vadCalibrationDurationMs);
@@ -456,6 +456,12 @@ void AudioApi::calibrateVadEnergy()
 
     // Get all V values and calculate threshold
     std::vector<double> vValues = calibrationService->getAndClearRecentVValues();
+    if (vValues.empty()) {
+        // Keep the previous threshold: the fallback is far above any speech level.
+        LOG_WARNING() << "Calibration captured no audio; keeping threshold" << settings.vadThreshold;
+        emit calibrationFinishedEnergy(settings.vadThreshold);
+        return;
+    }
     double threshold = VADEnergyService::calculateThresholdFromValues(vValues);
     
     LOG_DEBUG() << "Calibration done: threshold=" << threshold
@@ -475,17 +481,17 @@ void AudioApi::calibrateVadAutocorrelation()
     // Create a temporary VAD autocorrelation service for calibration
     auto calibrationService = std::make_unique<VADAutocorrelationService>(nullptr);
 
+    const AppSettings settings = Settings::loadSettings();
     QAudioFormat fmt = m_format;
     auto source = std::unique_ptr<QAudioSource>(new QAudioSource(m_audioDevice, fmt, this));
     QIODevice* io = source->start();
     if (!io) {
-        LOG_DEBUG() << "Finish: calibrateVadAutocorrelation - Failed to open audio device";
-        emit calibrationFinishedAutocorrelation(0.4);  // Default fallback threshold for autocorrelation
+        LOG_WARNING() << "Autocorrelation calibration could not open the audio device; keeping thresholds";
+        emit calibrationFinishedAutocorrelation(settings.autoCorrThreshold, settings.autoCorrEnergyThreshold);
         return;
     }
 
-    // Record for 2 seconds synchronously using a local event loop
-    AppSettings settings = Settings::loadSettings();
+    // Record synchronously using a local event loop
     QTimer stopTimer;
     stopTimer.setSingleShot(true);
     stopTimer.setInterval(settings.vadCalibrationDurationMs);
@@ -507,15 +513,15 @@ void AudioApi::calibrateVadAutocorrelation()
             // Process audio samples through calibration service
             calibrationService->processAudioSamples(samples, numSamples);
             
-            // Also collect frame energies (R0) for energy threshold calculation
-            // Process the same samples to compute frame energies
-            const int frameSize = 256; // FRAME_SIZE from vadautocorrelationservice.cpp
-            const int hopSize = 64;    // HOP_SIZE from vadautocorrelationservice.cpp
-            
+            // R0 must match the runtime energy gate in VADAutocorrelationService:
+            // 128-sample frames, 64-sample hop, Hamming window, samples scaled to [-1, 1].
+            const int frameSize = 128;
+            const int hopSize = 64;
             for (int i = 0; i + frameSize <= numSamples; i += hopSize) {
                 double r0 = 0.0;
                 for (int j = 0; j < frameSize; ++j) {
-                    double sample = static_cast<double>(samples[i + j]) / 32768.0;
+                    const double window = 0.54 - 0.46 * std::cos(2.0 * 3.14159265358979323846 * j / (frameSize - 1));
+                    const double sample = window * static_cast<double>(samples[i + j]) / 32768.0;
                     r0 += sample * sample;
                 }
                 r0Values.push_back(r0);
@@ -531,6 +537,12 @@ void AudioApi::calibrateVadAutocorrelation()
     // Get U(n) values and calculate threshold
     calibrationService->updateSavedMetrics();
     const auto& uValues = calibrationService->getSavedU();
+    if (uValues.empty() || r0Values.empty()) {
+        LOG_WARNING() << "Autocorrelation calibration captured no audio; keeping threshold"
+                      << settings.autoCorrThreshold;
+        emit calibrationFinishedAutocorrelation(settings.autoCorrThreshold, settings.autoCorrEnergyThreshold);
+        return;
+    }
     
     double threshold = 0.4;  // Default threshold for autocorrelation [0..1]
     if (!uValues.empty()) {
@@ -540,12 +552,9 @@ void AudioApi::calibrateVadAutocorrelation()
             sum += val;
         }
         double mean = sum / static_cast<double>(uValues.size());
-        
-// Load settings for the threshold multiplier
-    AppSettings settings = Settings::loadSettings();
-    // Use mean as the threshold (conservative estimate)
-    // Autocorrelation is [0, 1], so add a reasonable margin above background noise
-    threshold = mean * settings.autoCorrThresholdK;
+
+        // Autocorrelation is [0, 1]; K sets the margin above background noise.
+        threshold = mean * settings.autoCorrThresholdK;
         
         // Clamp to reasonable range [0.2, 0.6]
         if (threshold < 0.2) threshold = 0.2;
@@ -591,13 +600,9 @@ void AudioApi::calibrateVadAutocorrelation()
         LOG_DEBUG() << "No R0 values collected for energy threshold, using default: " << energyThreshold;
     }
 
-    // Save the energy threshold to settings for use in future recordings
-    AppSettings currentSettings = Settings::loadSettings();
-    currentSettings.autoCorrEnergyThreshold = energyThreshold;
-    Settings::saveSettings(currentSettings);
-    LOG_DEBUG() << "Saved autoCorrEnergyThreshold to settings: " << energyThreshold;
-
-    emit calibrationFinishedAutocorrelation(threshold);
+    // The caller stores both values through SettingsApi; writing the INI here
+    // would be overwritten by SettingsApi's in-memory copy on its next save.
+    emit calibrationFinishedAutocorrelation(threshold, energyThreshold);
     LOG_DEBUG() << "Finish: calibrateVadAutocorrelation";
 }
 

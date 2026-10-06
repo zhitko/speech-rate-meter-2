@@ -99,15 +99,12 @@ Settings::loadSettings()
     settings.fontSizeMultiplier = qsettings.value("fontSizeMultiplier", 1.0).toDouble();
     settings.primaryColor = qsettings.value("primaryColor", QString("blue")).toString().toStdString();
     settings.showNavigationMenu = qsettings.value("showNavigationMenu", false).toBool();
-    settings.metricAverageCount = std::clamp(qsettings.value("metricAverageCount", 4).toInt(), 1, 30);
     settings.autoStopRecording = qsettings.value("autoStopRecording", true).toBool();
     settings.autoCalibrate = qsettings.value("autoCalibrate", false).toBool();
     settings.vadCalibrationDurationMs = qsettings.value("vadCalibrationDurationMs", 2000).toInt();
     settings.autoStopSilenceDuration = qsettings.value("autoStopSilenceDuration", 2000).toInt();
-    settings.minRecordingTimeMs = qsettings.value("minRecordingTimeMs", 1000).toInt();
-    settings.maxRecordingTimeMs = qsettings.value("maxRecordingTimeMs", 15000).toInt();
-    if (settings.maxRecordingTimeMs <= settings.minRecordingTimeMs)
-        settings.maxRecordingTimeMs = settings.minRecordingTimeMs + 1000;
+    settings.analysisWindowSec = std::clamp(qsettings.value("analysisWindowSec", 10).toInt(), 3, 30);
+    settings.updatesPerMinute = std::clamp(qsettings.value("updatesPerMinute", 60).toInt(), 6, 240);
     settings.vadMethod = qsettings.value("vadMethod", 0).toInt();
     settings.vadThreshold = qsettings.value("vadThreshold", 10000.0).toDouble();
     settings.autoCorrThreshold = qsettings.value("autoCorrThreshold", 0.3).toDouble();
@@ -169,13 +166,15 @@ void Settings::saveSettings(const AppSettings& settings)
     qsettings.setValue("fontSizeMultiplier", settings.fontSizeMultiplier);
     qsettings.setValue("primaryColor", QString::fromStdString(settings.primaryColor));
     qsettings.setValue("showNavigationMenu", settings.showNavigationMenu);
-    qsettings.setValue("metricAverageCount", settings.metricAverageCount);
+    qsettings.remove("metricAverageCount");
+    qsettings.remove("minRecordingTimeMs");
+    qsettings.remove("maxRecordingTimeMs");
     qsettings.setValue("autoStopRecording", settings.autoStopRecording);
     qsettings.setValue("autoCalibrate", settings.autoCalibrate);
     qsettings.setValue("vadCalibrationDurationMs", settings.vadCalibrationDurationMs);
     qsettings.setValue("autoStopSilenceDuration", settings.autoStopSilenceDuration);
-    qsettings.setValue("minRecordingTimeMs", settings.minRecordingTimeMs);
-    qsettings.setValue("maxRecordingTimeMs", settings.maxRecordingTimeMs);
+    qsettings.setValue("analysisWindowSec", settings.analysisWindowSec);
+    qsettings.setValue("updatesPerMinute", settings.updatesPerMinute);
     qsettings.setValue("vadMethod", settings.vadMethod);
     qsettings.setValue("vadThreshold", settings.vadThreshold);
     qsettings.setValue("autoCorrThreshold", settings.autoCorrThreshold);

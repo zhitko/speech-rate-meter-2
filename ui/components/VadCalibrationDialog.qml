@@ -7,12 +7,12 @@ import "../utils"
 
 // VAD Calibration dialog.
 // Usage:
-//   VadCalibrationDialog { id: myDialog; onCalibrationDone: function(threshold) { ... } }
+//   VadCalibrationDialog { id: myDialog; onCalibrationComplete: { ... } }
 //   myDialog.open()
 //
-// The dialog starts calibration automatically when opened and closes itself
-// when calibration finishes. The resulting threshold is reported via the
-// calibrationDone(threshold) signal so the caller can store it.
+// The dialog starts calibration automatically when opened, calibrates every
+// detector the current VAD method uses, stores the thresholds in settingsApi,
+// closes itself, and then emits calibrationComplete().
 
 Dialog {
     id: root
@@ -31,26 +31,47 @@ Dialog {
     width: 380
     closePolicy: Popup.NoAutoClose
 
+    // 0: energy, 1: autocorrelation, 2: hybrid (both detectors are calibrated)
+    readonly property int method: settingsApi ? settingsApi.vadMethod : 0
+    readonly property int passes: method === 2 ? 2 : 1
+
+    // Emitted once every detector used by the current method is calibrated.
+    signal calibrationComplete()
+
+    function calibrate() {
+        if (method === 1)
+            _calibrationAudioApi.calibrateVadAutocorrelation();
+        else
+            _calibrationAudioApi.calibrateVadEnergy();
+    }
+
     // Internal AudioApi — callers do not need to provide one.
     AudioApi {
         id: _calibrationAudioApi
         onCalibrationFinishedEnergy: function(threshold) {
+            if (root.settingsApi)
+                root.settingsApi.vadThreshold = threshold;
             root.calibrationDoneEnergy(threshold);
+            if (root.method === 2) {
+                // Let the energy result reach the UI before the second blocking pass.
+                Qt.callLater(_calibrationAudioApi.calibrateVadAutocorrelation);
+                return;
+            }
             root.close();
+            root.calibrationComplete();
         }
-        onCalibrationFinishedAutocorrelation: function(threshold) {
+        onCalibrationFinishedAutocorrelation: function(threshold, energyThreshold) {
+            if (root.settingsApi) {
+                root.settingsApi.autoCorrThreshold = threshold;
+                root.settingsApi.autoCorrEnergyThreshold = energyThreshold;
+            }
             root.calibrationDoneAutocorrelation(threshold);
             root.close();
+            root.calibrationComplete();
         }
         onPermissionResultReceived: function(granted) {
             if (granted) {
-                // Retry calibration after permission granted
-                const method = root.settingsApi ? root.settingsApi.vadMethod : 0;
-                if (method === 1) {
-                    _calibrationAudioApi.calibrateVadAutocorrelation();
-                } else {
-                    _calibrationAudioApi.calibrateVadEnergy();
-                }
+                root.calibrate();
             } else {
                 Logger.warning("Microphone permission denied — cannot calibrate");
                 if (root.sessionApi)
@@ -63,7 +84,7 @@ Dialog {
     contentItem: ColumnLayout {
         spacing: 16
         Label {
-            text: qsTr("Please stay quiet for %1 seconds so the background noise level can be measured.").arg(root.settingsApi ? Math.round(root.settingsApi.vadCalibrationDurationMs / 1000) : 2)
+            text: qsTr("Please stay quiet for %1 seconds so the background noise level can be measured.").arg(root.passes * (root.settingsApi ? Math.round(root.settingsApi.vadCalibrationDurationMs / 1000) : 2))
             wrapMode: Text.WordWrap
             Layout.fillWidth: true
             font.pixelSize: AppScale.fs(15)
@@ -98,11 +119,6 @@ Dialog {
             // onPermissionResultReceived callback
             return;
         }
-        const method = root.settingsApi ? root.settingsApi.vadMethod : 0;
-        if (method === 1) {  // 1: autocorr
-            _calibrationAudioApi.calibrateVadAutocorrelation();
-        } else {  // 0: energy, 2: hybrid (default to energy)
-            _calibrationAudioApi.calibrateVadEnergy();
-        }
+        root.calibrate();
     }
 }

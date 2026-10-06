@@ -201,6 +201,36 @@ std::vector<Run> interiorGaps(const std::vector<Run>& nuclei)
     return gaps;
 }
 
+double speechGateLevel(const std::vector<double>& contour, const Config& cfg)
+{
+    if (contour.empty())
+        return cfg.minSpeechLevel;
+    std::vector<double> sorted = contour;
+    const double fraction = std::clamp(cfg.noiseFloorPercentile, 0.0, 1.0);
+    const auto rank = static_cast<std::size_t>(fraction * static_cast<double>(sorted.size() - 1));
+    std::nth_element(sorted.begin(), sorted.begin() + static_cast<std::ptrdiff_t>(rank), sorted.end());
+    return std::max(cfg.minSpeechLevel, sorted[rank] * cfg.speechOverNoise);
+}
+
+std::vector<Run> gateNuclei(const std::vector<Run>& nuclei,
+    const std::vector<double>& contour,
+    const Config& cfg)
+{
+    const double level = speechGateLevel(contour, cfg);
+    const int count = static_cast<int>(contour.size());
+    std::vector<Run> kept;
+    kept.reserve(nuclei.size());
+    for (const Run& nucleus : nuclei) {
+        double peak = 0;
+        const int end = std::min(nucleus.start + nucleus.length, count - 1);
+        for (int index = std::max(0, nucleus.start); index <= end; ++index)
+            peak = std::max(peak, contour[index]);
+        if (peak >= level)
+            kept.push_back(nucleus);
+    }
+    return kept;
+}
+
 Moments sampleMoments(const std::vector<int>& lengths)
 {
     Moments moments;
@@ -316,7 +346,10 @@ bool sameMeasurement(const Config& left, const Config& right)
         && left.k1 == right.k1
         && left.k2 == right.k2
         && left.k3 == right.k3
-        && left.k4 == right.k4;
+        && left.k4 == right.k4
+        && left.speechOverNoise == right.speechOverNoise
+        && left.minSpeechLevel == right.minSpeechLevel
+        && left.noiseFloorPercentile == right.noiseFloorPercentile;
 }
 
 Metrics blendMetrics(const Metrics& left, const Metrics& right)
@@ -371,7 +404,10 @@ Measurement measure(const std::vector<float>& samples, const Config& cfg)
         return {};
     const std::vector<double> smoothed = smooth(normalized, cfg.smooth);
     const std::uint32_t minFrames = minLengthFrames(cfg.shift, cfg.minLengthMs);
-    const std::vector<Run> nuclei = vowelNuclei(normalized, smoothed, cfg.peakMargin, minFrames);
+    const std::vector<Run> nuclei = gateNuclei(
+        vowelNuclei(normalized, smoothed, cfg.peakMargin, minFrames), contour, cfg);
+    if (static_cast<int>(nuclei.size()) < std::max(1, cfg.minVowels))
+        return {};
     const std::vector<Run> gaps = interiorGaps(nuclei);
 
     std::vector<int> mask(normalized.size(), 2);

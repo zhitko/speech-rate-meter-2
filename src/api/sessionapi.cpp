@@ -44,6 +44,13 @@ constexpr int kSampleRate = 8000;
 constexpr int kHop = 64;
 constexpr int kVadFrame = 128;
 constexpr qint64 kPadSamples = kSampleRate * 300 / 1000;
+// A phrase shorter than this is not stored.
+constexpr qint64 kMinPhraseSamples = kSampleRate;
+// Live numbers need at least this much audio in the window.
+constexpr qint64 kMinWindowSamples = kSampleRate * 3 / 2;
+// Longer speech without a pause is stored as several segments.
+constexpr qint64 kMaxSegmentSamples = kSampleRate * 15;
+constexpr qint64 kMaxWindowSamples = kSampleRate * 30;
 
 QString stamp(const QDateTime& time)
 {
@@ -103,30 +110,6 @@ QVariantMap metricsToMap(const speechrate::Metrics& metrics,
     map.insert(QStringLiteral("vowelMedian"), metrics.vowelMedian);
     map.insert(QStringLiteral("vowelsPerSecond"), metrics.vowelsPerSecond);
     return map;
-}
-
-const QStringList& averagedMetricKeys()
-{
-    static const QStringList keys = {
-        QStringLiteral("speechRate"),
-        QStringLiteral("articulationRate"),
-        QStringLiteral("phrasePauses"),
-        QStringLiteral("speechDuration"),
-        QStringLiteral("fillerScore"),
-        QStringLiteral("fillerPercent"),
-        QStringLiteral("gapLength"),
-        QStringLiteral("gapCount"),
-        QStringLiteral("gapMax"),
-        QStringLiteral("gapMean"),
-        QStringLiteral("gapMedian"),
-        QStringLiteral("vowelLength"),
-        QStringLiteral("vowelCount"),
-        QStringLiteral("vowelMax"),
-        QStringLiteral("vowelMean"),
-        QStringLiteral("vowelMedian"),
-        QStringLiteral("vowelsPerSecond"),
-    };
-    return keys;
 }
 
 std::vector<float> readWavSamples(const QString& path)
@@ -222,6 +205,7 @@ struct Job {
     double fillerMin = 120;
     double fillerMax = 240;
     int phraseEpoch = 0;
+    double openSeconds = 0;
     quint64 liveGen = 0;
     quint64 generation = 0;
     QString path;
@@ -327,6 +311,8 @@ protected:
                 SessionStore::setEndedAt(job.sessionId, job.sessionEndedAt);
                 SessionStore::recoverPending();
                 QMetaObject::invokeMethod(m_api, "notifySessions", Qt::QueuedConnection);
+                QMetaObject::invokeMethod(m_api, "applySessionEnded", Qt::QueuedConnection,
+                    Q_ARG(quint64, job.generation));
                 continue;
             }
 
@@ -365,11 +351,19 @@ protected:
                 stampJob(map);
             } else {
                 const speechrate::Measurement measured = speechrate::measure(job.samples, job.config);
-                if (!measured.metrics.valid)
-                    continue;
                 if (job.kind == JobKind::Live
                     && (m_queue->liveGeneration() != job.liveGen
                         || m_queue->phraseEpoch() != job.phraseEpoch)) {
+                    continue;
+                }
+                if (!measured.metrics.valid) {
+                    if (job.kind == JobKind::Live) {
+                        map.insert(QStringLiteral("valid"), false);
+                        map.insert(QStringLiteral("live"), true);
+                        map.insert(QStringLiteral("phraseEpoch"), job.phraseEpoch);
+                        stampJob(map);
+                        QMetaObject::invokeMethod(m_api, "applyMetrics", Qt::QueuedConnection, Q_ARG(QVariantMap, map));
+                    }
                     continue;
                 }
 
@@ -393,9 +387,11 @@ protected:
                         LOG_INFO() << "Stored phrase" << job.segmentStartedAt << "rate" << measured.metrics.speechRate;
                 } else {
                     map = metricsToMap(measured.metrics, job.fillerMin, job.fillerMax, true, job.phraseEpoch, false);
+                    map.insert(QStringLiteral("openSeconds"), job.openSeconds);
                 }
                 map.insert(QStringLiteral("stored"), stored);
-                SessionStore::insertMeasurement(map, measured.parts, job.config, job.fillerMin, job.fillerMax);
+                if (job.kind == JobKind::Final)
+                    SessionStore::insertMeasurement(map, measured.parts, job.config, job.fillerMin, job.fillerMax);
                 stampJob(map);
             }
 
@@ -536,6 +532,7 @@ public slots:
         m_useSpeechDetection = m_settings.autoCalibrate;
         m_settingsTimer.start();
         m_pcm.clear();
+        m_recent.clear();
         m_origin = 0;
         m_fed = 0;
         m_phraseSpeaking = false;
@@ -611,6 +608,7 @@ public slots:
         finishAudio();
         Job end;
         end.kind = JobKind::EndSession;
+        end.generation = m_generation;
         end.sessionId = m_sessionId;
         end.sessionEndedAt = stamp(QDateTime::currentDateTime());
         m_queue->pushOrdered(end);
@@ -706,16 +704,6 @@ private:
         emit levelUpdated(0);
     }
 
-    qint64 minSamples() const
-    {
-        return static_cast<qint64>(m_settings.minRecordingTimeMs) * kSampleRate / 1000;
-    }
-
-    qint64 maxSamples() const
-    {
-        return static_cast<qint64>(m_settings.maxRecordingTimeMs) * kSampleRate / 1000;
-    }
-
     qint64 span() const
     {
         return std::max<qint64>(0, m_speechEnd - m_speechStart);
@@ -723,7 +711,27 @@ private:
 
     bool longEnough() const
     {
-        return span() >= minSamples();
+        return span() >= kMinPhraseSamples;
+    }
+
+    qint64 openSamples() const
+    {
+        return std::max<qint64>(0, m_speechEnd - leadingStart());
+    }
+
+    qint64 windowSamples() const
+    {
+        return static_cast<qint64>(std::clamp(m_settings.analysisWindowSec, 3, 30)) * kSampleRate;
+    }
+
+    bool windowReady() const
+    {
+        return static_cast<qint64>(m_recent.size()) + openSamples() >= kMinWindowSamples;
+    }
+
+    int liveIntervalMs() const
+    {
+        return 60000 / std::clamp(m_settings.updatesPerMinute, 6, 240);
     }
 
     void bumpEpoch()
@@ -784,8 +792,8 @@ private:
 
     void cutIfTooLong()
     {
-        while (m_phraseSpeaking && span() >= maxSamples() && maxSamples() > 0) {
-            const qint64 cut = m_speechStart + maxSamples();
+        while (m_phraseSpeaking && span() >= kMaxSegmentSamples) {
+            const qint64 cut = m_speechStart + kMaxSegmentSamples;
             const std::vector<float> buffer = extract(leadingStart(), cut);
             const QDateTime ended = QDateTime::currentDateTime();
             postFinal(buffer, m_phraseStartedAt, ended);
@@ -825,7 +833,7 @@ private:
         int seconds = 0;
         if (m_phraseSpeaking) {
             seconds = static_cast<int>(span() / kSampleRate);
-            phase = longEnough() ? SessionApi::Measuring : SessionApi::TooShort;
+            phase = windowReady() ? SessionApi::Measuring : SessionApi::TooShort;
         } else if (m_dropped) {
             phase = SessionApi::Dropped;
         }
@@ -839,14 +847,25 @@ private:
 
     void publishLive()
     {
-        if (!m_phraseSpeaking || !longEnough())
+        if (!m_phraseSpeaking || !windowReady())
             return;
-        if (m_liveTimer.isValid() && m_liveTimer.elapsed() < 250)
+        if (m_liveTimer.isValid() && m_liveTimer.elapsed() < liveIntervalMs())
             return;
         m_liveTimer.start();
+        const std::vector<float> open = extract(leadingStart(), m_speechEnd);
+        const std::size_t window = static_cast<std::size_t>(windowSamples());
         Job job;
         job.kind = JobKind::Live;
-        job.samples = extract(leadingStart(), m_speechEnd);
+        if (open.size() >= window) {
+            job.samples.assign(open.end() - static_cast<std::ptrdiff_t>(window), open.end());
+        } else {
+            const std::size_t fromRecent = std::min(m_recent.size(), window - open.size());
+            job.samples.reserve(fromRecent + open.size());
+            job.samples.insert(job.samples.end(),
+                m_recent.end() - static_cast<std::ptrdiff_t>(fromRecent), m_recent.end());
+            job.samples.insert(job.samples.end(), open.begin(), open.end());
+        }
+        job.openSeconds = static_cast<double>(open.size()) / kSampleRate;
         job.config = configFrom(m_settings);
         job.fillerMin = m_settings.fillerMin;
         job.fillerMax = m_settings.fillerMax;
@@ -861,6 +880,9 @@ private:
     {
         if (samples.empty())
             return;
+        m_recent.insert(m_recent.end(), samples.begin(), samples.end());
+        if (m_recent.size() > static_cast<std::size_t>(kMaxWindowSamples))
+            m_recent.erase(m_recent.begin(), m_recent.end() - static_cast<std::ptrdiff_t>(kMaxWindowSamples));
         Job job;
         job.kind = JobKind::Final;
         job.samples = samples;
@@ -928,6 +950,9 @@ private:
     std::unique_ptr<VADAutocorrelationService> m_corr;
 
     std::vector<qint16> m_pcm;
+    // Audio of the segments already closed in this session, newest last.
+    // Live windows continue from it across pauses.
+    std::deque<float> m_recent;
     qint64 m_origin = 0;
     qint64 m_fed = 0;
     bool m_useSpeechDetection = false;
@@ -1032,9 +1057,7 @@ void SessionApi::beginCapture()
     m_shownSessionId.clear();
     m_shownSessionStartedAt.clear();
     m_lastShownKey.clear();
-    m_metricWindow.clear();
-    m_metricEpoch = -1;
-    m_metricWindowLive = false;
+    m_noSpeech = false;
     m_sessionActive = true;
     m_phase = Listening;
     m_phraseSeconds = 0;
@@ -1051,15 +1074,12 @@ void SessionApi::resetResultState()
 {
     const bool hadResult = m_hasResult;
     m_hasResult = false;
-    m_showingLive = false;
-    m_hasCommitted = false;
     m_speechRate = 0;
     m_articulationRate = 0;
     m_phrasePauses = 0;
     m_speechDuration = 0;
     m_fillerScore = 0;
     m_details.clear();
-    m_committed.clear();
     if (hadResult)
         emit hasResultChanged();
     emit metricsChanged();
@@ -1188,29 +1208,45 @@ void SessionApi::applyLevel(qreal level)
 
 void SessionApi::applyMetrics(const QVariantMap& metrics)
 {
-    if (!m_alive.load() || !metrics.value(QStringLiteral("valid")).toBool())
+    if (!m_alive.load())
         return;
     if (metrics.value(QStringLiteral("generation")).toULongLong() != m_captureGeneration)
         return;
+    const bool valid = metrics.value(QStringLiteral("valid")).toBool();
     const bool live = metrics.value(QStringLiteral("live")).toBool();
     if (live && metrics.value(QStringLiteral("phraseEpoch")).toInt() != m_epoch)
         return;
     const bool sessionPhrase = metrics.value(QStringLiteral("scope")).toString() == QLatin1String("phrase");
-    m_shownSessionId = sessionPhrase ? metrics.value(QStringLiteral("sessionId")).toString() : QString();
-    m_shownSessionStartedAt = sessionPhrase ? metrics.value(QStringLiteral("sessionStartedAt")).toString() : QString();
     if (!sessionPhrase) {
-        showMetrics(metrics, true);
+        if (!valid)
+            return;
+        m_shownSessionId.clear();
+        m_shownSessionStartedAt.clear();
+        showMetrics(metrics, metrics.value(QStringLiteral("speechDuration")).toDouble());
         return;
     }
+    if (live && (!m_sessionActive || m_stopPending))
+        return;
+    m_shownSessionId = metrics.value(QStringLiteral("sessionId")).toString();
+    m_shownSessionStartedAt = metrics.value(QStringLiteral("sessionStartedAt")).toString();
+
+    SessionAccumulator& acc = *m_accumulator;
+    const double storedSpeech = acc.ready ? acc.metrics.speechDuration : 0.0;
+    if (live) {
+        setNoSpeech(!valid);
+        if (valid)
+            showMetrics(metrics, storedSpeech + metrics.value(QStringLiteral("openSeconds")).toDouble());
+        return;
+    }
+    if (!valid)
+        return;
 
     speechrate::Parts parts;
     speechrate::Config config;
     double fillerMin = 0;
     double fillerMax = 0;
-    if (!SessionStore::takeMeasurement(metrics, parts, config, fillerMin, fillerMax)) {
-        showMetrics(metrics, !live);
+    if (!SessionStore::takeMeasurement(metrics, parts, config, fillerMin, fillerMax))
         return;
-    }
 
     const speechrate::Metrics phrase = speechrate::metricsFromLengths(parts.vowelLengths,
         parts.gapLengths,
@@ -1218,95 +1254,73 @@ void SessionApi::applyMetrics(const QVariantMap& metrics)
         config,
         parts.vowelMaxFrames,
         parts.gapMaxFrames);
-    const int epoch = metrics.value(QStringLiteral("phraseEpoch")).toInt();
-    SessionAccumulator& acc = *m_accumulator;
 
-    if (!live) {
-        if (!acc.ready || (acc.pooled && speechrate::sameMeasurement(acc.config, config))) {
-            if (!acc.ready)
-                acc.parts = parts;
-            else
-                speechrate::appendParts(acc.parts, parts);
-            acc.config = acc.ready ? acc.config : config;
-            acc.pooled = true;
-            acc.fillerMin = fillerMin;
-            acc.fillerMax = fillerMax;
-            acc.metrics = speechrate::metricsFromLengths(acc.parts.vowelLengths,
-                acc.parts.gapLengths,
-                acc.parts.speechDuration,
-                acc.config,
-                acc.parts.vowelMaxFrames,
-                acc.parts.gapMaxFrames);
-            acc.ready = acc.metrics.valid;
-        } else {
-            acc.pooled = false;
-            acc.fillerMin = fillerMin;
-            acc.fillerMax = fillerMax;
-            acc.metrics = speechrate::blendMetrics(acc.metrics, phrase);
-            acc.ready = acc.metrics.valid;
-        }
-        if (!acc.ready) {
-            showMetrics(metrics, true);
-            return;
-        }
-        showMetrics(metricsToMap(acc.metrics, acc.fillerMin, acc.fillerMax, false, epoch,
-                        metrics.value(QStringLiteral("stored")).toBool()),
-            true);
-        return;
-    }
-
-    speechrate::Metrics shown = phrase;
-    double shownMin = fillerMin;
-    double shownMax = fillerMax;
-    if (acc.ready && acc.pooled && speechrate::sameMeasurement(acc.config, config)) {
-        speechrate::Parts combined = acc.parts;
-        speechrate::appendParts(combined, parts);
-        shown = speechrate::metricsFromLengths(combined.vowelLengths,
-            combined.gapLengths,
-            combined.speechDuration,
+    if (!acc.ready || (acc.pooled && speechrate::sameMeasurement(acc.config, config))) {
+        if (!acc.ready)
+            acc.parts = parts;
+        else
+            speechrate::appendParts(acc.parts, parts);
+        acc.config = acc.ready ? acc.config : config;
+        acc.pooled = true;
+        acc.fillerMin = fillerMin;
+        acc.fillerMax = fillerMax;
+        acc.metrics = speechrate::metricsFromLengths(acc.parts.vowelLengths,
+            acc.parts.gapLengths,
+            acc.parts.speechDuration,
             acc.config,
-            combined.vowelMaxFrames,
-            combined.gapMaxFrames);
-        shownMin = acc.fillerMin;
-        shownMax = acc.fillerMax;
-    } else if (acc.ready) {
-        shown = speechrate::blendMetrics(acc.metrics, phrase);
-        shownMin = acc.fillerMin;
-        shownMax = acc.fillerMax;
+            acc.parts.vowelMaxFrames,
+            acc.parts.gapMaxFrames);
+        acc.ready = acc.metrics.valid;
+    } else {
+        acc.pooled = false;
+        acc.fillerMin = fillerMin;
+        acc.fillerMax = fillerMax;
+        acc.metrics = speechrate::blendMetrics(acc.metrics, phrase);
+        acc.ready = acc.metrics.valid;
     }
-    if (!shown.valid) {
-        showMetrics(metrics, false);
+    if (!acc.ready)
+        return;
+    if (!m_hasResult) {
+        showMetrics(metricsToMap(acc.metrics, acc.fillerMin, acc.fillerMax, false, 0, true),
+            acc.metrics.speechDuration);
         return;
     }
-    showMetrics(metricsToMap(shown, shownMin, shownMax, true, epoch, false), false);
+    if (m_speechDuration != acc.metrics.speechDuration) {
+        m_speechDuration = acc.metrics.speechDuration;
+        emit metricsChanged();
+        rememberShown(m_details, m_speechDuration);
+    }
 }
 
-void SessionApi::showMetrics(const QVariantMap& metrics, bool committed)
+void SessionApi::applySessionEnded(quint64 generation)
 {
-    if (metrics.isEmpty() || !metrics.value(QStringLiteral("valid"), true).toBool()) {
-        m_showingLive = false;
-        if (!m_hasCommitted) {
-            if (m_hasResult) {
-                m_hasResult = false;
-                emit hasResultChanged();
-            }
-            return;
-        }
-    }
+    if (!m_alive.load() || generation != m_captureGeneration || (m_sessionActive && !m_stopPending))
+        return;
+    const SessionAccumulator& acc = *m_accumulator;
+    if (!acc.ready)
+        return;
+    // After Stop, Home shows the whole session, matching its History row.
+    m_shownSessionId.clear();
+    showMetrics(metricsToMap(acc.metrics, acc.fillerMin, acc.fillerMax, false, 0, true),
+        acc.metrics.speechDuration);
+}
 
-    const QVariantMap shown = metrics.isEmpty() ? m_committed : smoothedMetrics(metrics, committed);
-    if (committed && !metrics.isEmpty()) {
-        m_committed = metrics;
-        m_hasCommitted = true;
-        m_showingLive = false;
-    } else if (!committed) {
-        m_showingLive = true;
-    }
+void SessionApi::setNoSpeech(bool noSpeech)
+{
+    if (m_noSpeech == noSpeech)
+        return;
+    const int before = phase();
+    m_noSpeech = noSpeech;
+    if (phase() != before)
+        emit phaseChanged();
+}
 
+void SessionApi::showMetrics(const QVariantMap& shown, double speechSeconds)
+{
     m_speechRate = shown.value(QStringLiteral("speechRate")).toDouble();
     m_articulationRate = shown.value(QStringLiteral("articulationRate")).toDouble();
     m_phrasePauses = shown.value(QStringLiteral("phrasePauses")).toDouble();
-    m_speechDuration = shown.value(QStringLiteral("speechDuration")).toDouble();
+    m_speechDuration = speechSeconds;
     m_fillerScore = shown.value(QStringLiteral("fillerScore")).toDouble();
     m_details = shown;
     if (!m_hasResult) {
@@ -1314,14 +1328,14 @@ void SessionApi::showMetrics(const QVariantMap& metrics, bool committed)
         emit hasResultChanged();
     }
     emit metricsChanged();
-    rememberShown(shown);
+    rememberShown(shown, speechSeconds);
     if (!m_sessionActive && m_phase == IdleEmpty) {
         m_phase = IdleReady;
         emit phaseChanged();
     }
 }
 
-void SessionApi::rememberShown(const QVariantMap& shown)
+void SessionApi::rememberShown(const QVariantMap& shown, double speechSeconds)
 {
     if (m_shownSessionId.isEmpty() || !shown.value(QStringLiteral("valid"), true).toBool())
         return;
@@ -1330,7 +1344,7 @@ void SessionApi::rememberShown(const QVariantMap& shown)
     const int speechRate = roundHalfAway(shown.value(QStringLiteral("speechRate")).toDouble());
     const int articulation = roundHalfAway(shown.value(QStringLiteral("articulationRate")).toDouble());
     const int pauses = roundHalfAway(shown.value(QStringLiteral("phrasePauses")).toDouble() * 100.0);
-    const int duration = roundHalfAway(shown.value(QStringLiteral("speechDuration")).toDouble());
+    const int duration = roundHalfAway(speechSeconds);
     const int fillers = roundHalfAway(speechrate::fillerPercent(
         shown.value(QStringLiteral("fillerScore")).toDouble(), settings.fillerMin, settings.fillerMax));
     const QString key = QString::number(speechRate) + QLatin1Char('|')
@@ -1354,50 +1368,13 @@ void SessionApi::rememberShown(const QVariantMap& shown)
     notifySessions();
 }
 
-QVariantMap SessionApi::smoothedMetrics(const QVariantMap& metrics, bool committed)
-{
-    const int count = std::clamp(Settings::loadSettings().metricAverageCount, 1, 30);
-    const int epoch = metrics.value(QStringLiteral("phraseEpoch")).toInt();
-    if (committed) {
-        m_metricWindow.clear();
-        m_metricWindow.append(metrics);
-        m_metricEpoch = epoch;
-        m_metricWindowLive = false;
-        return metrics;
-    }
-
-    const bool samePhrase = !m_metricWindow.isEmpty()
-        && epoch == m_metricEpoch
-        && m_metricWindowLive;
-    if (!samePhrase)
-        m_metricWindow.clear();
-
-    m_metricEpoch = epoch;
-    m_metricWindowLive = true;
-    m_metricWindow.append(metrics);
-    while (m_metricWindow.size() > count)
-        m_metricWindow.removeFirst();
-
-    if (m_metricWindow.size() == 1)
-        return metrics;
-
-    QVariantMap averaged = metrics;
-    const double samples = m_metricWindow.size();
-    for (const QString& key : averagedMetricKeys()) {
-        double sum = 0;
-        for (const QVariantMap& sample : m_metricWindow)
-            sum += sample.value(key).toDouble();
-        averaged.insert(key, sum / samples);
-    }
-    return averaged;
-}
-
 void SessionApi::applyRunning(bool running)
 {
     if (!m_alive.load())
         return;
     m_stopPending = false;
     if (!running) {
+        m_noSpeech = false;
         m_audioLevel = 0;
         emit audioLevelChanged();
         m_phraseSeconds = 0;
@@ -1455,7 +1432,6 @@ void SessionApi::applyUserDataCleared()
     m_shownSessionId.clear();
     m_shownSessionStartedAt.clear();
     m_lastShownKey.clear();
-    m_metricWindow.clear();
     if (m_phase != IdleEmpty) {
         m_phase = IdleEmpty;
         emit phaseChanged();
