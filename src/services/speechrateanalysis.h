@@ -1,5 +1,5 @@
-#ifndef SPEECHRATERATEANALYSIS_H
-#define SPEECHRATERATEANALYSIS_H
+#ifndef SPEECHRATEANALYSIS_H
+#define SPEECHRATEANALYSIS_H
 
 #include <cstdint>
 #include <vector>

@@ -151,13 +151,38 @@ QString SessionStore::sessionPath(const QString& sessionId)
     return sessionsDir() + QLatin1Char('/') + sessionId + QStringLiteral(".json");
 }
 
-QVariantMap SessionStore::readJson(const QString& path)
+SessionStore::JsonState SessionStore::readJson(const QString& path, QVariantMap& root)
 {
+    root.clear();
     QFile file(path);
+    if (!file.exists())
+        return JsonState::Missing;
     if (!file.open(QIODevice::ReadOnly))
-        return {};
-    const QJsonDocument document = QJsonDocument::fromJson(file.readAll());
-    return document.object().toVariantMap();
+        return JsonState::Malformed;
+    QJsonParseError error;
+    const QJsonDocument document = QJsonDocument::fromJson(file.readAll(), &error);
+    if (error.error != QJsonParseError::NoError || !document.isObject())
+        return JsonState::Malformed;
+    root = document.object().toVariantMap();
+    if (root.isEmpty())
+        return JsonState::Malformed;
+    return JsonState::Valid;
+}
+
+bool SessionStore::quarantineMalformed(const QString& path)
+{
+    if (!QFileInfo::exists(path))
+        return true;
+    const QString suffix = QDateTime::currentDateTimeUtc().toString(QStringLiteral("yyyyMMdd-HHmmss-zzz"));
+    QString quarantined = path + QStringLiteral(".malformed-") + suffix;
+    for (int counter = 1; QFileInfo::exists(quarantined); ++counter)
+        quarantined = path + QStringLiteral(".malformed-") + suffix + QLatin1Char('-') + QString::number(counter);
+    if (QFile::rename(path, quarantined)) {
+        LOG_WARNING() << "Quarantined malformed JSON:" << quarantined;
+        return true;
+    }
+    LOG_WARNING() << "Could not quarantine malformed JSON:" << path;
+    return false;
 }
 
 bool SessionStore::writeJson(const QString& path, const QVariantMap& root)
@@ -183,7 +208,10 @@ bool SessionStore::segmentAlreadyStored(const QString& sessionId, const QVariant
     const QString ended = segment.value(QStringLiteral("endedAt")).toString();
     if (started.isEmpty() || ended.isEmpty())
         return false;
-    const QVariantList segments = readJson(sessionPath(sessionId)).value(QStringLiteral("segments")).toList();
+    QVariantMap root;
+    if (readJson(sessionPath(sessionId), root) != JsonState::Valid)
+        return false;
+    const QVariantList segments = root.value(QStringLiteral("segments")).toList();
     for (const QVariant& item : segments) {
         const QVariantMap row = item.toMap();
         if (row.value(QStringLiteral("startedAt")).toString() == started
@@ -244,7 +272,14 @@ bool SessionStore::recoverPending()
         if (!QFileInfo::exists(pending))
             continue;
 
-        const QVariantMap meta = readJson(pending);
+        QVariantMap meta;
+        const JsonState state = readJson(pending, meta);
+        if (state == JsonState::Malformed) {
+            quarantineMalformed(pending);
+            continue;
+        }
+        if (state != JsonState::Valid)
+            continue;
         const QString sessionId = meta.value(QStringLiteral("sessionId")).toString();
         const QVariantMap segment = meta.value(QStringLiteral("segment")).toMap();
         if (sessionId.isEmpty() || segment.isEmpty())
@@ -298,8 +333,12 @@ bool SessionStore::appendSegment(const QString& sessionId,
     const QVariantMap& segment)
 {
     const QMutexLocker locker(&fileMutex());
-    QVariantMap root = readJson(sessionPath(sessionId));
-    if (root.isEmpty()) {
+    const QString path = sessionPath(sessionId);
+    QVariantMap root;
+    const JsonState state = readJson(path, root);
+    if (state == JsonState::Malformed && !quarantineMalformed(path))
+        return false;
+    if (state != JsonState::Valid) {
         root.insert(QStringLiteral("id"), sessionId);
         root.insert(QStringLiteral("startedAt"), sessionStartedAt);
         root.insert(QStringLiteral("segments"), QVariantList {});
@@ -308,7 +347,7 @@ bool SessionStore::appendSegment(const QString& sessionId,
     segments.append(segment);
     root.insert(QStringLiteral("segments"), segments);
     root.insert(QStringLiteral("endedAt"), segment.value(QStringLiteral("endedAt")).toString());
-    return writeJson(sessionPath(sessionId), root);
+    return writeJson(path, root);
 }
 
 bool SessionStore::setEndedAt(const QString& sessionId, const QString& endedAt)
@@ -317,8 +356,11 @@ bool SessionStore::setEndedAt(const QString& sessionId, const QString& endedAt)
     const QString path = sessionPath(sessionId);
     if (!QFileInfo::exists(path))
         return true;
-    QVariantMap root = readJson(path);
-    if (root.isEmpty())
+    QVariantMap root;
+    const JsonState state = readJson(path, root);
+    if (state == JsonState::Malformed)
+        quarantineMalformed(path);
+    if (state != JsonState::Valid)
         return false;
     root.insert(QStringLiteral("endedAt"), endedAt);
     return writeJson(path, root);
@@ -331,8 +373,12 @@ bool SessionStore::appendShown(const QString& sessionId,
     if (sessionId.isEmpty() || sample.isEmpty())
         return false;
     const QMutexLocker locker(&fileMutex());
-    QVariantMap root = readJson(sessionPath(sessionId));
-    if (root.isEmpty()) {
+    const QString path = sessionPath(sessionId);
+    QVariantMap root;
+    const JsonState state = readJson(path, root);
+    if (state == JsonState::Malformed && !quarantineMalformed(path))
+        return false;
+    if (state != JsonState::Valid) {
         root.insert(QStringLiteral("id"), sessionId);
         root.insert(QStringLiteral("startedAt"), sessionStartedAt);
         root.insert(QStringLiteral("segments"), QVariantList {});
@@ -341,7 +387,7 @@ bool SessionStore::appendShown(const QString& sessionId,
     shown.append(sample);
     root.insert(QStringLiteral("shown"), shown);
     root.insert(QStringLiteral("endedAt"), sample.value(QStringLiteral("at")).toString());
-    return writeJson(sessionPath(sessionId), root);
+    return writeJson(path, root);
 }
 
 QVariantMap SessionStore::summarize(const QVariantMap& root)
@@ -451,7 +497,13 @@ QVariantList SessionStore::listSessions()
 
     const QFileInfoList files = dir.entryInfoList({ QStringLiteral("*.json") }, QDir::Files, QDir::Name);
     for (const QFileInfo& info : files) {
-        const QVariantMap summary = summarize(readJson(info.absoluteFilePath()));
+        QVariantMap root;
+        const JsonState state = readJson(info.absoluteFilePath(), root);
+        if (state == JsonState::Malformed) {
+            quarantineMalformed(info.absoluteFilePath());
+            continue;
+        }
+        const QVariantMap summary = summarize(root);
         if (!summary.isEmpty())
             sessions.append(summary);
     }
@@ -462,8 +514,12 @@ QVariantList SessionStore::listSessions()
 QVariantMap SessionStore::loadSession(const QString& sessionId)
 {
     const QMutexLocker locker(&fileMutex());
-    QVariantMap root = readJson(sessionPath(sessionId));
-    if (root.isEmpty())
+    const QString path = sessionPath(sessionId);
+    QVariantMap root;
+    const JsonState state = readJson(path, root);
+    if (state == JsonState::Malformed)
+        quarantineMalformed(path);
+    if (state != JsonState::Valid)
         return {};
     QVariantMap session = summarize(root);
     if (session.isEmpty())
@@ -499,7 +555,7 @@ void SessionStore::clearAll()
     const QMutexLocker locker(&fileMutex());
     QDir sessions(sessionsDir());
     if (sessions.exists()) {
-        const QFileInfoList files = sessions.entryInfoList({ QStringLiteral("*.json") }, QDir::Files);
+        const QFileInfoList files = sessions.entryInfoList(QDir::Files);
         for (const QFileInfo& info : files)
             QFile::remove(info.absoluteFilePath());
     }

@@ -1,11 +1,9 @@
 #ifndef LOGGER_H
 #define LOGGER_H
 
-#include "fileLogger.h"
-#include <chrono>
 #include <filesystem>
-#include <iomanip>
-#include <iostream>
+#include <QDebug>
+#include <QString>
 #include <sstream>
 #include <string>
 
@@ -19,45 +17,26 @@ public:
     static void log(Level level, const std::string& file, int line,
         const std::string& function, const std::string& message)
     {
-        auto now = std::chrono::system_clock::now();
-        auto in_time_t = std::chrono::system_clock::to_time_t(now);
-        auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-                      now.time_since_epoch())
-            % 1000;
-
-        std::string levelStr;
+        std::filesystem::path filePath(file);
+        const QString formatted = QStringLiteral("%1:%2 [%3] %4")
+                                      .arg(QString::fromStdString(filePath.filename().string()))
+                                      .arg(line)
+                                      .arg(QString::fromStdString(function))
+                                      .arg(QString::fromStdString(message));
         switch (level) {
         case Level::DEBUG:
-            levelStr = "DEBUG";
+            qDebug().noquote() << formatted;
             break;
         case Level::INFO:
-            levelStr = "INFO";
+            qInfo().noquote() << formatted;
             break;
         case Level::WARNING:
-            levelStr = "WARNING";
+            qWarning().noquote() << formatted;
             break;
         case Level::CRITICAL:
-            levelStr = "CRITICAL";
+            qCritical().noquote() << formatted;
             break;
         }
-
-        // Extract filename from path
-        std::filesystem::path filePath(file);
-        std::string filename = filePath.filename().string();
-
-        // Format the log message
-        std::ostringstream oss;
-        oss << std::put_time(std::localtime(&in_time_t), "%Y-%m-%d %H:%M:%S") << "."
-            << std::setfill('0') << std::setw(3) << ms.count() << " " << filename
-            << ":" << line << " [" << function << "] " << message;
-
-        std::string formattedMessage = oss.str();
-
-        // Write to console
-        std::cout << formattedMessage << std::endl;
-
-        // Write to file
-        FileLogger::getInstance().writeLog(formattedMessage);
     }
 };
 

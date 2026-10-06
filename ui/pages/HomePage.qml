@@ -61,7 +61,7 @@ Page {
         title: qsTr("Open File")
         nameFilters: [qsTr("WAV files (*.wav)")]
         fileMode: FileDialog.OpenFile
-        onAccepted: if (sessionApi)
+        onAccepted: if (sessionApi && !sessionApi.busy)
             sessionApi.openWavFile(selectedFile)
     }
 
@@ -70,13 +70,13 @@ Page {
         onCalibrationDoneEnergy: function(threshold) {
             if (settingsApi)
                 settingsApi.vadThreshold = threshold
-            if (sessionApi && !sessionApi.sessionActive)
+            if (sessionApi && !sessionApi.sessionActive && !sessionApi.busy)
                 sessionApi.startSession()
         }
         onCalibrationDoneAutocorrelation: function(threshold) {
             if (settingsApi)
                 settingsApi.autoCorrThreshold = threshold
-            if (sessionApi && !sessionApi.sessionActive)
+            if (sessionApi && !sessionApi.sessionActive && !sessionApi.busy)
                 sessionApi.startSession()
         }
     }
@@ -104,6 +104,7 @@ Page {
                 Layout.fillWidth: true
                 Layout.topMargin: AppScale.pagePadding
                 spacing: 12
+                visible: sessionApi && (sessionApi.sessionActive || sessionApi.hasResult)
 
                 Label {
                     Layout.fillWidth: true
@@ -119,6 +120,44 @@ Page {
                     font.pixelSize: AppScale.fs(20)
                     font.bold: true
                     color: Theme.onSurface(Material.theme)
+                }
+            }
+
+            Frame {
+                Layout.fillWidth: true
+                visible: sessionApi && (sessionApi.busy || sessionApi.errorMessage.length > 0)
+                padding: 12
+
+                background: Rectangle {
+                    color: sessionApi && sessionApi.errorMessage.length > 0
+                           ? Theme.errorContainer(Material.theme)
+                           : Theme.secondaryContainer(Material.theme)
+                    radius: Theme.shapeMedium
+                }
+
+                RowLayout {
+                    width: parent.width
+                    spacing: 12
+
+                    BusyIndicator {
+                        visible: sessionApi && sessionApi.busy
+                        running: visible
+                        Layout.preferredWidth: 28
+                        Layout.preferredHeight: 28
+                        Accessible.name: qsTr("Analyzing audio")
+                    }
+
+                    Label {
+                        Layout.fillWidth: true
+                        wrapMode: Text.Wrap
+                        text: sessionApi && sessionApi.errorMessage.length > 0
+                              ? sessionApi.errorMessage
+                              : qsTr("Analyzing audio…")
+                        color: sessionApi && sessionApi.errorMessage.length > 0
+                               ? Theme.onErrorContainer(Material.theme)
+                               : Theme.onSecondaryContainer(Material.theme)
+                        font.pixelSize: AppScale.fs(14)
+                    }
                 }
             }
 
@@ -149,7 +188,10 @@ Page {
                     Label {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 180
-                        visible: !sessionApi || (!sessionApi.hasResult && !sessionApi.sessionActive)
+                        visible: !sessionApi || (!sessionApi.hasResult
+                                                 && !sessionApi.sessionActive
+                                                 && !sessionApi.busy
+                                                 && sessionApi.errorMessage.length === 0)
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                         wrapMode: Text.Wrap
@@ -224,6 +266,10 @@ Page {
                 Item {
                     Layout.fillWidth: true
                     implicitHeight: 18
+                    Accessible.role: Accessible.ProgressBar
+                    Accessible.name: qsTr("Microphone level")
+                    Accessible.description: qsTr("%1 percent").arg(Math.round(
+                                                100 * Math.max(0, Math.min(1, sessionApi ? sessionApi.audioLevel : 0))))
 
                     Rectangle {
                         anchors.fill: parent
@@ -250,6 +296,9 @@ Page {
                 hoverEnabled: true
                 implicitWidth: AppScale.isCompact ? 112 : 128
                 implicitHeight: implicitWidth + AppScale.fs(32)
+                enabled: sessionApi && !sessionApi.busy
+                Accessible.name: sessionApi && sessionApi.sessionActive
+                                 ? qsTr("Stop recording") : qsTr("Start recording")
                 onClicked: {
                     if (!sessionApi)
                         return
@@ -304,12 +353,14 @@ Page {
                 Button {
                     text: qsTr("Details")
                     visible: sessionApi && sessionApi.hasResult
+                    enabled: sessionApi && !sessionApi.busy
                     onClicked: detailsDialog.open()
                 }
 
                 Button {
                     text: qsTr("Open File")
                     visible: sessionApi && sessionApi.openFileAvailable && !sessionApi.sessionActive
+                    enabled: sessionApi && !sessionApi.busy
                     onClicked: {
                         wavDialog.currentFolder = sessionApi.testsFolderUrl()
                         wavDialog.open()

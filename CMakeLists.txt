@@ -99,7 +99,6 @@ qt_add_executable(appspeech-rate-meter-2
     src/services/helpers/vectorutils_normalization.cpp
     src/services/helpers/vectorutils_interpolation.cpp
     src/services/helpers/vectorutils_smoothing.cpp
-    src/services/helpers/fileLogger.h
 )
 
 target_include_directories(appspeech-rate-meter-2 PRIVATE 
@@ -245,7 +244,7 @@ if(ANDROID)
         QT_ANDROID_VERSION_CODE 18
         QT_ANDROID_VERSION_NAME "${PROJECT_VERSION}"
         QT_ANDROID_APP_NAME "Speech Rate Meter 2"
-        QT_ANDROID_PACKAGE_NAME "by.intoncore.SpeechRateMeter"
+        QT_ANDROID_PACKAGE_NAME "by.intoncore.SpeechRateMeter2"
         # Uncompressed native libs, 16 KB zip-aligned by AGP 9. Required
         # so Play-generated APKs mmap .so files on 16 KB page-size devices.
         # Address Sanitizer builds should override this to TRUE.
@@ -299,6 +298,7 @@ endif()
 add_dependencies(appspeech-rate-meter-2 copy_runtime_resources)
 
 if(NOT ANDROID)
+    enable_testing()
     add_executable(speechrate-analysis-test
         tests/speechrate_analysis_test.cpp
         src/services/speechrateanalysis.cpp
@@ -306,6 +306,23 @@ if(NOT ANDROID)
     target_include_directories(speechrate-analysis-test PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src/services
     )
+    add_test(NAME speechrate-analysis COMMAND speechrate-analysis-test)
+
+    add_executable(sessionstore-test
+        tests/sessionstore_test.cpp
+        src/services/sessionstore.cpp
+        src/services/speechrateanalysis.cpp
+        src/services/wavfileservice.cpp
+        src/services/helpers/wavFile.cpp
+        src/api/helpers/settings.cpp
+    )
+    target_include_directories(sessionstore-test PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/api
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/services
+    )
+    target_link_libraries(sessionstore-test PRIVATE Qt6::Core)
+    add_test(NAME sessionstore COMMAND sessionstore-test)
 endif()
 
 include(GNUInstallDirs)

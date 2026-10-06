@@ -7,16 +7,19 @@ import "../utils"
 
 Page {
     id: root
-    title: sessionData.title ? sessionData.title : qsTr("History")
+    title: hasSession ? sessionData.title : qsTr("History")
     padding: 0
     property string pageId: "session"
     property string sessionId: ""
 
     readonly property var sessionApi: ApplicationWindow.window ? ApplicationWindow.window.sessionApi : null
     property var sessionData: ({})
+    property bool loaded: false
+    readonly property bool hasSession: !!(sessionData && sessionData.id)
 
     function reload() {
         sessionData = sessionApi ? sessionApi.session(sessionId) : ({})
+        loaded = true
     }
 
     Component.onCompleted: reload()
@@ -26,9 +29,36 @@ Page {
         function onSessionsChanged() { root.reload() }
     }
 
+    ColumnLayout {
+        anchors.centerIn: parent
+        width: Math.max(0, parent.width - AppScale.pagePadding * 2)
+        spacing: 12
+        visible: root.loaded && !root.hasSession
+
+        Label {
+            Layout.fillWidth: true
+            horizontalAlignment: Text.AlignHCenter
+            wrapMode: Text.Wrap
+            text: qsTr("This session is no longer available. It may have been deleted.")
+            color: Theme.onSurfaceVariant(Material.theme)
+            font.pixelSize: AppScale.fs(16)
+        }
+
+        Button {
+            Layout.alignment: Qt.AlignHCenter
+            text: qsTr("Back to History")
+            onClicked: {
+                var view = root.StackView.view
+                if (view)
+                    view.pop()
+            }
+        }
+    }
+
     ScrollView {
         id: scrollView
         anchors.fill: parent
+        visible: root.hasSession
         contentWidth: availableWidth
         clip: true
 

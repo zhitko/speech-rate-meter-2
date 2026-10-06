@@ -86,6 +86,7 @@ CMakeLists.txt.user*
 .uic/
 /build*/
 application.log
+logs.txt
 .*/
 stories/
 build_appimage/

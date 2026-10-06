@@ -138,11 +138,6 @@ public:
     Q_INVOKABLE void load();
     Q_INVOKABLE void save();
 
-    /**
-     * Deletes saved recordings under data/records.
-     */
-    Q_INVOKABLE void clearUserData();
-
 signals:
     void settingsChanged();
     void languageChanged();
@@ -179,8 +174,6 @@ signals:
     void fillerMinChanged();
     void fillerMaxChanged();
     void metricAverageCountChanged();
-    void userDataCleared();
-
 private:
     AppSettings m_settings;
     bool m_advanced = false;

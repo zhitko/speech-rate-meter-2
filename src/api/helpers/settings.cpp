@@ -21,6 +21,18 @@ QMutex& settingsMutex()
     return mutex;
 }
 
+QMutex& appDataMutex()
+{
+    static QMutex mutex;
+    return mutex;
+}
+
+QString& appDataOverride()
+{
+    static QString path;
+    return path;
+}
+
 } // namespace
 
 AppSettings
@@ -32,11 +44,28 @@ Settings::getDefaultSettings()
 QString
 Settings::getAppDataDir()
 {
+    {
+        QMutexLocker lock(&appDataMutex());
+        if (!appDataOverride().isEmpty())
+            return appDataOverride();
+    }
 #ifdef Q_OS_ANDROID
     return QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
 #else
     return QCoreApplication::applicationDirPath();
 #endif
+}
+
+void Settings::setAppDataDirForTests(const QString& path)
+{
+    QMutexLocker lock(&appDataMutex());
+    appDataOverride() = QDir::cleanPath(QFileInfo(path).absoluteFilePath());
+}
+
+void Settings::clearAppDataDirForTests()
+{
+    QMutexLocker lock(&appDataMutex());
+    appDataOverride().clear();
 }
 
 QString

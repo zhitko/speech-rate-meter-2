@@ -70,10 +70,13 @@ public:
     static bool recordsAreEmpty();
 
 private:
+    enum class JsonState { Missing, Valid, Malformed };
+
     static QString sessionPath(const QString& sessionId);
     static QString pendingPath(const QString& scratchPath);
     static bool writeJson(const QString& path, const QVariantMap& root);
-    static QVariantMap readJson(const QString& path);
+    static JsonState readJson(const QString& path, QVariantMap& root);
+    static bool quarantineMalformed(const QString& path);
     static QVariantMap summarize(const QVariantMap& root);
     static bool segmentAlreadyStored(const QString& sessionId, const QVariantMap& segment);
     static bool appendWithRetry(const QString& sessionId,

@@ -6,7 +6,7 @@ Speech Rate Meter 2 estimates how fast you are speaking. It does not recognize w
 
 1. Open **Home**.
 2. Press **Start** and speak naturally. The microphone stays open. With **Use Speech Autodetection** on, stay quiet while background noise is measured, then speak. With it off, the numbers follow the recording from the first sample.
-3. With **Use Speech Autodetection** on, pause. That phrase is measured, and the next one starts when you speak again. With it off, keep speaking until **Stop**. A pause does not end the measurement.
+3. With **Use Speech Autodetection** on, pause. That phrase is measured, and the next one starts when you speak again. With it off, the whole take starts at the first recorded sample: silence is included, pauses do not end it, and only **Stop** or the **Longest phrase** limit closes it.
 4. Press **Stop** when the session is finished.
 
 The numbers on Home cover every phrase kept since **Start**, including the one you are speaking. **Speech** is the total time measured, not just the latest phrase.
@@ -21,11 +21,11 @@ While a session is running, **Recording** stays in the toolbar on every page. Ta
 
 ## Settings
 
-**Settings** holds language, theme, color, font size, and the navigation bar.
+Opening **Settings** stops an active recording first, applying the usual keep-or-drop rule to the open phrase. **Settings** holds language, theme, color, font size, and the navigation bar.
 
 **Use Speech Autodetection** measures background noise after **Start**, then listens for speech. When it is off, **Start** measures the recording from the first sample, and a pause does not end it. **Shortest phrase**, **Longest phrase**, and **Pause** choose which stretches are kept. **Slow** and **Fast** are the ends of the speech-rate gauge. While you are speaking, Home averages the latest updates of the whole session. **Display average**, under **Advanced**, sets how many. After a pause, Home shows every phrase kept since **Start**.
 
-**Advanced** shows calibration and coefficients. It turns off when you leave the app. On a computer, **Open File** measures one WAV file without saving a session.
+**Advanced** shows calibration and coefficients. It turns off when you leave the app. On a computer, **Open File** measures one WAV file without saving a session. It accepts only 8000 Hz, mono, signed 16-bit PCM WAV files.
 
 **Delete user data** removes saved sessions. Recorded audio is already gone. These settings are kept.
 

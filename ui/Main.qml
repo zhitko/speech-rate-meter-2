@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick 6.8
 import QtQuick.Controls 6.8
 import QtQuick.Layouts 1.15
@@ -46,6 +48,24 @@ ApplicationWindow {
             return
         stackView.clear()
         stackView.push("pages/HomePage.qml")
+    }
+
+    function navigateTo(id, page, properties) {
+        if (id === "settings" && sessionApi.sessionActive)
+            sessionApi.stopSession()
+
+        if (id === "home") {
+            goHome()
+            return
+        }
+
+        if (id === "history" && pageId() === "session") {
+            stackView.pop()
+            return
+        }
+
+        if (pageId() !== id)
+            stackView.push(page, properties || {})
     }
 
     function pageId() {
@@ -151,12 +171,26 @@ ApplicationWindow {
                     leftPadding: 8
                 }
 
-                Rectangle {
+                Button {
+                    id: recordingChip
                     visible: sessionApi.sessionActive
-                    radius: height / 2
-                    color: Theme.errorContainer(Material.theme)
+                    flat: true
+                    padding: 0
                     implicitHeight: 32
                     implicitWidth: chipRow.implicitWidth + 20
+                    focusPolicy: Qt.StrongFocus
+                    Accessible.role: Accessible.Button
+                    Accessible.name: qsTr("Recording in progress. Return to Home")
+                    onClicked: window.navigateTo("home", "pages/HomePage.qml")
+
+                    background: Rectangle {
+                        radius: height / 2
+                        color: recordingChip.activeFocus
+                               ? Theme.secondaryContainer(Material.theme)
+                               : Theme.errorContainer(Material.theme)
+                        border.width: recordingChip.activeFocus ? 2 : 0
+                        border.color: Theme.primary(Material.theme)
+                    }
 
                     Row {
                         id: chipRow
@@ -174,11 +208,6 @@ ApplicationWindow {
                             font.pixelSize: AppScale.fs(13)
                             color: Theme.onErrorContainer(Material.theme)
                         }
-                    }
-
-                    MouseArea {
-                        anchors.fill: parent
-                        onClicked: window.goHome()
                     }
                 }
 
@@ -219,19 +248,28 @@ ApplicationWindow {
 
                 Repeater {
                     model: [
-                        { text: qsTr("Home"), icon: Icons.faHome, id: "home" },
-                        { text: qsTr("History"), icon: Icons.faClockRotateLeft, id: "history" },
-                        { text: qsTr("Settings"), icon: Icons.faGear, id: "settings" }
+                        { text: qsTr("Home"), icon: Icons.faHome, id: "home", page: "pages/HomePage.qml" },
+                        { text: qsTr("History"), icon: Icons.faClockRotateLeft, id: "history", page: "pages/HistoryPage.qml" },
+                        { text: qsTr("Settings"), icon: Icons.faGear, id: "settings", page: "pages/SettingsPage.qml" }
                     ]
 
-                    Item {
+                    Button {
+                        id: navigationButton
+                        required property var modelData
                         width: navigationBar.width / 3
                         height: navigationBar.height
+                        flat: true
+                        padding: 0
+                        focusPolicy: Qt.StrongFocus
                         readonly property bool selected: modelData.id === "history"
                                                          ? (window.pageId() === "history" || window.pageId() === "session")
                                                          : window.pageId() === modelData.id
+                        Accessible.role: Accessible.Button
+                        Accessible.name: modelData.text
+                        Accessible.description: selected ? qsTr("Current page") : ""
+                        onClicked: window.navigateTo(modelData.id, modelData.page)
 
-                        Column {
+                        contentItem: Column {
                             anchors.centerIn: parent
                             spacing: 4
 
@@ -240,49 +278,31 @@ ApplicationWindow {
                                 height: 32
                                 radius: 16
                                 anchors.horizontalCenter: parent.horizontalCenter
-                                color: parent.parent.selected ? Theme.secondaryContainer(Material.theme) : "transparent"
+                                color: navigationButton.selected || navigationButton.activeFocus
+                                       ? Theme.secondaryContainer(Material.theme) : "transparent"
 
                                 Text {
                                     anchors.centerIn: parent
                                     font.family: Icons.familySolid
                                     font.weight: Font.Black
                                     font.pixelSize: AppScale.fs(20)
-                                    text: modelData.icon
-                                    color: parent.parent.parent.selected
+                                    text: navigationButton.modelData.icon
+                                    color: navigationButton.selected
                                            ? Theme.onSecondaryContainer(Material.theme)
                                            : Theme.onSurfaceVariant(Material.theme)
                                 }
                             }
 
                             Text {
-                                text: modelData.text
+                                text: navigationButton.modelData.text
                                 anchors.horizontalCenter: parent.horizontalCenter
                                 font.pixelSize: AppScale.fs(12)
-                                font.weight: parent.parent.selected ? Font.Bold : Font.Normal
-                                color: parent.parent.selected ? Theme.onSurface(Material.theme) : Theme.onSurfaceVariant(Material.theme)
+                                font.weight: navigationButton.selected ? Font.Bold : Font.Normal
+                                color: navigationButton.selected ? Theme.onSurface(Material.theme) : Theme.onSurfaceVariant(Material.theme)
                             }
                         }
 
-                        MouseArea {
-                            anchors.fill: parent
-                            onClicked: {
-                                if (modelData.id === "home") {
-                                    window.goHome()
-                                    return
-                                }
-                                if (modelData.id === "history") {
-                                    if (window.pageId() === "session") {
-                                        stackView.pop()
-                                        return
-                                    }
-                                    if (window.pageId() !== "history")
-                                        stackView.push("pages/HistoryPage.qml")
-                                    return
-                                }
-                                if (window.pageId() !== "settings")
-                                    stackView.push("pages/SettingsPage.qml")
-                            }
-                        }
+                        background: Item {}
                     }
                 }
             }
@@ -357,6 +377,8 @@ ApplicationWindow {
                     ]
 
                     delegate: ItemDelegate {
+                        id: drawerButton
+                        required property var modelData
                         Layout.fillWidth: true
                         Layout.preferredHeight: 56
 
@@ -365,13 +387,13 @@ ApplicationWindow {
                             Text {
                                 font.family: Icons.familySolid
                                 font.weight: Font.Black
-                                text: modelData.icon
+                                text: drawerButton.modelData.icon
                                 font.pixelSize: AppScale.fs(18)
                                 color: parent.parent.highlighted ? Theme.onSecondaryContainer(Material.theme) : Theme.onSurfaceVariant(Material.theme)
                                 Layout.leftMargin: 4
                             }
                             Label {
-                                text: modelData.text
+                                text: drawerButton.modelData.text
                                 font.pixelSize: AppScale.fs(14)
                                 font.weight: parent.parent.highlighted ? Font.Bold : Font.Normal
                                 color: parent.parent.highlighted ? Theme.onSecondaryContainer(Material.theme) : Theme.onSurface(Material.theme)
@@ -392,12 +414,7 @@ ApplicationWindow {
                         }
 
                         onClicked: {
-                            if (modelData.id === "home")
-                                window.goHome()
-                            else if (modelData.id === "history" && window.pageId() === "session")
-                                stackView.pop()
-                            else if (window.pageId() !== modelData.id)
-                                stackView.push(modelData.page)
+                            window.navigateTo(modelData.id, modelData.page)
                             drawer.close()
                         }
                     }

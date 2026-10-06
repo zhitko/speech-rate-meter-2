@@ -60,6 +60,10 @@ public:
      */
     static QString getAppDataDir();
 
+    /** Overrides the application data root for isolated backend tests. */
+    static void setAppDataDirForTests(const QString& path);
+    static void clearAppDataDirForTests();
+
 private:
     static QString getSettingsFilePath();
 };

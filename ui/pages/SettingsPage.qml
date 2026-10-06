@@ -9,6 +9,7 @@ Page {
     id: root
     title: qsTr("Settings")
     property string pageId: "settings"
+    readonly property bool singleColumnForm: width < 720 || AppScale.fontScale > 1.0
 
     readonly property var settingsApi: ApplicationWindow.window ? ApplicationWindow.window.settingsApi : null
     readonly property var sessionApi: ApplicationWindow.window ? ApplicationWindow.window.sessionApi : null
@@ -36,13 +37,14 @@ Page {
         confirmText: qsTr("Delete")
         cancelText: qsTr("Cancel")
         isDestructive: true
-        onAccepted: if (settingsApi)
-            settingsApi.clearUserData()
+        onAccepted: if (sessionApi && !sessionApi.sessionActive && !sessionApi.busy)
+            sessionApi.clearUserData()
     }
 
     Material.theme: ApplicationWindow.window ? ApplicationWindow.window.theme : Material.Light
 
     ScrollView {
+        id: settingsScroll
         anchors.fill: parent
         contentWidth: availableWidth
         ScrollBar.vertical.policy: (root.settingsApi && !root.settingsApi.showNavigationMenu)
@@ -50,7 +52,7 @@ Page {
         ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
 
         ColumnLayout {
-            width: parent.width
+            width: settingsScroll.availableWidth
             spacing: 0
 
             Frame {
@@ -74,17 +76,29 @@ Page {
                     }
 
                     GridLayout {
-                        columns: 2
+                        columns: root.singleColumnForm ? 1 : 2
                         columnSpacing: 20
                         rowSpacing: 10
                         Layout.fillWidth: true
 
                         Label { text: qsTr("Language"); color: Theme.onSurface(Material.theme) }
                         ComboBox {
-                            model: ["en", "ru"]
-                            currentIndex: settingsApi ? model.indexOf(settingsApi.language) : 0
+                            textRole: "name"
+                            model: [
+                                { name: qsTr("English"), id: "en" },
+                                { name: qsTr("Russian"), id: "ru" }
+                            ]
+                            currentIndex: {
+                                if (!settingsApi)
+                                    return 0
+                                for (var i = 0; i < model.length; ++i) {
+                                    if (model[i].id === settingsApi.language)
+                                        return i
+                                }
+                                return 0
+                            }
                             onActivated: if (settingsApi)
-                                settingsApi.language = currentText
+                                settingsApi.language = model[index].id
                             Layout.fillWidth: true
                         }
 
@@ -168,6 +182,7 @@ Page {
                     Button {
                         text: qsTr("Delete user data")
                         Layout.fillWidth: true
+                        enabled: sessionApi && !sessionApi.sessionActive && !sessionApi.busy
                         flat: true
                         Material.foreground: Theme.error(Material.theme)
                         background: Rectangle {
@@ -204,7 +219,7 @@ Page {
                     }
 
                     GridLayout {
-                        columns: 2
+                        columns: root.singleColumnForm ? 1 : 2
                         columnSpacing: 20
                         rowSpacing: 10
                         Layout.fillWidth: true
@@ -220,7 +235,8 @@ Page {
                             Layout.fillWidth: true
                         }
                         Label {
-                            Layout.columnSpan: 2
+                            Layout.columnSpan: parent.columns
+                            Layout.fillWidth: true
                             wrapMode: Text.Wrap
                             text: qsTr("Shorter speech is ignored.")
                             color: Theme.onSurfaceVariant(Material.theme)
@@ -238,7 +254,8 @@ Page {
                             Layout.fillWidth: true
                         }
                         Label {
-                            Layout.columnSpan: 2
+                            Layout.columnSpan: parent.columns
+                            Layout.fillWidth: true
                             wrapMode: Text.Wrap
                             text: qsTr("A longer stretch is split even without a pause.")
                             color: Theme.onSurfaceVariant(Material.theme)
@@ -256,7 +273,8 @@ Page {
                             Layout.fillWidth: true
                         }
                         Label {
-                            Layout.columnSpan: 2
+                            Layout.columnSpan: parent.columns
+                            Layout.fillWidth: true
                             wrapMode: Text.Wrap
                             text: qsTr("Silence that ends a phrase.")
                             color: Theme.onSurfaceVariant(Material.theme)
@@ -275,7 +293,8 @@ Page {
                                 settingsApi.autoCalibrate = checked
                         }
                         Label {
-                            Layout.columnSpan: 2
+                            Layout.columnSpan: parent.columns
+                            Layout.fillWidth: true
                             wrapMode: Text.Wrap
                             text: qsTr("After Start, measure background noise, then listen for speech. Off measures the recording from the first sample.")
                             color: Theme.onSurfaceVariant(Material.theme)
@@ -293,7 +312,8 @@ Page {
                             Layout.fillWidth: true
                         }
                         Label {
-                            Layout.columnSpan: 2
+                            Layout.columnSpan: parent.columns
+                            Layout.fillWidth: true
                             wrapMode: Text.Wrap
                             text: qsTr("Left end of the speech-rate gauge.")
                             color: Theme.onSurfaceVariant(Material.theme)
@@ -311,7 +331,8 @@ Page {
                             Layout.fillWidth: true
                         }
                         Label {
-                            Layout.columnSpan: 2
+                            Layout.columnSpan: parent.columns
+                            Layout.fillWidth: true
                             wrapMode: Text.Wrap
                             text: qsTr("Right end of the speech-rate gauge.")
                             color: Theme.onSurfaceVariant(Material.theme)
@@ -322,7 +343,7 @@ Page {
                     RowLayout {
                         Layout.fillWidth: true
                         Label {
-                            text: qsTr("Advanced")
+                            text: qsTr("Show advanced settings")
                             color: Theme.onSurface(Material.theme)
                             Layout.fillWidth: true
                         }
@@ -367,7 +388,7 @@ Page {
                     }
 
                     GridLayout {
-                        columns: 2
+                        columns: root.singleColumnForm ? 1 : 2
                         columnSpacing: 20
                         rowSpacing: 10
                         Layout.fillWidth: true
@@ -383,14 +404,15 @@ Page {
                             Layout.fillWidth: true
                         }
                         Label {
-                            Layout.columnSpan: 2
+                            Layout.columnSpan: parent.columns
+                            Layout.fillWidth: true
                             wrapMode: Text.Wrap
                             text: qsTr("While a phrase is open, Home averages this many recent updates.")
                             color: Theme.onSurfaceVariant(Material.theme)
                             font.pixelSize: AppScale.fs(12)
                         }
 
-                        Label { text: qsTr("Mean value degry"); color: Theme.onSurface(Material.theme) }
+                        Label { text: qsTr("Mean value degree"); color: Theme.onSurface(Material.theme) }
                         SpinBox {
                             from: 1
                             to: 20
@@ -532,7 +554,7 @@ Page {
                     Button {
                         text: qsTr("Calibrate")
                         Layout.fillWidth: true
-                        enabled: !(sessionApi && sessionApi.sessionActive)
+                        enabled: sessionApi && !sessionApi.sessionActive && !sessionApi.busy
                         onClicked: vadCalibrationDialog.open()
                     }
                 }

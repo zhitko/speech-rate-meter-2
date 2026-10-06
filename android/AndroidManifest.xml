@@ -1,18 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="by.intoncore.SpeechRateMeter"
+    package="by.intoncore.SpeechRateMeter2"
     android:versionCode="-- %%INSERT_VERSION_CODE%% --"
     android:versionName="-- %%INSERT_VERSION_NAME%% --"
     android:installLocation="auto">
 
-    <!-- RECORD_AUDIO is the only permission the speech-rate flow uses.
-         Camera, network, and storage are declared and unused. -->
+    <!-- Speech capture is the only protected platform capability used. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
-    <uses-permission android:name="android.permission.CAMERA"/>
-    <uses-permission android:name="android.permission.INTERNET"/>
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
 
     <!-- Require a microphone -->
     <uses-feature android:name="android.hardware.microphone" android:required="true"/>

@@ -32,6 +32,11 @@ class SessionApi : public QObject {
     Q_PROPERTY(double fillerScore READ fillerScore NOTIFY metricsChanged)
     Q_PROPERTY(QVariantMap details READ details NOTIFY metricsChanged)
     Q_PROPERTY(bool openFileAvailable READ openFileAvailable CONSTANT)
+    Q_PROPERTY(bool openFileBusy READ openFileBusy NOTIFY openFileBusyChanged)
+    Q_PROPERTY(QString openFileError READ openFileError NOTIFY openFileErrorChanged)
+    Q_PROPERTY(bool clearingUserData READ clearingUserData NOTIFY clearingUserDataChanged)
+    Q_PROPERTY(bool busy READ busy NOTIFY busyChanged)
+    Q_PROPERTY(QString errorMessage READ openFileError NOTIFY openFileErrorChanged)
 
 public:
     enum Phase {
@@ -60,10 +65,16 @@ public:
     double fillerScore() const { return m_fillerScore; }
     QVariantMap details() const { return m_details; }
     bool openFileAvailable() const;
+    bool openFileBusy() const { return m_openFileBusy; }
+    QString openFileError() const { return m_openFileError; }
+    bool clearingUserData() const { return m_clearPending; }
+    bool busy() const { return m_openFileBusy || m_clearPending; }
 
     Q_INVOKABLE void startSession();
     Q_INVOKABLE void stopSession();
     Q_INVOKABLE void openWavFile(const QUrl& url);
+    Q_INVOKABLE void reportMicrophoneDenied();
+    Q_INVOKABLE void clearUserData();
     Q_INVOKABLE QUrl testsFolderUrl() const;
     Q_INVOKABLE QVariantList sessions() const;
     Q_INVOKABLE QVariantMap session(const QString& sessionId) const;
@@ -76,6 +87,12 @@ signals:
     void hasResultChanged();
     void metricsChanged();
     void sessionsChanged();
+    void openFileBusyChanged();
+    void openFileErrorChanged();
+    void openFileFinished(bool success, const QString& error);
+    void clearingUserDataChanged();
+    void userDataCleared();
+    void busyChanged();
 
 private slots:
     void applyPhase(int phase, int seconds, int epoch);
@@ -83,10 +100,15 @@ private slots:
     void applyMetrics(const QVariantMap& metrics);
     void applyRunning(bool running);
     void applyDeviceFailed();
+    void applyOpenFileFinished(bool success, const QString& error);
+    void applyUserDataCleared();
     void notifySessions();
 
 private:
     void beginCapture();
+    void enqueueClearUserData();
+    void resetResultState();
+    void setOpenFileError(const QString& error);
     void showMetrics(const QVariantMap& metrics, bool committed);
     void rememberShown(const QVariantMap& shown);
     QVariantMap smoothedMetrics(const QVariantMap& metrics, bool committed);
@@ -96,7 +118,11 @@ private:
     quint64 m_captureGeneration = 0;
 
     bool m_sessionActive = false;
+    bool m_startPending = false;
     bool m_stopPending = false;
+    bool m_openFileBusy = false;
+    bool m_clearPending = false;
+    bool m_clearEnqueued = false;
     int m_phase = IdleEmpty;
     int m_phraseSeconds = 0;
     int m_epoch = 0;
@@ -109,6 +135,7 @@ private:
     double m_phrasePauses = 0;
     double m_speechDuration = 0;
     double m_fillerScore = 0;
+    QString m_openFileError;
     QVariantMap m_details;
     QVariantMap m_committed;
     QString m_shownSessionId;

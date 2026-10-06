@@ -516,30 +516,6 @@ void SettingsApi::save()
     emit settingsChanged();
 }
 
-void SettingsApi::clearUserData()
-{
-    const QString recordsPath = Settings::getAppDataDir() + QStringLiteral("/data/records");
-    QDir recordsDir(recordsPath);
-    if (recordsDir.exists()) {
-        const QFileInfoList files = recordsDir.entryInfoList(QDir::Files);
-        for (const QFileInfo& fileInfo : files) {
-            if (!QFile::remove(fileInfo.absoluteFilePath()))
-                LOG_WARNING() << "Failed to delete recording:" << fileInfo.absoluteFilePath();
-        }
-    }
-
-    const QString sessionsPath = Settings::getAppDataDir() + QStringLiteral("/data/sessions");
-    QDir sessionsDir(sessionsPath);
-    if (sessionsDir.exists()) {
-        const QFileInfoList files = sessionsDir.entryInfoList({ QStringLiteral("*.json") }, QDir::Files);
-        for (const QFileInfo& fileInfo : files) {
-            if (!QFile::remove(fileInfo.absoluteFilePath()))
-                LOG_WARNING() << "Failed to delete session:" << fileInfo.absoluteFilePath();
-        }
-    }
-    emit userDataCleared();
-}
-
 void SettingsApi::applyFont()
 {
     QFont appFont = QGuiApplication::font();

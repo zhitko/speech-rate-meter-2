@@ -24,13 +24,22 @@ Dialog {
     }
 
     contentItem: Flickable {
+        id: detailsFlickable
         implicitHeight: Math.min(contentColumn.implicitHeight, 420)
+        contentWidth: width
         contentHeight: contentColumn.implicitHeight
         clip: true
+        flickableDirection: Flickable.VerticalFlick
+        boundsBehavior: Flickable.StopAtBounds
+        ScrollBar.vertical: ScrollBar {
+            id: detailsScrollBar
+            policy: ScrollBar.AsNeeded
+        }
 
         ColumnLayout {
             id: contentColumn
-            width: parent.width
+            width: Math.max(0, detailsFlickable.width
+                            - (detailsScrollBar.visible ? detailsScrollBar.width + 8 : 0))
             spacing: 8
 
             Repeater {
@@ -55,11 +64,15 @@ Dialog {
                         text: modelData[0]
                         wrapMode: Text.Wrap
                         Layout.fillWidth: true
+                        Layout.alignment: Qt.AlignTop
                         color: Theme.onSurface(Material.theme)
                         font.pixelSize: AppScale.fs(14)
                     }
                     Label {
                         text: modelData[1]
+                        Layout.preferredWidth: 88
+                        Layout.alignment: Qt.AlignTop | Qt.AlignRight
+                        horizontalAlignment: Text.AlignRight
                         color: Theme.onSurface(Material.theme)
                         font.pixelSize: AppScale.fs(14)
                     }

@@ -66,31 +66,47 @@ Page {
             width: ListView.view.width - AppScale.pagePadding * 2
             implicitHeight: textColumn.implicitHeight + 20
 
-            contentItem: Column {
-                id: textColumn
-                spacing: 2
-                Label {
-                    width: parent.width
-                    text: modelData.title
-                    elide: Text.ElideRight
-                    font.pixelSize: AppScale.fs(16)
-                    font.bold: true
-                    color: Theme.onSurface(Material.theme)
+            Accessible.name: qsTr("Open session %1").arg(modelData.title)
+
+            contentItem: RowLayout {
+                spacing: 12
+
+                Column {
+                    id: textColumn
+                    Layout.fillWidth: true
+                    spacing: 2
+                    Label {
+                        width: parent.width
+                        text: modelData.title
+                        elide: Text.ElideRight
+                        font.pixelSize: AppScale.fs(16)
+                        font.bold: true
+                        color: Theme.onSurface(Material.theme)
+                    }
+                    Label {
+                        width: parent.width
+                        text: qsTr("%1 · %2 · %3 wpm")
+                            .arg(qsTr("%n phrases", "", modelData.phraseCount))
+                            .arg(qsTr("%n updates", "", modelData.updateCount))
+                            .arg(Number(modelData.speechRate).toFixed(0))
+                        font.pixelSize: AppScale.fs(14)
+                        color: Theme.onSurface(Material.theme)
+                    }
+                    Label {
+                        width: parent.width
+                        text: root.sessionLine(modelData)
+                        wrapMode: Text.Wrap
+                        font.pixelSize: AppScale.fs(13)
+                        color: Theme.onSurfaceVariant(Material.theme)
+                    }
                 }
-                Label {
-                    width: parent.width
-                    text: qsTr("%1 · %2 · %3 wpm")
-                        .arg(qsTr("%n phrases", "", modelData.phraseCount))
-                        .arg(qsTr("%n updates", "", modelData.updateCount))
-                        .arg(Number(modelData.speechRate).toFixed(0))
+
+                Text {
+                    Layout.alignment: Qt.AlignVCenter
+                    text: Icons.faChevronRight
+                    font.family: Icons.familySolid
+                    font.weight: Font.Black
                     font.pixelSize: AppScale.fs(14)
-                    color: Theme.onSurface(Material.theme)
-                }
-                Label {
-                    width: parent.width
-                    text: root.sessionLine(modelData)
-                    wrapMode: Text.Wrap
-                    font.pixelSize: AppScale.fs(13)
                     color: Theme.onSurfaceVariant(Material.theme)
                 }
             }

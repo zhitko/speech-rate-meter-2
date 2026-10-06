@@ -6,11 +6,10 @@
 #include <QFileInfo>
 #include <QString>
 
-#include "../services/helpers/fileLogger.h"
-
 /*
- * Custom logging utility that integrates with Qt's logging system and also
- * writes logs to a file using FileLogger. Provides stream-style logging with
+ * Custom logging utility that integrates with Qt's logging system. The
+ * application message handler owns console and file output, so each message is
+ * written once. Provides stream-style logging with
  * automatic timestamp, filename, line number, and function name.
  *
  * Usage:
@@ -19,7 +18,7 @@
  *   LOG_WARNING() << "Warning message";
  *   LOG_CRITICAL() << "Critical error message";
  *
- * Logs will be printed to the console and also saved to a log file.
+ * Logs are routed through the installed Qt message handler.
  */
 class QtLogger {
 public:
@@ -67,9 +66,7 @@ public:
 };
 
 /*
- * Helper class to accumulate log messages and write them on destruction.
- * This allows for stream-style logging while ensuring that the full message is
- * logged with the appropriate prefix and written to both console and file.
+ * Helper class to accumulate log messages and submit them on destruction.
  * Example usage:
  *   LOG_DEBUG() << "Value of x:" << x << "and y:" << y;
  * This will log a message like:
@@ -109,9 +106,6 @@ public:
             qCritical().noquote() << fullMessage;
             break;
         }
-
-        // Write to file
-        FileLogger::getInstance().writeLog(fullMessage.toStdString());
     }
 
     template <typename T>

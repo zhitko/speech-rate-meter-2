@@ -21,7 +21,7 @@ One job is on screen at a time. A drawer (and the bottom bar, when that setting 
 | Privacy Policy | What stays on the device. |
 | Open-source licences | Bundled components. |
 
-Home is the only screen with the record button. While a session is running, every screen shows a `Recording` chip in the toolbar, so leaving Home does not look like the microphone closed. The chip returns to Home.
+Home is the only screen with the record button. While a session is running, non-Settings screens show a `Recording` chip in the toolbar; the chip returns to Home. Entering Settings is different: it stops the active recording first, applying the normal min-length keep/drop rule to the open segment.
 
 There is no waveform and no playback of recorded speech. The audio is deleted after the metrics are stored (section 1.3).
 
@@ -49,11 +49,11 @@ Home, from top to bottom:
 4. A level meter, visible only while the session is on, so silence and speech are obvious.
 5. A round button: microphone and `Start` when idle, stop icon and `Stop` while the session is on. The timer for the open phrase sits with the status line, as `mm:ss`.
 
-Details is inside Advanced. It opens the intermediate statistics in section 7 for the segment still held in memory, using the technical names from that section. Open File is an Advanced action on desktop only. There is no Save button.
+Details is inside Advanced. It opens the intermediate statistics in section 7 for the same collection represented on Home, using the technical names from that section. During a live phrase, these fields use the same last-N snapshot average as the headline values; finalized and Open File results do not. Open File is an Advanced action on desktop only. There is no Save button.
 
 ### 1.2 Recording
 
-A session stays open. The user does not start and stop each phrase. Capture, pause detection, cutting, and analysis run off the UI thread; the screen only receives finished metric snapshots. The same session keeps running if the user opens another page. Segments that close while Home is hidden are still stored, and the speech-rate gauge catches up when Home is shown again.
+A session stays open. The user does not start and stop each phrase. Capture, pause detection, cutting, and analysis run off the UI thread; the screen only receives finished metric snapshots. The same session keeps running if the user opens another non-Settings page. Entering Settings stops it. Segments that close while Home is hidden are still stored, and the speech-rate gauge catches up when Home is shown again.
 
 **What Home says**
 
@@ -72,13 +72,13 @@ These lines are the only status copy on Home. Each replaces the previous one.
 
 **Session**
 
-1. Press Start. When Use Speech Autodetection is on (`autoCalibrate`, default off), the VAD calibration dialog runs first. The user stays quiet for `vadCalibrationDurationMs` (default 2000 ms), the measured threshold is stored, and then the microphone opens and stays open. Speech and pauses are found by the voice-activity detector. When the setting is off, Start opens the microphone immediately and the whole take is the phrase: measurement starts at the first sample, a pause does not close it, and the numbers update once the speech span reaches Min recording time. The choice is fixed for that session. If microphone permission is denied during calibration, the session does not start. The timer starts at `00:00` and shows the speech length of the current phrase (`mm:ss`), incrementing once per second. It resets when the next phrase starts.
+1. Press Start. On Android, microphone permission is checked and, if necessary, requested before capture or calibration begins. A denial leaves the session stopped. When Use Speech Autodetection is on (`autoCalibrate`, default off), the user then stays quiet for the `vadCalibrationDurationMs` calibration (default 2000 ms); capture remains open afterward and speech and pauses are found by the voice-activity detector. When the setting is off, the whole take is the phrase: measurement starts at the first sample (including silence), a pause does not close it, and the numbers update once the span reaches Min recording time. The choice is fixed for that session. The timer starts at `00:00` and shows the current phrase length (`mm:ss`), incrementing once per second. It resets when the next phrase starts.
 2. Press Stop to end the session. Capture stops. An open phrase is kept or dropped by the min-length rule below.
-3. `RECORD_AUDIO` is requested when the session starts, if it is not already granted. If it is denied, the session does not start.
+3. `RECORD_AUDIO` is the only Android permission. It is requested on Start, not at application launch.
 
 **Cutting at pauses**
 
-When Use Speech Autodetection is on, speech and pause come from the recorder’s voice-activity detector (energy, autocorrelation, or hybrid) and its thresholds. A pause is a run of non-speech that lasts at least Silence Duration (`autoStopSilenceDuration`, default 2000 ms). That pause is a record boundary. It is not the Phrase Pauses number in section 6.4, which is still computed inside one segment. When the setting is off, Silence Duration does not close the take. Max recording time still splits it.
+When Use Speech Autodetection is on, speech and pause come from the recorder’s voice-activity detector and its thresholds. Method `0` is energy, `1` is autocorrelation, and `2` is the public Hybrid choice, requiring both detectors (logical AND). The worker also understands internal value `3` as logical OR for compatibility, but the Settings UI does not offer it. A pause is a run of non-speech that lasts at least Silence Duration (`autoStopSilenceDuration`, default 2000 ms). That pause is a record boundary. It is not the Phrase Pauses number in section 6.4, which is still computed inside one segment. When autodetection is off, Silence Duration does not close the take. Max recording time still splits it.
 
 A segment closes in either of these cases:
 
@@ -95,8 +95,8 @@ Both sit in the Recording settings group. The UI edits them in seconds. The file
 
 | Setting | Default | INI key |
 | --- | --- | --- |
-| Min recording time | 1 s | `minRecordingTimeMs` = 1000 |
-| Max recording time | 15 s | `maxRecordingTimeMs` = 15000 |
+| Min recording time | 1 s | `General/minRecordingTimeMs` = 1000 |
+| Max recording time | 15 s | `General/maxRecordingTimeMs` = 15000 |
 
 - A pause closes a segment shorter than Min recording time: drop it. Do not store metrics and do not replace the numbers already on screen. The session continues.
 - A segment that reaches Max recording time is kept. Because max is longer than min, it always qualifies.
@@ -110,6 +110,7 @@ Section 6 runs on the samples that would be written if the segment closed now: s
 - After that, a new snapshot is started at most every 250 ms. If a newer buffer is ready before the previous analysis finishes, the older run is abandoned.
 - Each published snapshot is joined with the phrases already kept in this session, then shown. While the phrase is still open, Home shows the arithmetic mean of the last N of those joined snapshots. N is Display average (section 9), default 4. N = 1 shows each snapshot unchanged. Until N snapshots exist, the mean uses the ones received so far. A new phrase starts a new window.
 - When a segment closes, the final analysis of that buffer replaces its live snapshots inside the collection. The screen shows the collection, not the phrase alone and not the display average. The session file stores the phrase. The buffer is then released. Open File is a single analysis and is not averaged or joined.
+- The live Display average window applies to every numeric field in the published snapshot, including the Details fields, not only the five headline values. Finalized collection and Open File details are unaveraged.
 - Speech is the sum of analyzed phrase lengths since Start. It can disagree with the timer by up to one second, by the 300 ms pads, and by the sample-rate rule in section 3.
 
 **Files**
@@ -125,17 +126,17 @@ Capture format requested from the device:
 
 If the device rejects that format, capture uses the nearest supported format. Samples are resampled to 8000 Hz mono s16le before analysis, so the samples match the time base in section 3.
 
-The resampled segment lives in memory. It is not kept as a recording the user can play later. A temporary WAV under `data/records/` (executable directory on desktop, application-local data on Android) is allowed only as a scratch file for that one segment. The file name is local time `dd.MM.yyyy.hh.mm.ss.zzz` plus `.wav`.
+The resampled segment lives in memory. It is not kept as a recording the user can play later. A temporary WAV under `data/records/` (executable directory on desktop, application-local data on Android) is allowed only as a scratch file for that one segment. The file name is local time `dd.MM.yyyy.HH.mm.ss.zzz` plus `.wav`.
 
 Delete that file as soon as the segment’s metrics are in the session file. Release the memory buffer in the same step. Do not open the next segment’s scratch file until the previous one is gone. After a segment is stored, and whenever the app is idle, `data/records/` is empty. If writing the session file fails, keep the scratch file and retry; do not delete the only copy of a result that was not stored. Open File is not a scratch file and is never deleted.
 
-Open File (desktop): a WAV dialog starting at `<executable>/data/tests/`. The chosen file is analyzed once, as a whole file. It is not cut at pauses and it is not updated live. The button is hidden on Android (`isOpenAvailable() == false`).
+Open File (desktop): a WAV dialog starting at `<executable>/data/tests/`. The chosen file must be PCM WAV at exactly 8000 Hz, mono, signed 16-bit little-endian. Any other sample rate, channel count, encoding, or bit depth is rejected rather than converted. A valid file is analyzed once as a whole file; it is not cut at pauses or updated live. QML exposes availability through the `openFileAvailable` property/API; it is `false` on Android and `true` on desktop.
 
 ### 1.3 Saved history
 
 History is a list of recording sessions. A session is the span from press-record to press-stop in section 1.2. It keeps every segment that was written, and every change of the five numbers Home actually showed from Start until Stop. A phrase dropped for being shorter than Min recording time is not stored and does not change those numbers. An opened file is not a session.
 
-The session file is created on the first shown change. Each later change is appended when the on-screen labels change. Each kept segment is appended as soon as its final analysis finishes, and only then is that segment’s audio deleted. Stopping the session sets the session end time. A session that ends with no shown changes and no kept segments is not listed. Delete user data removes the session files and any scratch WAV still in `data/records/`.
+The session file is created by whichever happens first: the first shown change or the first kept segment. Each later shown change is appended when the on-screen labels change. Each kept segment is appended as soon as its final analysis finishes, and only then is that segment’s audio deleted. Stopping the session sets the session end time. A session that ends with no shown changes and no kept segments is not listed. Delete user data removes the session files and any scratch WAV still in `data/records/`.
 
 **File**
 
@@ -146,6 +147,16 @@ One JSON file per session, under `data/sessions/` next to `data/records/` (execu
   "id": "20261005-231001-042",
   "startedAt": "2026-10-05T23:10:01.042",
   "endedAt": "2026-10-05T23:12:18.110",
+  "shown": [
+    {
+      "at": "2026-10-05T23:10:05.250",
+      "speechRate": 126.8,
+      "articulationRate": 149.6,
+      "phrasePauses": 0.18,
+      "speechDuration": 3.72,
+      "fillerPercent": 12
+    }
+  ],
   "segments": [
     {
       "startedAt": "2026-10-05T23:10:04.100",
@@ -154,13 +165,28 @@ One JSON file per session, under `data/sessions/` next to `data/records/` (execu
       "articulationRate": 151.2,
       "phrasePauses": 0.18,
       "speechDuration": 4.86,
-      "fillerPercent": 12
+      "fillerPercent": 12,
+      "vowelLengths": [4, 10],
+      "gapLengths": [40],
+      "vowelMaxFrames": 11,
+      "gapMaxFrames": 40,
+      "frame": 240,
+      "shift": 120,
+      "smooth": 120,
+      "minLengthMs": 5,
+      "degree": 3,
+      "k1": 0.71,
+      "k2": 1.2,
+      "k3": 0.3,
+      "k4": 100,
+      "fillerMin": 120,
+      "fillerMax": 240
     }
   ]
 }
 ```
 
-Times are local, zero-padded, with milliseconds. The session file has no audio path. The five numbers are the finalized analysis of the memory buffer, before display rounding:
+Times are local, zero-padded, use a 24-hour `HH` field, and include milliseconds. The session file has no audio path. `shown` contains the exact five-value snapshots displayed on Home; each entry is timestamped by `at`. Every segment contains both its finalized headline result and the analysis inputs needed to recompute a combined session result. The five headline numbers are stored before display rounding except `fillerPercent`, which is already the integer label value:
 
 | Field | Value |
 | --- | --- |
@@ -204,7 +230,7 @@ PCM s16le mono
 
 Every derived series is cached on a loaded file path. Changing settings does not invalidate that cache. A new segment, a live snapshot of the open segment, or a different file path creates a new analysis and therefore picks up the current settings. Re-opening the same saved path on the same backend object returns the old numbers.
 
-The sample rate used to convert frame counts into seconds is the constant **8000**, not the rate stored in the WAV header (`getWaveFrameRate()` is hard-coded). Duration of an opened file that is not 8000 Hz will be wrong in the current program. Match the constant if the goal is numerical compatibility. Use the real header rate only if you intentionally fix that.
+The sample rate used to convert frame counts into seconds is the constant **8000**, matching recorder output and the strict Open File validation. Open File rejects a WAV whose header does not specify 8000 Hz mono signed 16-bit PCM.
 
 Samples are decoded as signed 16-bit integers regardless of other bit depths: sample count is `data_bytes / (bitDepth/8)`, then each step reads an `int16`. For the files this app writes, bit depth is 16, so this is just “little-endian int16 to float”.
 
@@ -446,7 +472,7 @@ If `R_s > R_a`, the function returns `R_s`. Articulation rate is never shown bel
 
 If `N_c` is 0 the denominator is just `T_v`. If that is also 0 the current code divides by zero.
 
-Printed and gauge behavior match speech rate. Min/max articulation limits are not edited separately: the settings screen writes Min RS into both minima and Max RS into both maxima.
+The articulation value is printed as an integer only; there is no articulation gauge. Legacy articulation min/max settings are still synchronized with Min/Max RS but do not control a visible needle.
 
 ### 6.4 Phrase pauses
 
@@ -481,7 +507,7 @@ F_clamped = clamp(F, F_min, F_max)
 percent   = (F_clamped - F_min) / (F_max - F_min) * 100
 ```
 
-The on-screen label is `percent` as an integer followed by ` %`. The gauge value is `F_clamped`, and the gauge’s own min/max are `F_min` and `F_max`. A raw score below 120 therefore prints `0 %`. A raw score above 240 prints `100 %`.
+The on-screen label is `percent` as an integer followed by ` %`. There is no filler gauge. A raw score below 120 therefore prints `0 %`; a raw score above 240 prints `100 %`.
 
 ## 7. Details screen
 
@@ -520,7 +546,7 @@ kurtosis = mean(z^4) - 3                    # excess kurtosis
 
 ## 9. Settings
 
-Stored in `settings.ini` beside the executable (desktop) or in application-local data (Android), INI format. The file is read only when the key `date_v3` exists. Until the user changes something, every value below is the in-code default and the file may be absent. The first save writes `date_v3` as an empty `QDate`, which is enough to make later launches load the file.
+Stored in `settings.ini` beside the executable (desktop) or in application-local data (Android), INI format. The file is read only when the root key `date_v3` exists. Until the user changes something, every value below is the in-code default and the file may be absent. The first save writes `date_v3` as an empty `QDate`, which is enough to make later launches load the file. General application and recorder values are under the `[General]` group; analysis coefficients retain their named groups.
 
 Advanced is a process-global boolean. It is not written to the INI and resets to off on restart. When it is off, Settings shows General, the phrase controls (including Use Speech Autodetection), and the speech-rate gauge range. Display average, coefficients, filler calibration, signal-processing parameters, voice-activity calibration, and Open File are hidden, not reset.
 
@@ -528,10 +554,10 @@ Everyday labels use plain units. Silence Duration is edited in seconds and store
 
 | On screen | Stored setting | Default | Hint |
 | --- | --- | --- | --- |
-| Shortest phrase | Min recording time | 1 s | Shorter speech is ignored. |
-| Longest phrase | Max recording time | 15 s | A longer stretch is split even without a pause. |
-| Pause | Silence Duration | 2 s | Silence that ends a phrase. |
-| Use Speech Autodetection | `autoCalibrate` | off | After Start, measure background noise, then listen for speech. Off measures the recording from the first sample. |
+| Shortest phrase | `General/minRecordingTimeMs` | 1 s | Shorter speech is ignored. |
+| Longest phrase | `General/maxRecordingTimeMs` | 15 s | A longer stretch is split even without a pause. |
+| Pause | `General/autoStopSilenceDuration` | 2 s | Silence that ends a phrase. |
+| Use Speech Autodetection | `General/autoCalibrate` | off | After Start, measure background noise, then listen for speech. Off measures the recording from the first sample. |
 | Slow | Min RS | 70 wpm | Left end of the speech-rate gauge. Also copies to articulation min. |
 | Fast | Max RS | 210 wpm | Right end of the speech-rate gauge. Also copies to articulation max. |
 
@@ -560,9 +586,9 @@ The three phrase controls are always visible. They are not hidden with Advanced,
 
 | Stored setting | Default | INI key |
 | --- | --- | --- |
-| Min recording time | 1 s | `minRecordingTimeMs` |
-| Max recording time | 15 s | `maxRecordingTimeMs` |
-| Silence Duration | 2 s | `autoStopSilenceDuration` = 2000 |
+| Min recording time | 1 s | `General/minRecordingTimeMs` |
+| Max recording time | 15 s | `General/maxRecordingTimeMs` |
+| Silence Duration | 2 s | `General/autoStopSilenceDuration` = 2000 |
 
 Silence Duration is the pause that closes a phrase. Min and Max recording time bound the speech span that is kept.
 
@@ -627,12 +653,10 @@ Display layer, separate from `analyze`:
 speech_label        = format(R_s, 0) + " wpm"
 speech_needle       = clamp(R_s, MinRS, MaxRS)
 articulation_label  = format(R_a, 0) + " wpm"
-articulation_needle = clamp(R_a, MinRS, MaxRS)
 pause_label         = format(P, 2) + " sec"
 duration_label      = format(T_s, 0) + " sec"
 F_c                 = clamp(F, F_min, F_max)
 filler_label        = format((F_c - F_min) / (F_max - F_min) * 100, 0) + " %"
-filler_needle       = F_c
 ```
 
 ## 11. Worked numeric skeleton
@@ -665,9 +689,9 @@ This example is only a check of the formula wiring. Real nuclei are much more nu
 ## 12. Platform behavior worth copying
 
 - Capture, pause cutting, and analysis run off the UI thread. Headline metrics update during an open segment (section 1.2), at most every 250 ms. Open File is still a single whole-file analysis.
-- Each screen constructs its own analysis backend. Settings and the audio recorder are process-wide singletons. Details uses the analysis already computed for the current segment. It does not re-read a WAV; the segment audio has been deleted.
-- Logging: every Qt debug line is appended to `logs.txt` in the process working directory, prefixed with `dd.MM.yyyy hh:mm:ss:zzz`.
-- Android package id `by.intoncore.SpeechRateMeter`, versionName `1.2`, versionCode `18`. Permissions include `RECORD_AUDIO`. Camera, network, and storage permissions are declared and unused by the speech-rate flow.
+- One application-level `SessionApi` instance owns capture, analysis queues, the open-session accumulator, history access, and the result exposed to every page. Pages obtain that shared instance from the application window; they do not construct per-screen analysis backends. `SettingsApi` is likewise application-level. Details reads the metrics already published by `SessionApi` and does not re-read deleted scratch audio.
+- Logging: one Qt message handler appends each Qt log line to `logs.txt` in the process working directory, prefixed with 24-hour local time `dd.MM.yyyy HH:mm:ss:zzz`. `main.cpp` does not initialize a second `FileLogger` sink.
+- Android package id `by.intoncore.SpeechRateMeter2`, versionName `1.2`, versionCode `18`. The only declared permission is `RECORD_AUDIO`.
 - WAV container is PCM with the standard header, format chunk, and data chunk. No cue points are written for a new recording. Manual segments marked `P` (pre-nucleus), `N` (nucleus), and `T` (post-nucleus) can be read from cue/label chunks by the library; the application never displays them.
 
 ## 13. Present in the repository and unused by this application
@@ -692,6 +716,6 @@ Do not implement these for behavioral parity:
 7. Means on the details screen and in the formulas are power means of degree 3, not arithmetic means.
 8. Even-count medians use integer division.
 9. `R_s`, `R_a` (with the `R_s` floor), `P`, and `F` match section 6, including the filler remap onto 120…240 → 0…100%.
-10. Gauges clamp; printed wpm and the pause do not, except filler, which is clamped before the percent conversion.
+10. The single speech-rate gauge clamps its needle; printed wpm and the pause do not. Filler is clamped before percent conversion.
 11. Settings defaults and the Advanced visibility rules match section 9. Advanced itself is not persisted.
 12. Each recording session is a JSON file of its kept segments, without audio, plus each change Home showed from Start to Stop. History lists sessions with the five metrics recomputed on all kept phrases together. Opening a session shows those values and one chart per metric against the times the numbers changed.

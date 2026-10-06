@@ -14,6 +14,7 @@
 #include <QDateTime>
 #include <QDir>
 #include <QElapsedTimer>
+#include <QFile>
 #include <QFileInfo>
 #include <QHash>
 #include <QIODevice>
@@ -157,7 +158,62 @@ std::vector<float> readWavSamples(const QString& path)
     return samples;
 }
 
-enum class JobKind { Live, Final, OpenFile, EndSession };
+QString validateWavFile(const QString& path)
+{
+    const QFileInfo info(path);
+    if (!info.exists() || !info.isFile() || !info.isReadable())
+        return QCoreApplication::translate("SessionApi", "The selected file cannot be opened.");
+
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly))
+        return QCoreApplication::translate("SessionApi", "The selected file cannot be opened.");
+    const QByteArray bytes = file.readAll();
+    if (bytes.size() < 12 || bytes.first(4) != "RIFF" || bytes.sliced(8, 4) != "WAVE") {
+        return QCoreApplication::translate("SessionApi", "The selected file is not a valid WAV file.");
+    }
+
+    const auto u16 = [&bytes](qsizetype at) {
+        const auto* p = reinterpret_cast<const unsigned char*>(bytes.constData() + at);
+        return std::uint16_t(p[0] | (p[1] << 8));
+    };
+    const auto u32 = [&bytes](qsizetype at) {
+        const auto* p = reinterpret_cast<const unsigned char*>(bytes.constData() + at);
+        return std::uint32_t(p[0]) | (std::uint32_t(p[1]) << 8)
+            | (std::uint32_t(p[2]) << 16) | (std::uint32_t(p[3]) << 24);
+    };
+    const std::uint32_t riffSize = u32(4);
+    if (riffSize < 4 || static_cast<quint64>(riffSize) + 8 > static_cast<quint64>(bytes.size()))
+        return QCoreApplication::translate("SessionApi", "The selected file is not a valid WAV file.");
+
+    bool exactPcm = false;
+    bool validData = false;
+    qsizetype offset = 12;
+    const qsizetype riffEnd = static_cast<qsizetype>(riffSize) + 8;
+    while (offset + 8 <= riffEnd) {
+        const QByteArray id = bytes.sliced(offset, 4);
+        const std::uint32_t size = u32(offset + 4);
+        const quint64 end = static_cast<quint64>(offset) + 8 + size;
+        const quint64 paddedEnd = end + (size & 1U);
+        if (end > static_cast<quint64>(riffEnd) || paddedEnd > static_cast<quint64>(riffEnd))
+            return QCoreApplication::translate("SessionApi", "The selected file is not a valid WAV file.");
+        if (id == "fmt " && size >= 16) {
+            const qsizetype body = offset + 8;
+            exactPcm = u16(body) == 1 && u16(body + 2) == 1
+                && u32(body + 4) == kSampleRate && u32(body + 8) == kSampleRate * 2
+                && u16(body + 12) == 2 && u16(body + 14) == 16;
+        } else if (id == "data") {
+            validData = size >= 2 && (size % 2) == 0;
+        }
+        offset = static_cast<qsizetype>(paddedEnd);
+    }
+    if (!exactPcm || !validData) {
+        return QCoreApplication::translate(
+            "SessionApi", "Use a PCM WAV file: 8000 Hz, mono, signed 16-bit little-endian.");
+    }
+    return {};
+}
+
+enum class JobKind { Live, Final, OpenFile, EndSession, ClearAll };
 
 struct Job {
     JobKind kind = JobKind::Live;
@@ -261,6 +317,12 @@ protected:
     {
         Job job;
         while (m_queue->pop(job)) {
+            if (job.kind == JobKind::ClearAll) {
+                SessionStore::clearAll();
+                m_cache.clear();
+                QMetaObject::invokeMethod(m_api, "applyUserDataCleared", Qt::QueuedConnection);
+                continue;
+            }
             if (job.kind == JobKind::EndSession) {
                 SessionStore::setEndedAt(job.sessionId, job.sessionEndedAt);
                 SessionStore::recoverPending();
@@ -278,16 +340,24 @@ protected:
             };
             if (job.kind == JobKind::OpenFile) {
                 const QString key = QFileInfo(job.path).canonicalFilePath();
-                if (key.isEmpty())
+                if (key.isEmpty()) {
+                    QMetaObject::invokeMethod(m_api, "applyOpenFileFinished", Qt::QueuedConnection,
+                        Q_ARG(bool, false),
+                        Q_ARG(QString, QCoreApplication::translate("SessionApi", "The selected file cannot be opened.")));
                     continue;
+                }
                 const auto cached = m_cache.constFind(key);
                 if (cached != m_cache.cend()) {
                     map = cached.value();
                 } else {
                     const std::vector<float> samples = readWavSamples(job.path);
                     const speechrate::Measurement measured = speechrate::measure(samples, job.config);
-                    if (!measured.metrics.valid)
+                    if (!measured.metrics.valid) {
+                        QMetaObject::invokeMethod(m_api, "applyOpenFileFinished", Qt::QueuedConnection,
+                            Q_ARG(bool, false),
+                            Q_ARG(QString, QCoreApplication::translate("SessionApi", "No measurable speech was found in the file.")));
                         continue;
+                    }
                     map = metricsToMap(measured.metrics, job.fillerMin, job.fillerMax, false, 0, false);
                     SessionStore::insertMeasurement(map, measured.parts, job.config, job.fillerMin, job.fillerMax);
                     m_cache.insert(key, map);
@@ -332,6 +402,10 @@ protected:
             if (map.isEmpty())
                 continue;
             QMetaObject::invokeMethod(m_api, "applyMetrics", Qt::QueuedConnection, Q_ARG(QVariantMap, map));
+            if (job.kind == JobKind::OpenFile) {
+                QMetaObject::invokeMethod(m_api, "applyOpenFileFinished", Qt::QueuedConnection,
+                    Q_ARG(bool, true), Q_ARG(QString, QString()));
+            }
             if (map.value(QStringLiteral("stored")).toBool())
                 QMetaObject::invokeMethod(m_api, "notifySessions", Qt::QueuedConnection);
         }
@@ -927,17 +1001,22 @@ bool SessionApi::openFileAvailable() const
 
 void SessionApi::startSession()
 {
-    if (m_sessionActive || m_stopPending || !m_alive.load())
+    if (m_sessionActive || m_startPending || m_stopPending || m_openFileBusy || m_clearPending || !m_alive.load())
         return;
 
 #ifdef Q_OS_ANDROID
     QMicrophonePermission microphonePermission;
     if (qApp->checkPermission(microphonePermission) != Qt::PermissionStatus::Granted) {
+        m_startPending = true;
         qApp->requestPermission(microphonePermission, this, [this](const QPermission& permission) {
-            if (qApp->checkPermission(permission) == Qt::PermissionStatus::Granted)
+            m_startPending = false;
+            if (m_clearPending) {
+                enqueueClearUserData();
+            } else if (qApp->checkPermission(permission) == Qt::PermissionStatus::Granted) {
                 beginCapture();
-            else
+            } else {
                 applyDeviceFailed();
+            }
         });
         return;
     }
@@ -949,6 +1028,7 @@ void SessionApi::beginCapture()
 {
     ++m_captureGeneration;
     *m_accumulator = {};
+    resetResultState();
     m_shownSessionId.clear();
     m_shownSessionStartedAt.clear();
     m_lastShownKey.clear();
@@ -967,6 +1047,24 @@ void SessionApi::beginCapture()
         Q_ARG(quint64, m_captureGeneration));
 }
 
+void SessionApi::resetResultState()
+{
+    const bool hadResult = m_hasResult;
+    m_hasResult = false;
+    m_showingLive = false;
+    m_hasCommitted = false;
+    m_speechRate = 0;
+    m_articulationRate = 0;
+    m_phrasePauses = 0;
+    m_speechDuration = 0;
+    m_fillerScore = 0;
+    m_details.clear();
+    m_committed.clear();
+    if (hadResult)
+        emit hasResultChanged();
+    emit metricsChanged();
+}
+
 void SessionApi::stopSession()
 {
     if (!m_sessionActive || m_stopPending)
@@ -977,11 +1075,22 @@ void SessionApi::stopSession()
 
 void SessionApi::openWavFile(const QUrl& url)
 {
-    if (m_sessionActive || !openFileAvailable())
+    if (m_sessionActive || m_startPending || m_stopPending || m_openFileBusy || m_clearPending || !openFileAvailable())
         return;
     const QString path = url.isLocalFile() ? url.toLocalFile() : url.toString();
-    if (path.isEmpty())
+    const QString error = path.isEmpty()
+        ? QCoreApplication::translate("SessionApi", "The selected file cannot be opened.")
+        : validateWavFile(path);
+    if (!error.isEmpty()) {
+        setOpenFileError(error);
+        emit openFileFinished(false, error);
         return;
+    }
+    ++m_captureGeneration;
+    setOpenFileError({});
+    m_openFileBusy = true;
+    emit openFileBusyChanged();
+    emit busyChanged();
     const AppSettings settings = Settings::loadSettings();
     Job job;
     job.kind = JobKind::OpenFile;
@@ -991,6 +1100,50 @@ void SessionApi::openWavFile(const QUrl& url)
     job.fillerMax = settings.fillerMax;
     job.generation = m_captureGeneration;
     m_queue->pushOrdered(std::move(job));
+}
+
+void SessionApi::reportMicrophoneDenied()
+{
+    if (m_sessionActive || m_stopPending)
+        return;
+    applyDeviceFailed();
+}
+
+void SessionApi::clearUserData()
+{
+    if (m_clearPending)
+        return;
+    m_clearPending = true;
+    emit clearingUserDataChanged();
+    emit busyChanged();
+    if (m_startPending)
+        return;
+    if (m_sessionActive || m_stopPending) {
+        if (!m_stopPending)
+            stopSession();
+        return;
+    }
+    if (m_openFileBusy)
+        return;
+    enqueueClearUserData();
+}
+
+void SessionApi::enqueueClearUserData()
+{
+    if (m_clearEnqueued)
+        return;
+    m_clearEnqueued = true;
+    Job job;
+    job.kind = JobKind::ClearAll;
+    m_queue->pushOrdered(std::move(job));
+}
+
+void SessionApi::setOpenFileError(const QString& error)
+{
+    if (m_openFileError == error)
+        return;
+    m_openFileError = error;
+    emit openFileErrorChanged();
 }
 
 QUrl SessionApi::testsFolderUrl() const
@@ -1190,10 +1343,10 @@ void SessionApi::rememberShown(const QVariantMap& shown)
 
     QVariantMap sample;
     sample.insert(QStringLiteral("at"), stamp(QDateTime::currentDateTime()));
-    sample.insert(QStringLiteral("speechRate"), shown.value(QStringLiteral("speechRate")));
-    sample.insert(QStringLiteral("articulationRate"), shown.value(QStringLiteral("articulationRate")));
-    sample.insert(QStringLiteral("phrasePauses"), shown.value(QStringLiteral("phrasePauses")));
-    sample.insert(QStringLiteral("speechDuration"), shown.value(QStringLiteral("speechDuration")));
+    sample.insert(QStringLiteral("speechRate"), speechRate);
+    sample.insert(QStringLiteral("articulationRate"), articulation);
+    sample.insert(QStringLiteral("phrasePauses"), pauses / 100.0);
+    sample.insert(QStringLiteral("speechDuration"), duration);
     sample.insert(QStringLiteral("fillerPercent"), fillers);
     if (!SessionStore::appendShown(m_shownSessionId, m_shownSessionStartedAt, sample))
         return;
@@ -1259,6 +1412,8 @@ void SessionApi::applyRunning(bool running)
         m_sessionActive = running;
         emit sessionActiveChanged();
     }
+    if (!running && m_clearPending && !m_openFileBusy)
+        enqueueClearUserData();
 }
 
 void SessionApi::applyDeviceFailed()
@@ -1272,6 +1427,44 @@ void SessionApi::applyDeviceFailed()
     emit sessionActiveChanged();
     emit audioLevelChanged();
     emit phaseChanged();
+    if (m_clearPending && !m_openFileBusy)
+        enqueueClearUserData();
+}
+
+void SessionApi::applyOpenFileFinished(bool success, const QString& error)
+{
+    if (!m_alive.load() || !m_openFileBusy)
+        return;
+    m_openFileBusy = false;
+    emit openFileBusyChanged();
+    emit busyChanged();
+    setOpenFileError(error);
+    emit openFileFinished(success, error);
+    if (m_clearPending)
+        enqueueClearUserData();
+}
+
+void SessionApi::applyUserDataCleared()
+{
+    if (!m_alive.load() || !m_clearPending)
+        return;
+    m_clearEnqueued = false;
+    ++m_captureGeneration;
+    *m_accumulator = {};
+    resetResultState();
+    m_shownSessionId.clear();
+    m_shownSessionStartedAt.clear();
+    m_lastShownKey.clear();
+    m_metricWindow.clear();
+    if (m_phase != IdleEmpty) {
+        m_phase = IdleEmpty;
+        emit phaseChanged();
+    }
+    m_clearPending = false;
+    emit clearingUserDataChanged();
+    emit busyChanged();
+    emit sessionsChanged();
+    emit userDataCleared();
 }
 
 void SessionApi::notifySessions()

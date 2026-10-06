@@ -10,11 +10,32 @@ Item {
     property int decimals: 0
     property var points: []
 
+    readonly property color axisColor: Theme.outlineVariant(Material.theme)
+    readonly property color labelColor: Theme.onSurfaceVariant(Material.theme)
+    readonly property color lineColor: Theme.primary(Material.theme)
+    readonly property int paintTheme: Material.theme
+
     implicitHeight: 180
 
     onPointsChanged: canvas.requestPaint()
+    onValueKeyChanged: canvas.requestPaint()
+    onDecimalsChanged: canvas.requestPaint()
+    onUnitChanged: canvas.requestPaint()
     onWidthChanged: canvas.requestPaint()
     onHeightChanged: canvas.requestPaint()
+    onAxisColorChanged: canvas.requestPaint()
+    onLabelColorChanged: canvas.requestPaint()
+    onLineColorChanged: canvas.requestPaint()
+    onPaintThemeChanged: canvas.requestPaint()
+
+    function hasRenderablePoints() {
+        for (var i = 0; i < points.length; ++i) {
+            var value = points[i] ? Number(points[i][valueKey]) : NaN
+            if (isFinite(value))
+                return true
+        }
+        return false
+    }
 
     Text {
         id: titleLabel
@@ -25,6 +46,17 @@ Item {
         color: Theme.onSurface(Material.theme)
         font.pixelSize: AppScale.fs(16)
         font.bold: true
+    }
+
+    Text {
+        anchors.centerIn: canvas
+        width: Math.max(0, canvas.width - 32)
+        visible: !root.hasRenderablePoints()
+        text: qsTr("No measurements to chart")
+        horizontalAlignment: Text.AlignHCenter
+        wrapMode: Text.Wrap
+        color: Theme.onSurfaceVariant(Material.theme)
+        font.pixelSize: AppScale.fs(14)
     }
 
     Canvas {
@@ -44,7 +76,10 @@ Item {
                 var point = root.points[i]
                 if (!point)
                     continue
-                values.push(Number(point[root.valueKey]))
+                var value = Number(point[root.valueKey])
+                if (!isFinite(value))
+                    continue
+                values.push(value)
                 clocks.push(point.clock ? point.clock : "")
             }
             if (values.length === 0)
@@ -62,14 +97,15 @@ Item {
                 maxValue += pad
             }
 
-            var left = root.decimals > 0 ? 58 : 44
+            var left = root.unit.length > 0 ? (root.decimals > 0 ? 86 : 72)
+                                             : (root.decimals > 0 ? 58 : 44)
             var right = 12
             var top = 8
             var bottom = 46
             var plotWidth = Math.max(1, width - left - right)
             var plotHeight = Math.max(1, height - top - bottom)
 
-            ctx.strokeStyle = Theme.outlineVariant(Material.theme)
+            ctx.strokeStyle = root.axisColor
             ctx.lineWidth = 1
             ctx.globalAlpha = 0.55
             for (var g = 1; g <= 3; ++g) {
@@ -86,15 +122,16 @@ Item {
             ctx.lineTo(left + plotWidth, top + plotHeight)
             ctx.stroke()
 
-            ctx.fillStyle = Theme.onSurfaceVariant(Material.theme)
+            ctx.fillStyle = root.labelColor
             ctx.font = AppScale.fs(11) + "px sans-serif"
             ctx.textAlign = "right"
             ctx.textBaseline = "middle"
-            ctx.fillText(maxValue.toFixed(root.decimals), left - 6, top)
-            ctx.fillText(minValue.toFixed(root.decimals), left - 6, top + plotHeight)
+            var unitSuffix = root.unit.length > 0 ? " " + root.unit : ""
+            ctx.fillText(maxValue.toFixed(root.decimals) + unitSuffix, left - 6, top)
+            ctx.fillText(minValue.toFixed(root.decimals) + unitSuffix, left - 6, top + plotHeight)
 
-            ctx.strokeStyle = Theme.primary(Material.theme)
-            ctx.fillStyle = Theme.primary(Material.theme)
+            ctx.strokeStyle = root.lineColor
+            ctx.fillStyle = root.lineColor
             ctx.lineWidth = 2
             ctx.beginPath()
             for (var p = 0; p < values.length; ++p) {
@@ -115,7 +152,7 @@ Item {
                 ctx.fill()
             }
 
-            ctx.fillStyle = Theme.onSurfaceVariant(Material.theme)
+            ctx.fillStyle = root.labelColor
             ctx.textBaseline = "top"
             if (clocks.length > 0) {
                 ctx.textAlign = "left"

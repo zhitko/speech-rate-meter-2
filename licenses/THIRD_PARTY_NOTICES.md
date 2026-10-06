@@ -93,7 +93,7 @@ https://github.com/androidx/androidx
 
 Keep the source repository and the exact version used for every published
 binary available for at least as long as that binary is distributed.
-Android package id: `by.intoncore.SpeechRateMeter`.
+Android package id: `by.intoncore.SpeechRateMeter2`.
 A release source archive must include the application source, plus the
 matching ALGLIB and SPTK source trees or unambiguous access to those exact
 sources. Requests concerning source or relinking may also be filed through

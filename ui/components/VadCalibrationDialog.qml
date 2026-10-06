@@ -17,6 +17,10 @@ import "../utils"
 Dialog {
     id: root
 
+    readonly property var appWindow: ApplicationWindow.window
+    readonly property var settingsApi: appWindow ? appWindow.settingsApi : null
+    readonly property var sessionApi: appWindow ? appWindow.sessionApi : null
+
     // Emitted when calibration finishes successfully.
     signal calibrationDoneEnergy(real threshold)
     signal calibrationDoneAutocorrelation(real threshold)
@@ -41,7 +45,7 @@ Dialog {
         onPermissionResultReceived: function(granted) {
             if (granted) {
                 // Retry calibration after permission granted
-                const method = window.settingsApi ? window.settingsApi.vadMethod : 0;
+                const method = root.settingsApi ? root.settingsApi.vadMethod : 0;
                 if (method === 1) {
                     _calibrationAudioApi.calibrateVadAutocorrelation();
                 } else {
@@ -49,6 +53,8 @@ Dialog {
                 }
             } else {
                 Logger.warning("Microphone permission denied — cannot calibrate");
+                if (root.sessionApi)
+                    root.sessionApi.reportMicrophoneDenied();
                 root.close();
             }
         }
@@ -57,7 +63,7 @@ Dialog {
     contentItem: ColumnLayout {
         spacing: 16
         Label {
-            text: qsTr("Please stay quiet for %1 seconds so the background noise level can be measured.").arg(window.settingsApi ? Math.round(window.settingsApi.vadCalibrationDurationMs / 1000) : 2)
+            text: qsTr("Please stay quiet for %1 seconds so the background noise level can be measured.").arg(root.settingsApi ? Math.round(root.settingsApi.vadCalibrationDurationMs / 1000) : 2)
             wrapMode: Text.WordWrap
             Layout.fillWidth: true
             font.pixelSize: AppScale.fs(15)
@@ -92,7 +98,7 @@ Dialog {
             // onPermissionResultReceived callback
             return;
         }
-        const method = window.settingsApi ? window.settingsApi.vadMethod : 0;
+        const method = root.settingsApi ? root.settingsApi.vadMethod : 0;
         if (method === 1) {  // 1: autocorr
             _calibrationAudioApi.calibrateVadAutocorrelation();
         } else {  // 0: energy, 2: hybrid (default to energy)

@@ -22,7 +22,6 @@
 
 // Logging
 #include "qmllogger.h"
-#include "src/services/helpers/fileLogger.h"
 
 #ifdef Q_OS_ANDROID
 /**
@@ -92,7 +91,7 @@ static void extractAndroidAssets()
 
 static void appendDebugLog(QtMsgType type, const QMessageLogContext&, const QString& message)
 {
-    const QString line = QDateTime::currentDateTime().toString(QStringLiteral("dd.MM.yyyy hh:mm:ss:zzz "))
+    const QString line = QDateTime::currentDateTime().toString(QStringLiteral("dd.MM.yyyy HH:mm:ss:zzz "))
         + message;
     static QMutex mutex;
     QMutexLocker locker(&mutex);
@@ -108,8 +107,6 @@ static void appendDebugLog(QtMsgType type, const QMessageLogContext&, const QStr
 
 int main(int argc, char* argv[])
 {
-    // Initialize file logger (clears the log file)
-    FileLogger::getInstance().initialize();
     qInstallMessageHandler(appendDebugLog);
 
 #ifdef Q_OS_ANDROID
