@@ -15,11 +15,14 @@ struct AppSettings {
     double fontSizeMultiplier = 1.0;
     std::string primaryColor = "blue";
     bool showNavigationMenu = false;
+    int metricAverageCount = 4;
 
     bool autoStopRecording = true;
     bool autoCalibrate = false;
     int vadCalibrationDurationMs = 2000;
     int autoStopSilenceDuration = 2000;
+    int minRecordingTimeMs = 1000;
+    int maxRecordingTimeMs = 15000;
     int vadMethod = 0; // 0: energy, 1: autocorr, 2: hybrid
     double vadThreshold = 10000.0;
     double autoCorrThreshold = 0.3;
@@ -27,6 +30,22 @@ struct AppSettings {
     double autoCorrMinF0 = 80.0;
     double autoCorrMaxF0 = 300.0;
     double autoCorrEnergyThreshold = 0.02;
+
+    int meanValueDegry = 3;
+    double speechRateK1 = 0.71;
+    double speechRateMin = 70;
+    double speechRateMax = 210;
+    double articulationK2 = 1.2;
+    double articulationMin = 70;
+    double articulationMax = 210;
+    double pausesK3 = 0.30;
+    int intensityFrame = 240;
+    int intensityShift = 120;
+    int intensitySmooth = 120;
+    int segmentMinLengthMs = 5;
+    double fillerK4 = 100;
+    double fillerMin = 120;
+    double fillerMax = 240;
 };
 
 class Settings {

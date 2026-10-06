@@ -1,20 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    package="by.intoncore.SpeechRateMeter2"
+    package="by.intoncore.SpeechRateMeter"
     android:versionCode="-- %%INSERT_VERSION_CODE%% --"
     android:versionName="-- %%INSERT_VERSION_NAME%% --"
     android:installLocation="auto">
 
-    <!-- Microphone only. Deliberately omit %%INSERT_PERMISSIONS%% so
-         androiddeployqt does not inject Qt Core's INTERNET /
-         WRITE_EXTERNAL_STORAGE. File picker is desktop-only. -->
+    <!-- RECORD_AUDIO is the only permission the speech-rate flow uses.
+         Camera, network, and storage are declared and unused. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
-    <uses-permission android:name="android.permission.INTERNET" tools:node="remove"/>
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" tools:node="remove"/>
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" tools:node="remove"/>
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" tools:node="remove"/>
-    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" tools:node="remove"/>
+    <uses-permission android:name="android.permission.CAMERA"/>
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
 
     <!-- Require a microphone -->
     <uses-feature android:name="android.hardware.microphone" android:required="true"/>

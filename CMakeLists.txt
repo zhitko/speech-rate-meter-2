@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 # versionName. Increment QT_ANDROID_VERSION_CODE for each Android upload.
-project(speech-rate-meter-2 VERSION 1.0.0 LANGUAGES CXX)
+project(speech-rate-meter-2 VERSION 1.2 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 17)
@@ -63,6 +63,12 @@ qt_add_executable(appspeech-rate-meter-2
     src/api/fileapi.cpp
     src/api/settingsapi.h
     src/api/settingsapi.cpp
+    src/api/sessionapi.h
+    src/api/sessionapi.cpp
+    src/services/speechrateanalysis.h
+    src/services/speechrateanalysis.cpp
+    src/services/sessionstore.h
+    src/services/sessionstore.cpp
     src/api/qmllogger.h
     src/api/qmllogger.cpp
     src/api/helpers/settings.h
@@ -161,12 +167,18 @@ qt_add_qml_module(appspeech-rate-meter-2
     QML_FILES
         ui/Main.qml
         ui/pages/HomePage.qml
+        ui/pages/HistoryPage.qml
+        ui/pages/SessionPage.qml
         ui/pages/SettingsPage.qml
         ui/pages/UserGuidePage.qml
         ui/pages/PrivacyPolicyPage.qml
         ui/pages/LicensesPage.qml
         ui/components/PlayButton.qml
         ui/components/ConfirmDialog.qml
+        ui/components/SpeechRateGauge.qml
+        ui/components/MetricChart.qml
+        ui/components/DetailsDialog.qml
+        ui/components/DecimalSpinBox.qml
         ui/components/VadCalibrationDialog.qml
         ${qml_singletons}
     RESOURCES
@@ -230,10 +242,10 @@ if(ANDROID)
         QT_ANDROID_TARGET_SDK_VERSION 36
         QT_ANDROID_COMPILE_SDK_VERSION 36
         QT_ANDROID_MIN_SDK_VERSION 26
-        QT_ANDROID_VERSION_CODE 1
+        QT_ANDROID_VERSION_CODE 18
         QT_ANDROID_VERSION_NAME "${PROJECT_VERSION}"
         QT_ANDROID_APP_NAME "Speech Rate Meter 2"
-        QT_ANDROID_PACKAGE_NAME "by.intoncore.SpeechRateMeter2"
+        QT_ANDROID_PACKAGE_NAME "by.intoncore.SpeechRateMeter"
         # Uncompressed native libs, 16 KB zip-aligned by AGP 9. Required
         # so Play-generated APKs mmap .so files on 16 KB page-size devices.
         # Address Sanitizer builds should override this to TRUE.
@@ -285,6 +297,16 @@ else()
 endif()
 
 add_dependencies(appspeech-rate-meter-2 copy_runtime_resources)
+
+if(NOT ANDROID)
+    add_executable(speechrate-analysis-test
+        tests/speechrate_analysis_test.cpp
+        src/services/speechrateanalysis.cpp
+    )
+    target_include_directories(speechrate-analysis-test PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/services
+    )
+endif()
 
 include(GNUInstallDirs)
 install(TARGETS appspeech-rate-meter-2

@@ -5,6 +5,7 @@ import QtQuick.Controls.Material 6.8
 import QtQuick.Window
 
 import by.intoncore.settings 1.0
+import by.intoncore.session 1.0
 import "utils"
 
 ApplicationWindow {
@@ -33,7 +34,23 @@ ApplicationWindow {
         onThemeChanged: window.theme = getTheme()
     }
 
+    SessionApi {
+        id: sessionApi
+    }
+
     property alias settingsApi: settingsApi
+    property alias sessionApi: sessionApi
+
+    function goHome() {
+        if (stackView.depth === 1 && stackView.currentItem && stackView.currentItem.pageId === "home")
+            return
+        stackView.clear()
+        stackView.push("pages/HomePage.qml")
+    }
+
+    function pageId() {
+        return stackView.currentItem && stackView.currentItem.pageId ? stackView.currentItem.pageId : ""
+    }
 
     function getTheme() {
         return settingsApi.theme === "dark" ? Material.Dark
@@ -134,6 +151,37 @@ ApplicationWindow {
                     leftPadding: 8
                 }
 
+                Rectangle {
+                    visible: sessionApi.sessionActive
+                    radius: height / 2
+                    color: Theme.errorContainer(Material.theme)
+                    implicitHeight: 32
+                    implicitWidth: chipRow.implicitWidth + 20
+
+                    Row {
+                        id: chipRow
+                        anchors.centerIn: parent
+                        spacing: 6
+                        Rectangle {
+                            width: 8
+                            height: 8
+                            radius: 4
+                            anchors.verticalCenter: parent.verticalCenter
+                            color: Theme.error(Material.theme)
+                        }
+                        Label {
+                            text: qsTr("Recording")
+                            font.pixelSize: AppScale.fs(13)
+                            color: Theme.onErrorContainer(Material.theme)
+                        }
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: window.goHome()
+                    }
+                }
+
                 ToolButton {
                     id: backButton
                     font.family: Icons.familySolid
@@ -169,91 +217,71 @@ ApplicationWindow {
             Row {
                 anchors.fill: parent
 
-                Item {
-                    width: parent.width / 2
-                    height: parent.height
+                Repeater {
+                    model: [
+                        { text: qsTr("Home"), icon: Icons.faHome, id: "home" },
+                        { text: qsTr("History"), icon: Icons.faClockRotateLeft, id: "history" },
+                        { text: qsTr("Settings"), icon: Icons.faGear, id: "settings" }
+                    ]
 
-                    Column {
-                        anchors.centerIn: parent
-                        spacing: 4
+                    Item {
+                        width: navigationBar.width / 3
+                        height: navigationBar.height
+                        readonly property bool selected: modelData.id === "history"
+                                                         ? (window.pageId() === "history" || window.pageId() === "session")
+                                                         : window.pageId() === modelData.id
 
-                        Rectangle {
-                            width: 64
-                            height: 32
-                            radius: 16
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            color: stackView.depth <= 1 ? Theme.secondaryContainer(Material.theme) : "transparent"
+                        Column {
+                            anchors.centerIn: parent
+                            spacing: 4
+
+                            Rectangle {
+                                width: 64
+                                height: 32
+                                radius: 16
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                color: parent.parent.selected ? Theme.secondaryContainer(Material.theme) : "transparent"
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    font.family: Icons.familySolid
+                                    font.weight: Font.Black
+                                    font.pixelSize: AppScale.fs(20)
+                                    text: modelData.icon
+                                    color: parent.parent.parent.selected
+                                           ? Theme.onSecondaryContainer(Material.theme)
+                                           : Theme.onSurfaceVariant(Material.theme)
+                                }
+                            }
 
                             Text {
-                                anchors.centerIn: parent
-                                font.family: Icons.familySolid
-                                font.weight: Font.Black
-                                font.pixelSize: AppScale.fs(20)
-                                text: Icons.faHome
-                                color: stackView.depth <= 1 ? Theme.onSecondaryContainer(Material.theme) : Theme.onSurfaceVariant(Material.theme)
+                                text: modelData.text
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                font.pixelSize: AppScale.fs(12)
+                                font.weight: parent.parent.selected ? Font.Bold : Font.Normal
+                                color: parent.parent.selected ? Theme.onSurface(Material.theme) : Theme.onSurfaceVariant(Material.theme)
                             }
                         }
 
-                        Text {
-                            text: qsTr("Home")
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            font.pixelSize: AppScale.fs(12)
-                            font.weight: stackView.depth <= 1 ? Font.Bold : Font.Normal
-                            color: stackView.depth <= 1 ? Theme.onSurface(Material.theme) : Theme.onSurfaceVariant(Material.theme)
-                        }
-                    }
-
-                    MouseArea {
-                        anchors.fill: parent
-                        onClicked: {
-                            stackView.clear();
-                            stackView.push("pages/HomePage.qml");
-                        }
-                    }
-                }
-
-                Item {
-                    width: parent.width / 2
-                    height: parent.height
-
-                    Column {
-                        anchors.centerIn: parent
-                        spacing: 4
-
-                        Rectangle {
-                            width: 64
-                            height: 32
-                            radius: 16
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            color: stackView.currentItem && stackView.currentItem.title === qsTr("Settings")
-                                   ? Theme.secondaryContainer(Material.theme) : "transparent"
-
-                            Text {
-                                anchors.centerIn: parent
-                                font.family: Icons.familySolid
-                                font.weight: Font.Black
-                                font.pixelSize: AppScale.fs(20)
-                                text: Icons.faGear
-                                color: stackView.currentItem && stackView.currentItem.title === qsTr("Settings")
-                                       ? Theme.onSecondaryContainer(Material.theme) : Theme.onSurfaceVariant(Material.theme)
+                        MouseArea {
+                            anchors.fill: parent
+                            onClicked: {
+                                if (modelData.id === "home") {
+                                    window.goHome()
+                                    return
+                                }
+                                if (modelData.id === "history") {
+                                    if (window.pageId() === "session") {
+                                        stackView.pop()
+                                        return
+                                    }
+                                    if (window.pageId() !== "history")
+                                        stackView.push("pages/HistoryPage.qml")
+                                    return
+                                }
+                                if (window.pageId() !== "settings")
+                                    stackView.push("pages/SettingsPage.qml")
                             }
-                        }
-
-                        Text {
-                            text: qsTr("Settings")
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            font.pixelSize: AppScale.fs(12)
-                            font.weight: stackView.currentItem && stackView.currentItem.title === qsTr("Settings") ? Font.Bold : Font.Normal
-                            color: stackView.currentItem && stackView.currentItem.title === qsTr("Settings")
-                                   ? Theme.onSurface(Material.theme) : Theme.onSurfaceVariant(Material.theme)
-                        }
-                    }
-
-                    MouseArea {
-                        anchors.fill: parent
-                        onClicked: {
-                            if (stackView.currentItem && stackView.currentItem.title !== qsTr("Settings"))
-                                stackView.push("pages/SettingsPage.qml");
                         }
                     }
                 }
@@ -320,11 +348,12 @@ ApplicationWindow {
 
                 Repeater {
                     model: [
-                        { text: qsTr("Home"), icon: Icons.faHome, page: "pages/HomePage.qml", clear: true },
-                        { text: qsTr("Settings"), icon: Icons.faGear, page: "pages/SettingsPage.qml", clear: false },
-                        { text: qsTr("User Guide"), icon: Icons.faBookOpen, page: "pages/UserGuidePage.qml", clear: false },
-                        { text: qsTr("Privacy Policy"), icon: Icons.faShieldHalved, page: "pages/PrivacyPolicyPage.qml", clear: false },
-                        { text: qsTr("Open-source licences"), icon: Icons.faScaleBalanced, page: "pages/LicensesPage.qml", clear: false }
+                        { text: qsTr("Home"), icon: Icons.faHome, page: "pages/HomePage.qml", id: "home" },
+                        { text: qsTr("History"), icon: Icons.faClockRotateLeft, page: "pages/HistoryPage.qml", id: "history" },
+                        { text: qsTr("Settings"), icon: Icons.faGear, page: "pages/SettingsPage.qml", id: "settings" },
+                        { text: qsTr("User Guide"), icon: Icons.faBookOpen, page: "pages/UserGuidePage.qml", id: "guide" },
+                        { text: qsTr("Privacy Policy"), icon: Icons.faShieldHalved, page: "pages/PrivacyPolicyPage.qml", id: "privacy" },
+                        { text: qsTr("Open-source licences"), icon: Icons.faScaleBalanced, page: "pages/LicensesPage.qml", id: "licenses" }
                     ]
 
                     delegate: ItemDelegate {
@@ -351,9 +380,9 @@ ApplicationWindow {
                         }
 
                         highlighted: {
-                            if (modelData.text === qsTr("Home"))
-                                return stackView.depth <= 1;
-                            return stackView.currentItem && stackView.currentItem.title === modelData.text;
+                            if (modelData.id === "history")
+                                return window.pageId() === "history" || window.pageId() === "session"
+                            return window.pageId() === modelData.id
                         }
 
                         background: Rectangle {
@@ -363,10 +392,13 @@ ApplicationWindow {
                         }
 
                         onClicked: {
-                            if (modelData.clear)
-                                stackView.clear();
-                            stackView.push(modelData.page);
-                            drawer.close();
+                            if (modelData.id === "home")
+                                window.goHome()
+                            else if (modelData.id === "history" && window.pageId() === "session")
+                                stackView.pop()
+                            else if (window.pageId() !== modelData.id)
+                                stackView.push(modelData.page)
+                            drawer.close()
                         }
                     }
                 }
@@ -374,30 +406,6 @@ ApplicationWindow {
                 Item {
                     Layout.fillHeight: true
                     Layout.preferredHeight: 40
-                }
-
-                Rectangle {
-                    Layout.fillWidth: true
-                    height: 1
-                    color: Theme.outlineVariant(Material.theme)
-                    Layout.bottomMargin: 8
-                }
-
-                RowLayout {
-                    Layout.fillWidth: true
-                    Layout.margins: 16
-                    Label {
-                        text: qsTr("Dark Mode")
-                        Layout.fillWidth: true
-                        color: Theme.onSurface(Material.theme)
-                    }
-                    Switch {
-                        checked: window.theme === Material.Dark
-                        onCheckedChanged: {
-                            settingsApi.theme = checked ? "dark" : "light";
-                            settingsApi.save();
-                        }
-                    }
                 }
 
                 Label {

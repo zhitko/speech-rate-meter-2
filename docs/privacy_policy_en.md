@@ -1,20 +1,21 @@
 # Privacy Notice
 
-**Last updated October 5, 2026**
+**Last updated October 6, 2026**
 
-Speech Rate Meter 2 ("we") records speech only so you can keep a WAV file on your own device.
+Speech Rate Meter 2 ("we") uses the microphone only to estimate speaking tempo on this device. It does not recognize words and does not send audio anywhere.
 
 ## What is stored
 
-- **Microphone.** The app asks for microphone access in order to record. You can revoke that permission in the system settings.
-- **Recordings.** Each take is written as a WAV file in the app's private `data/records` folder. Recordings are not uploaded, shared, or backed up by us. Android backup of app data is disabled.
-- **Settings.** Language, theme, and recording options are stored locally in `settings.ini`.
+- **Microphone.** The app asks for microphone access when a session starts. You can revoke that permission in the system settings.
+- **Sessions.** Each kept phrase is stored as numbers (pace, articulation, fillers, pauses, and length) in a private `data/sessions` file. The file has no audio.
+- **Scratch audio.** A phrase may be written briefly as a WAV file in `data/records` while those numbers are saved. That file is deleted as soon as the save succeeds. After a session, and whenever the app is idle, that folder is empty unless a save failed and the file is still needed.
+- **Settings.** Language, theme, and measurement options are stored locally in `settings.ini`.
 
-The Android package does not request Internet access. Nothing on this list is sent to a server.
+The Android package also declares camera, network, and storage permissions. The speech-rate flow does not use them. Nothing on this list is sent to a server.
 
 ## How long it is kept
 
-Recordings stay on the device until you tap **Delete user data** in Settings or uninstall the app. Uninstalling also removes the local settings.
+Session files stay on the device until you tap **Delete user data** in Settings or uninstall the app. Delete user data also removes any scratch WAV still in `data/records`. Uninstalling removes the local settings as well.
 
 ## Contact
 

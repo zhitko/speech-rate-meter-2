@@ -9,6 +9,7 @@ import "../utils"
 Page {
     id: root
     title: qsTr("Privacy Policy")
+    property string pageId: "privacy"
 
     readonly property var settingsApi: ApplicationWindow.window ? ApplicationWindow.window.settingsApi : null
 

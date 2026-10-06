@@ -1,4 +1,5 @@
 #include <QCoreApplication>
+#include <QDateTime>
 #include <QDir>
 #include <QDirIterator>
 #include <QFile>
@@ -6,14 +7,17 @@
 #include <QFontDatabase>
 #include <QGuiApplication>
 #include <QIcon>
+#include <QMutex>
 #include <QQmlApplicationEngine>
 #include <QStandardPaths>
 #include <QStringList>
+#include <QTextStream>
 #include <QtQml>
 
 // APIS
 #include "audioapi.h"
 #include "fileapi.h"
+#include "sessionapi.h"
 #include "settingsapi.h"
 
 // Logging
@@ -86,10 +90,27 @@ static void extractAndroidAssets()
 }
 #endif // Q_OS_ANDROID
 
+static void appendDebugLog(QtMsgType type, const QMessageLogContext&, const QString& message)
+{
+    const QString line = QDateTime::currentDateTime().toString(QStringLiteral("dd.MM.yyyy hh:mm:ss:zzz "))
+        + message;
+    static QMutex mutex;
+    QMutexLocker locker(&mutex);
+    QFile file(QStringLiteral("logs.txt"));
+    if (file.open(QIODevice::WriteOnly | QIODevice::Append | QIODevice::Text)) {
+        QTextStream stream(&file);
+        stream << line << '\n';
+    }
+    fprintf(stderr, "%s\n", line.toLocal8Bit().constData());
+    if (type == QtFatalMsg)
+        abort();
+}
+
 int main(int argc, char* argv[])
 {
     // Initialize file logger (clears the log file)
     FileLogger::getInstance().initialize();
+    qInstallMessageHandler(appendDebugLog);
 
 #ifdef Q_OS_ANDROID
     // Extract bundled assets (settings.ini, data/patterns, …) from APK
@@ -129,6 +150,7 @@ int main(int argc, char* argv[])
     qmlRegisterType<AudioApi>("by.intoncore.audio", 1, 0, "AudioApi");
     qmlRegisterType<FileApi>("by.intoncore.file", 1, 0, "FileApi");
     qmlRegisterType<SettingsApi>("by.intoncore.settings", 1, 0, "SettingsApi");
+    qmlRegisterType<SessionApi>("by.intoncore.session", 1, 0, "SessionApi");
     qmlRegisterSingletonType<QmlLogger>("by.intoncore.logger", 1, 0, "QmlLogger", &QmlLogger::create);
 
     QQmlApplicationEngine engine;

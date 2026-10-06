@@ -27,6 +27,24 @@ class SettingsApi : public QObject {
     Q_PROPERTY(double autoCorrThresholdK READ autoCorrThresholdK WRITE setAutoCorrThresholdK NOTIFY autoCorrThresholdKChanged)
     Q_PROPERTY(double autoCorrMinF0 READ autoCorrMinF0 WRITE setAutoCorrMinF0 NOTIFY autoCorrMinF0Changed)
     Q_PROPERTY(double autoCorrMaxF0 READ autoCorrMaxF0 WRITE setAutoCorrMaxF0 NOTIFY autoCorrMaxF0Changed)
+    Q_PROPERTY(bool advanced READ advanced WRITE setAdvanced NOTIFY advancedChanged)
+    Q_PROPERTY(int shortestPhraseSec READ shortestPhraseSec WRITE setShortestPhraseSec NOTIFY shortestPhraseSecChanged)
+    Q_PROPERTY(int longestPhraseSec READ longestPhraseSec WRITE setLongestPhraseSec NOTIFY longestPhraseSecChanged)
+    Q_PROPERTY(int pauseSec READ pauseSec WRITE setPauseSec NOTIFY pauseSecChanged)
+    Q_PROPERTY(double slowWpm READ slowWpm WRITE setSlowWpm NOTIFY slowWpmChanged)
+    Q_PROPERTY(double fastWpm READ fastWpm WRITE setFastWpm NOTIFY fastWpmChanged)
+    Q_PROPERTY(int meanValueDegry READ meanValueDegry WRITE setMeanValueDegry NOTIFY meanValueDegryChanged)
+    Q_PROPERTY(double k1 READ k1 WRITE setK1 NOTIFY k1Changed)
+    Q_PROPERTY(double k2 READ k2 WRITE setK2 NOTIFY k2Changed)
+    Q_PROPERTY(double k3 READ k3 WRITE setK3 NOTIFY k3Changed)
+    Q_PROPERTY(double k4 READ k4 WRITE setK4 NOTIFY k4Changed)
+    Q_PROPERTY(int intensityFrame READ intensityFrame WRITE setIntensityFrame NOTIFY intensityFrameChanged)
+    Q_PROPERTY(int intensityShift READ intensityShift WRITE setIntensityShift NOTIFY intensityShiftChanged)
+    Q_PROPERTY(int intensitySmooth READ intensitySmooth WRITE setIntensitySmooth NOTIFY intensitySmoothChanged)
+    Q_PROPERTY(int segmentMinLengthMs READ segmentMinLengthMs WRITE setSegmentMinLengthMs NOTIFY segmentMinLengthMsChanged)
+    Q_PROPERTY(double fillerMin READ fillerMin WRITE setFillerMin NOTIFY fillerMinChanged)
+    Q_PROPERTY(double fillerMax READ fillerMax WRITE setFillerMax NOTIFY fillerMaxChanged)
+    Q_PROPERTY(int metricAverageCount READ metricAverageCount WRITE setMetricAverageCount NOTIFY metricAverageCountChanged)
 
 public:
     explicit SettingsApi(QObject* parent = nullptr);
@@ -79,6 +97,44 @@ public:
     double autoCorrMaxF0() const;
     void setAutoCorrMaxF0(double maxF0);
 
+    bool advanced() const;
+    void setAdvanced(bool advanced);
+
+    int shortestPhraseSec() const;
+    void setShortestPhraseSec(int seconds);
+    int longestPhraseSec() const;
+    void setLongestPhraseSec(int seconds);
+    int pauseSec() const;
+    void setPauseSec(int seconds);
+    double slowWpm() const;
+    void setSlowWpm(double wpm);
+    double fastWpm() const;
+    void setFastWpm(double wpm);
+    int meanValueDegry() const;
+    void setMeanValueDegry(int degree);
+    double k1() const;
+    void setK1(double value);
+    double k2() const;
+    void setK2(double value);
+    double k3() const;
+    void setK3(double value);
+    double k4() const;
+    void setK4(double value);
+    int intensityFrame() const;
+    void setIntensityFrame(int value);
+    int intensityShift() const;
+    void setIntensityShift(int value);
+    int intensitySmooth() const;
+    void setIntensitySmooth(int value);
+    int segmentMinLengthMs() const;
+    void setSegmentMinLengthMs(int value);
+    double fillerMin() const;
+    void setFillerMin(double value);
+    double fillerMax() const;
+    void setFillerMax(double value);
+    int metricAverageCount() const;
+    void setMetricAverageCount(int count);
+
     Q_INVOKABLE void load();
     Q_INVOKABLE void save();
 
@@ -105,9 +161,29 @@ signals:
     void autoCorrThresholdKChanged();
     void autoCorrMinF0Changed();
     void autoCorrMaxF0Changed();
+    void advancedChanged();
+    void shortestPhraseSecChanged();
+    void longestPhraseSecChanged();
+    void pauseSecChanged();
+    void slowWpmChanged();
+    void fastWpmChanged();
+    void meanValueDegryChanged();
+    void k1Changed();
+    void k2Changed();
+    void k3Changed();
+    void k4Changed();
+    void intensityFrameChanged();
+    void intensityShiftChanged();
+    void intensitySmoothChanged();
+    void segmentMinLengthMsChanged();
+    void fillerMinChanged();
+    void fillerMaxChanged();
+    void metricAverageCountChanged();
+    void userDataCleared();
 
 private:
     AppSettings m_settings;
+    bool m_advanced = false;
     QTranslator m_translator;
 
     void updateTranslator();

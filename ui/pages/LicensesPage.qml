@@ -10,6 +10,7 @@ import "../utils"
 Page {
     id: root
     title: qsTr("Open-source licences")
+    property string pageId: "licenses"
 
     property string documentTitle: ""
     property string documentText: ""

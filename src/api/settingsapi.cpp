@@ -255,6 +255,220 @@ void SettingsApi::setAutoCorrMaxF0(double maxF0)
     emit autoCorrMaxF0Changed();
 }
 
+bool SettingsApi::advanced() const
+{
+    return m_advanced;
+}
+
+void SettingsApi::setAdvanced(bool advanced)
+{
+    if (m_advanced == advanced)
+        return;
+    m_advanced = advanced;
+    emit advancedChanged();
+}
+
+int SettingsApi::shortestPhraseSec() const
+{
+    return m_settings.minRecordingTimeMs / 1000;
+}
+
+void SettingsApi::setShortestPhraseSec(int seconds)
+{
+    if (seconds < 0)
+        seconds = 0;
+    const int ms = seconds * 1000;
+    const bool minChanged = assignIfChanged(m_settings.minRecordingTimeMs, ms);
+    bool maxChanged = false;
+    if (m_settings.maxRecordingTimeMs <= m_settings.minRecordingTimeMs) {
+        maxChanged = assignIfChanged(m_settings.maxRecordingTimeMs, m_settings.minRecordingTimeMs + 1000);
+    }
+    if (!minChanged && !maxChanged)
+        return;
+    save();
+    if (minChanged)
+        emit shortestPhraseSecChanged();
+    if (maxChanged)
+        emit longestPhraseSecChanged();
+}
+
+int SettingsApi::longestPhraseSec() const
+{
+    return m_settings.maxRecordingTimeMs / 1000;
+}
+
+void SettingsApi::setLongestPhraseSec(int seconds)
+{
+    int ms = std::max(0, seconds) * 1000;
+    if (ms <= m_settings.minRecordingTimeMs)
+        ms = m_settings.minRecordingTimeMs + 1000;
+    if (!assignIfChanged(m_settings.maxRecordingTimeMs, ms))
+        return;
+    save();
+    emit longestPhraseSecChanged();
+}
+
+int SettingsApi::pauseSec() const
+{
+    return m_settings.autoStopSilenceDuration / 1000;
+}
+
+void SettingsApi::setPauseSec(int seconds)
+{
+    if (seconds < 0)
+        seconds = 0;
+    if (!assignIfChanged(m_settings.autoStopSilenceDuration, seconds * 1000))
+        return;
+    save();
+    emit pauseSecChanged();
+}
+
+double SettingsApi::slowWpm() const
+{
+    return m_settings.speechRateMin;
+}
+
+void SettingsApi::setSlowWpm(double wpm)
+{
+    const bool rateChanged = assignIfChanged(m_settings.speechRateMin, wpm);
+    const bool articulationChanged = assignIfChanged(m_settings.articulationMin, wpm);
+    if (!rateChanged && !articulationChanged)
+        return;
+    save();
+    emit slowWpmChanged();
+}
+
+double SettingsApi::fastWpm() const
+{
+    return m_settings.speechRateMax;
+}
+
+void SettingsApi::setFastWpm(double wpm)
+{
+    const bool rateChanged = assignIfChanged(m_settings.speechRateMax, wpm);
+    const bool articulationChanged = assignIfChanged(m_settings.articulationMax, wpm);
+    if (!rateChanged && !articulationChanged)
+        return;
+    save();
+    emit fastWpmChanged();
+}
+
+int SettingsApi::meanValueDegry() const
+{
+    return m_settings.meanValueDegry;
+}
+
+void SettingsApi::setMeanValueDegry(int degree)
+{
+    if (!assignIfChanged(m_settings.meanValueDegry, degree))
+        return;
+    save();
+    emit meanValueDegryChanged();
+}
+
+double SettingsApi::k1() const { return m_settings.speechRateK1; }
+void SettingsApi::setK1(double value)
+{
+    if (!assignIfChanged(m_settings.speechRateK1, value))
+        return;
+    save();
+    emit k1Changed();
+}
+
+double SettingsApi::k2() const { return m_settings.articulationK2; }
+void SettingsApi::setK2(double value)
+{
+    if (!assignIfChanged(m_settings.articulationK2, value))
+        return;
+    save();
+    emit k2Changed();
+}
+
+double SettingsApi::k3() const { return m_settings.pausesK3; }
+void SettingsApi::setK3(double value)
+{
+    if (!assignIfChanged(m_settings.pausesK3, value))
+        return;
+    save();
+    emit k3Changed();
+}
+
+double SettingsApi::k4() const { return m_settings.fillerK4; }
+void SettingsApi::setK4(double value)
+{
+    if (!assignIfChanged(m_settings.fillerK4, value))
+        return;
+    save();
+    emit k4Changed();
+}
+
+int SettingsApi::intensityFrame() const { return m_settings.intensityFrame; }
+void SettingsApi::setIntensityFrame(int value)
+{
+    if (!assignIfChanged(m_settings.intensityFrame, std::clamp(value, 0, 1024)))
+        return;
+    save();
+    emit intensityFrameChanged();
+}
+
+int SettingsApi::intensityShift() const { return m_settings.intensityShift; }
+void SettingsApi::setIntensityShift(int value)
+{
+    if (!assignIfChanged(m_settings.intensityShift, std::clamp(value, 0, 512)))
+        return;
+    save();
+    emit intensityShiftChanged();
+}
+
+int SettingsApi::intensitySmooth() const { return m_settings.intensitySmooth; }
+void SettingsApi::setIntensitySmooth(int value)
+{
+    if (!assignIfChanged(m_settings.intensitySmooth, std::clamp(value, 0, 1024)))
+        return;
+    save();
+    emit intensitySmoothChanged();
+}
+
+int SettingsApi::segmentMinLengthMs() const { return m_settings.segmentMinLengthMs; }
+void SettingsApi::setSegmentMinLengthMs(int value)
+{
+    if (!assignIfChanged(m_settings.segmentMinLengthMs, std::clamp(value, 0, 2000)))
+        return;
+    save();
+    emit segmentMinLengthMsChanged();
+}
+
+double SettingsApi::fillerMin() const { return m_settings.fillerMin; }
+void SettingsApi::setFillerMin(double value)
+{
+    if (!assignIfChanged(m_settings.fillerMin, value))
+        return;
+    save();
+    emit fillerMinChanged();
+}
+
+double SettingsApi::fillerMax() const { return m_settings.fillerMax; }
+void SettingsApi::setFillerMax(double value)
+{
+    if (!assignIfChanged(m_settings.fillerMax, value))
+        return;
+    save();
+    emit fillerMaxChanged();
+}
+
+int SettingsApi::metricAverageCount() const
+{
+    return m_settings.metricAverageCount;
+}
+
+void SettingsApi::setMetricAverageCount(int count)
+{
+    if (!assignIfChanged(m_settings.metricAverageCount, std::clamp(count, 1, 30)))
+        return;
+    save();
+    emit metricAverageCountChanged();
+}
+
 void SettingsApi::load()
 {
     m_settings = Settings::loadSettings();
@@ -276,6 +490,23 @@ void SettingsApi::load()
     emit autoCorrThresholdKChanged();
     emit autoCorrMinF0Changed();
     emit autoCorrMaxF0Changed();
+    emit shortestPhraseSecChanged();
+    emit longestPhraseSecChanged();
+    emit pauseSecChanged();
+    emit slowWpmChanged();
+    emit fastWpmChanged();
+    emit meanValueDegryChanged();
+    emit k1Changed();
+    emit k2Changed();
+    emit k3Changed();
+    emit k4Changed();
+    emit intensityFrameChanged();
+    emit intensityShiftChanged();
+    emit intensitySmoothChanged();
+    emit segmentMinLengthMsChanged();
+    emit fillerMinChanged();
+    emit fillerMaxChanged();
+    emit metricAverageCountChanged();
     emit settingsChanged();
 }
 
@@ -289,19 +520,24 @@ void SettingsApi::clearUserData()
 {
     const QString recordsPath = Settings::getAppDataDir() + QStringLiteral("/data/records");
     QDir recordsDir(recordsPath);
-    if (!recordsDir.exists())
-        return;
-
-    const QFileInfoList files = recordsDir.entryInfoList(QDir::Files);
-    for (const QFileInfo& fileInfo : files) {
-        if (!QFile::remove(fileInfo.absoluteFilePath()))
-            LOG_WARNING() << "Failed to delete recording:" << fileInfo.absoluteFilePath();
+    if (recordsDir.exists()) {
+        const QFileInfoList files = recordsDir.entryInfoList(QDir::Files);
+        for (const QFileInfo& fileInfo : files) {
+            if (!QFile::remove(fileInfo.absoluteFilePath()))
+                LOG_WARNING() << "Failed to delete recording:" << fileInfo.absoluteFilePath();
+        }
     }
 
-    const QFileInfoList dirs = recordsDir.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot);
-    for (const QFileInfo& dirInfo : dirs) {
-        QDir(dirInfo.absoluteFilePath()).removeRecursively();
+    const QString sessionsPath = Settings::getAppDataDir() + QStringLiteral("/data/sessions");
+    QDir sessionsDir(sessionsPath);
+    if (sessionsDir.exists()) {
+        const QFileInfoList files = sessionsDir.entryInfoList({ QStringLiteral("*.json") }, QDir::Files);
+        for (const QFileInfo& fileInfo : files) {
+            if (!QFile::remove(fileInfo.absoluteFilePath()))
+                LOG_WARNING() << "Failed to delete session:" << fileInfo.absoluteFilePath();
+        }
     }
+    emit userDataCleared();
 }
 
 void SettingsApi::applyFont()

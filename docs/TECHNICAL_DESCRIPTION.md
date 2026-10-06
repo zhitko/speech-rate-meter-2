@@ -4,7 +4,7 @@ This document describes the behavior that a reimplementation must reproduce. It 
 
 The application does not recognize words and does not use a speech-recognition model. It estimates speaking tempo from vowel-like intensity peaks.
 
-Section 1.2 is the version 2 recorder. A session stays open in the background, metrics update while speech is still going, and each pause-bounded segment becomes its own record. Sections 2–11 apply to each of those segments, not to one manually stopped take. Section 1.3 stores that session and shows its averages and per-metric charts.
+Section 1.2 is the version 2 recorder. A session stays open in the background, metrics update while speech is still going, and each pause-bounded segment becomes its own record. Sections 2–11 apply to each of those segments. Home and History then join every kept segment from Start to Stop into one result. Section 1.3 stores the segments and shows that joined result, plus per-metric charts.
 
 ## 1. What the user sees
 
@@ -14,7 +14,7 @@ One job is on screen at a time. A drawer (and the bottom bar, when that setting 
 
 | Item | Screen |
 | --- | --- |
-| Home | Start or stop a session, and read the current phrase. |
+| Home | Start or stop a session, and read the session so far. |
 | History | Past sessions. A row opens that session’s charts. |
 | Settings | Phrase length and appearance. Calibration and coefficients stay behind Advanced. |
 | User Guide | How to record. |
@@ -27,24 +27,24 @@ There is no waveform and no playback of recorded speech. The audio is deleted af
 
 ### 1.1 Headline results
 
-All five values are computed on the current segment (section 1.2): the live buffer while it is open, then the same buffer when the segment closes. The UI always analyzes 100% of that buffer, range `[0, 1]`. The samples are not kept after that.
+All five values cover the open session: every phrase kept since Start, plus the phrase still open once it is long enough. They are not the mean of those phrases. Vowel lengths and gap lengths are joined, speech time is added, the longest vowel and gap runs are kept, and section 6 runs once on that collection. A phrase dropped for being too short is left out. After Stop, the numbers stay. Open File is one file and is not joined with a session. Each phrase is still analyzed on its own buffer, range `[0, 1]`. The samples are not kept after that.
 
-Speech rate is the only gauge. Articulation, fillers, pauses, and phrase length are a text list under that number.
+Speech rate is the only gauge. Articulation, fillers, pauses, and speech time are a text list under that number.
 
 | On screen | Meaning | Unit | Display |
 | --- | --- | --- | --- |
-| Speech rate | Pace of this phrase, pauses included | words per minute | Large integer (`toFixed(0)`). The needle clamps to `[Min RS, Max RS]`. The printed number does not. |
+| Speech rate | Pace since Start, pauses inside phrases included | words per minute | Large integer (`toFixed(0)`). The needle clamps to `[Min RS, Max RS]`. The printed number does not. |
 | Articulation | Pace while speech is actually going | words per minute | Integer. No needle. |
-| Fillers | How much of the phrase is stretched sounds | percent | Integer and ` %`, from section 6.5. No needle. |
-| Pauses | Extra gaps inside the phrase | seconds | Two decimals and ` sec`. No needle. |
-| This phrase | Analyzed length of the snapshot | seconds | Integer and ` sec`. This is not the `mm:ss` timer. |
+| Fillers | How much of the speech is stretched sounds | percent | Integer and ` %`, from section 6.5. No needle. |
+| Pauses | Extra gaps inside the kept phrases | seconds | Two decimals and ` sec`. No needle. |
+| Speech | Analyzed speech since Start | seconds | Integer and ` sec`. Silence that ends a phrase is not included. This is not the `mm:ss` timer. |
 
 The gauge is one semicircle, start angle 90°, span 180°, min to max. A legend behind it runs green (`#066832`) → yellow (`#c8b219`) → red (`#b8181f`), labeled Slow / Average / Fast. The numbers under the arc are Min RS and Max RS in `wpm`. Defaults: 70 and 210. If the printed rate sits outside that range, the needle rests on the near end and the number still shows the real value.
 
 Home, from top to bottom:
 
 1. One status line for the current state (section 1.2).
-2. The speech-rate gauge, once a phrase has been long enough to publish. Before that, the same space holds the idle explanation and no gauge.
+2. The speech-rate gauge. Before a phrase has been long enough to publish, and only while the session is on, the needle rests at the middle. The speech-rate number and the four values stay hidden. While idle and nothing has been measured, that space holds the idle explanation and no gauge.
 3. The speech-rate number, then the other four values in a two-column list.
 4. A level meter, visible only while the session is on, so silence and speech are obvious.
 5. A round button: microphone and `Start` when idle, stop icon and `Stop` while the session is on. The timer for the open phrase sits with the status line, as `mm:ss`.
@@ -72,13 +72,13 @@ These lines are the only status copy on Home. Each replaces the previous one.
 
 **Session**
 
-1. Press Start. The microphone opens and stays open. The timer starts at `00:00` and shows the speech length of the current phrase (`mm:ss`), incrementing once per second. It resets when the next phrase starts.
+1. Press Start. When Use Speech Autodetection is on (`autoCalibrate`, default off), the VAD calibration dialog runs first. The user stays quiet for `vadCalibrationDurationMs` (default 2000 ms), the measured threshold is stored, and then the microphone opens and stays open. Speech and pauses are found by the voice-activity detector. When the setting is off, Start opens the microphone immediately and the whole take is the phrase: measurement starts at the first sample, a pause does not close it, and the numbers update once the speech span reaches Min recording time. The choice is fixed for that session. If microphone permission is denied during calibration, the session does not start. The timer starts at `00:00` and shows the speech length of the current phrase (`mm:ss`), incrementing once per second. It resets when the next phrase starts.
 2. Press Stop to end the session. Capture stops. An open phrase is kept or dropped by the min-length rule below.
 3. `RECORD_AUDIO` is requested when the session starts, if it is not already granted. If it is denied, the session does not start.
 
 **Cutting at pauses**
 
-Speech and pause come from the recorder’s voice-activity detector (energy, autocorrelation, or hybrid) and its thresholds. A pause is a run of non-speech that lasts at least Silence Duration (`autoStopSilenceDuration`, default 2000 ms). That pause is a record boundary. It is not the Phrase Pauses number in section 6.4, which is still computed inside one segment.
+When Use Speech Autodetection is on, speech and pause come from the recorder’s voice-activity detector (energy, autocorrelation, or hybrid) and its thresholds. A pause is a run of non-speech that lasts at least Silence Duration (`autoStopSilenceDuration`, default 2000 ms). That pause is a record boundary. It is not the Phrase Pauses number in section 6.4, which is still computed inside one segment. When the setting is off, Silence Duration does not close the take. Max recording time still splits it.
 
 A segment closes in either of these cases:
 
@@ -106,10 +106,11 @@ Both sit in the Recording settings group. The UI edits them in seconds. The file
 
 Section 6 runs on the samples that would be written if the segment closed now: speech so far, plus the leading 300 ms when it exists.
 
-- Nothing is published until the speech span reaches Min recording time. Until then the last finalized result stays on screen. If there is none yet, Home keeps the idle explanation and does not show the gauge.
-- After that, a new snapshot is started at most every 250 ms. If a newer buffer is ready before the previous analysis finishes, the older run is abandoned. Home shows the newest snapshot that finished.
-- When a segment closes, those live numbers are replaced by one final analysis of that buffer. The screen and the session record use that result. The buffer is then released.
-- Speech Duration is that analyzed length. It can disagree with the timer by up to one second, by the 300 ms pads, and by the sample-rate rule in section 3.
+- Nothing is published until the speech span reaches Min recording time. Until then the last finalized result stays on screen. If there is none yet, Home shows the gauge with the needle at the middle and does not show a speech-rate number.
+- After that, a new snapshot is started at most every 250 ms. If a newer buffer is ready before the previous analysis finishes, the older run is abandoned.
+- Each published snapshot is joined with the phrases already kept in this session, then shown. While the phrase is still open, Home shows the arithmetic mean of the last N of those joined snapshots. N is Display average (section 9), default 4. N = 1 shows each snapshot unchanged. Until N snapshots exist, the mean uses the ones received so far. A new phrase starts a new window.
+- When a segment closes, the final analysis of that buffer replaces its live snapshots inside the collection. The screen shows the collection, not the phrase alone and not the display average. The session file stores the phrase. The buffer is then released. Open File is a single analysis and is not averaged or joined.
+- Speech is the sum of analyzed phrase lengths since Start. It can disagree with the timer by up to one second, by the 300 ms pads, and by the sample-rate rule in section 3.
 
 **Files**
 
@@ -132,9 +133,9 @@ Open File (desktop): a WAV dialog starting at `<executable>/data/tests/`. The ch
 
 ### 1.3 Saved history
 
-History is a list of recording sessions. A session is the span from press-record to press-stop in section 1.2. It keeps every segment that was written, not the 250 ms live snapshots and not a segment that was dropped for being shorter than Min recording time. An opened file is not a session.
+History is a list of recording sessions. A session is the span from press-record to press-stop in section 1.2. It keeps every segment that was written, and every change of the five numbers Home actually showed from Start until Stop. A phrase dropped for being shorter than Min recording time is not stored and does not change those numbers. An opened file is not a session.
 
-The session file is created when the first segment is kept. Each later segment is appended as soon as its final analysis finishes, and only then is that segment’s audio deleted. Stopping the session sets the session end time. A session that ends with no kept segments is not listed. Delete user data removes the session files and any scratch WAV still in `data/records/`.
+The session file is created on the first shown change. Each later change is appended when the on-screen labels change. Each kept segment is appended as soon as its final analysis finishes, and only then is that segment’s audio deleted. Stopping the session sets the session end time. A session that ends with no shown changes and no kept segments is not listed. Delete user data removes the session files and any scratch WAV still in `data/records/`.
 
 **File**
 
@@ -176,16 +177,16 @@ Times are local, zero-padded, with milliseconds. The session file has no audio p
 Newest session first. A row is scannable without opening it:
 
 - Title: local date and start–end clock time, such as `5 Oct 2026, 23:10–23:12`.
-- Subtitle: phrase count and average speech rate, such as `8 phrases · 128 wpm`.
-- Third line: the other four averages, in the Home order, with the same rounding as the live labels.
+- Subtitle: phrase count, how many times the on-screen numbers changed, and the session speech rate, such as `8 phrases · 46 updates · 128 wpm`.
+- Third line: the other four session values, in the Home order, with the same rounding as the live labels.
 
-The average is the arithmetic mean of the stored segment values. Each kept segment counts once. An empty list says `No sessions yet. Start on Home and speak.`
+Those five values are section 6 on the joined vowel lengths, gap lengths, and speech durations of the kept phrases. Speech rate therefore weights a longer phrase more than a shorter one. Pauses and fillers use the joined runs, so they are not the mean of the per-phrase numbers. Speech is the sum. Each segment also stores `vowelLengths`, `gapLengths`, `vowelMaxFrames`, `gapMaxFrames`, and the coefficients used (`frame`, `shift`, `smooth`, `minLengthMs`, `degree`, `k1`–`k4`, `fillerMin`, `fillerMax`). The filler percent uses the last phrase’s filler range. If those lists are missing, or the coefficients differ inside one session, the row falls back to a duration-weighted mean of the stored headline values and the sum of the speech durations. An empty list says `No sessions yet. Start on Home and speak.`
 
 **Session charts**
 
-Choosing a row opens that session. The header repeats the list title and the average speech rate. Under it: `Each point is one phrase.`
+Choosing a row opens that session. The header repeats the list title and the five session values. Under it: `Each point is one change shown on Home.`
 
-Five charts follow, speech rate first and taller than the others. Titles are the Home labels. The horizontal axis is segment `endedAt` as clock time, in order. The vertical axis is the stored value (`wpm`, `%`, or `sec`) and is not clamped to the gauge. A session with one phrase is a single point. These are metric charts, not a waveform. Back returns to the list.
+Five charts follow, speech rate first and taller than the others. Titles are the Home labels. Each point is one moment when a printed number changed: speech rate or articulation to the nearest word per minute, fillers to the nearest percent, pauses to two decimals, or speech to the nearest second. The horizontal axis is that moment as clock time, in order. The vertical axis is the value Home was showing (`wpm`, `%`, or `sec`) and is not clamped to the gauge. A session whose labels never changed is a single point. Older files that have no shown changes plot one point per phrase instead. These are metric charts, not a waveform. Back returns to the list.
 
 ## 2. Processing pipeline
 
@@ -484,7 +485,7 @@ The on-screen label is `percent` as an integer followed by ` %`. The gauge value
 
 ## 7. Details screen
 
-Shown only from the recorder, and only while Advanced is checked. Same analysis as the headline numbers: the current segment, live or finalized.
+Shown only from the recorder, and only while Advanced is checked. Same collection Home is showing: the session since Start, or the opened file.
 
 | Label | Value | Format |
 | --- | --- | --- |
@@ -521,7 +522,7 @@ kurtosis = mean(z^4) - 3                    # excess kurtosis
 
 Stored in `settings.ini` beside the executable (desktop) or in application-local data (Android), INI format. The file is read only when the key `date_v3` exists. Until the user changes something, every value below is the in-code default and the file may be absent. The first save writes `date_v3` as an empty `QDate`, which is enough to make later launches load the file.
 
-Advanced is a process-global boolean. It is not written to the INI and resets to off on restart. When it is off, Settings shows General, the three phrase controls, and the speech-rate gauge range. Coefficients, filler calibration, signal-processing parameters, voice-activity calibration, and Open File are hidden, not reset.
+Advanced is a process-global boolean. It is not written to the INI and resets to off on restart. When it is off, Settings shows General, the phrase controls (including Use Speech Autodetection), and the speech-rate gauge range. Display average, coefficients, filler calibration, signal-processing parameters, voice-activity calibration, and Open File are hidden, not reset.
 
 Everyday labels use plain units. Silence Duration is edited in seconds and stored as milliseconds.
 
@@ -530,6 +531,7 @@ Everyday labels use plain units. Silence Duration is edited in seconds and store
 | Shortest phrase | Min recording time | 1 s | Shorter speech is ignored. |
 | Longest phrase | Max recording time | 15 s | A longer stretch is split even without a pause. |
 | Pause | Silence Duration | 2 s | Silence that ends a phrase. |
+| Use Speech Autodetection | `autoCalibrate` | off | After Start, measure background noise, then listen for speech. Off measures the recording from the first sample. |
 | Slow | Min RS | 70 wpm | Left end of the speech-rate gauge. Also copies to articulation min. |
 | Fast | Max RS | 210 wpm | Right end of the speech-rate gauge. Also copies to articulation max. |
 
@@ -539,6 +541,7 @@ Double-valued settings are edited as a spin box with 2 decimal places (internal 
 
 | UI label | Symbol | Default | INI key | Visible without Advanced |
 | --- | --- | --- | --- | --- |
+| Display average | N | 4 | `General/metricAverageCount` | no. Spin range 1…30. While a phrase is open, Home averages the last N joined snapshots. The closing collection is shown as computed. |
 | Mean value degry | `d` | 3 | `speechRate/MeanValueDegry` | no |
 | K1 | `K1` | 0.71 | `speechRate/K1` | no |
 | Min RS | `MinRS` | 70 | `speechRate/Min` | yes, labeled Slow. Also copies to articulation min. |
@@ -691,4 +694,4 @@ Do not implement these for behavioral parity:
 9. `R_s`, `R_a` (with the `R_s` floor), `P`, and `F` match section 6, including the filler remap onto 120…240 → 0…100%.
 10. Gauges clamp; printed wpm and the pause do not, except filler, which is clamped before the percent conversion.
 11. Settings defaults and the Advanced visibility rules match section 9. Advanced itself is not persisted.
-12. Each recording session is a JSON file of its kept segments, without audio. History lists sessions with an unweighted average of the five metrics. Opening a session shows one chart per metric against segment end time.
+12. Each recording session is a JSON file of its kept segments, without audio, plus each change Home showed from Start to Stop. History lists sessions with the five metrics recomputed on all kept phrases together. Opening a session shows those values and one chart per metric against the times the numbers changed.
