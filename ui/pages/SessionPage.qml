@@ -13,9 +13,18 @@ Page {
     property string sessionId: ""
 
     readonly property var sessionApi: ApplicationWindow.window ? ApplicationWindow.window.sessionApi : null
+    readonly property var settingsApi: ApplicationWindow.window ? ApplicationWindow.window.settingsApi : null
     property var sessionData: ({})
     property bool loaded: false
     readonly property bool hasSession: !!(sessionData && sessionData.id)
+    readonly property var segments: sessionData.segments ? sessionData.segments : []
+
+    readonly property real layoutWidth: Math.min(scrollView.availableWidth - AppScale.pagePadding * 2, 1120)
+    readonly property bool wideLayout: layoutWidth >= 680
+
+    function number(key, decimals) {
+        return sessionData[key] !== undefined ? Number(sessionData[key]).toFixed(decimals) : "—"
+    }
 
     function reload() {
         sessionData = sessionApi ? sessionApi.session(sessionId) : ({})
@@ -63,73 +72,87 @@ Page {
         clip: true
 
         ColumnLayout {
-            width: Math.max(0, scrollView.availableWidth - AppScale.pagePadding * 2)
-            x: AppScale.pagePadding
-            spacing: 16
+            width: root.layoutWidth
+            x: (scrollView.availableWidth - width) / 2
+            spacing: AppScale.pageSpacing
 
-            Frame {
+            Rectangle {
                 Layout.fillWidth: true
                 Layout.topMargin: AppScale.pagePadding
-                padding: 16
-                background: Rectangle {
-                    color: Theme.surfaceContainerLow(Material.theme)
-                    radius: 16
-                }
+                implicitHeight: summary.implicitHeight + 32
+                radius: Theme.shapeExtraLarge
+                color: Theme.surfaceContainerLow(Material.theme)
 
-                ColumnLayout {
-                    width: parent.width
-                    spacing: 8
+                GridLayout {
+                    id: summary
+                    anchors.fill: parent
+                    anchors.margins: 16
+                    columns: root.wideLayout ? 2 : 1
+                    columnSpacing: 16
+                    rowSpacing: 12
 
-                    Label {
+                    SpeechRateGauge {
                         Layout.fillWidth: true
-                        wrapMode: Text.Wrap
-                        text: sessionData.title ? sessionData.title : ""
-                        font.pixelSize: AppScale.fs(20)
-                        font.bold: true
-                        color: Theme.onSurface(Material.theme)
-                    }
-
-                    Label {
-                        Layout.fillWidth: true
-                        text: qsTr("%1 wpm").arg(sessionData.speechRate !== undefined ? Number(sessionData.speechRate).toFixed(0) : "0")
-                        font.pixelSize: AppScale.fs(28)
-                        font.bold: true
-                        color: Theme.onSurface(Material.theme)
+                        Layout.preferredWidth: root.wideLayout ? 1 : -1
+                        Layout.preferredHeight: root.wideLayout ? 240 : Math.max(190, Math.min(root.layoutWidth * 0.55, 260))
+                        hasValue: sessionData.speechRate !== undefined
+                        value: hasValue ? Number(sessionData.speechRate) : 0
+                        minimum: settingsApi ? settingsApi.slowWpm : 70
+                        maximum: settingsApi ? settingsApi.fastWpm : 210
                     }
 
                     GridLayout {
                         Layout.fillWidth: true
+                        Layout.preferredWidth: root.wideLayout ? 1 : -1
+                        Layout.alignment: Qt.AlignVCenter
                         columns: 2
-                        columnSpacing: 16
-                        rowSpacing: 8
+                        columnSpacing: AppScale.isCompact ? 8 : 12
+                        rowSpacing: AppScale.isCompact ? 8 : 12
 
-                        Label { text: qsTr("Articulation"); color: Theme.onSurfaceVariant(Material.theme); font.pixelSize: AppScale.fs(15) }
-                        Label {
-                            text: (sessionData.articulationRate !== undefined ? Number(sessionData.articulationRate).toFixed(0) : "0") + " " + qsTr("wpm")
-                            color: Theme.onSurface(Material.theme)
-                            font.pixelSize: AppScale.fs(15)
-                            Layout.alignment: Qt.AlignRight
+                        MetricTile {
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            Layout.preferredWidth: 1
+                            color: Theme.surfaceContainer(Material.theme)
+                            icon: Icons.faCommentDots
+                            label: qsTr("Articulation")
+                            value: root.number("articulationRate", 0)
+                            unit: qsTr("wpm")
+                            accent: Theme.primary(Material.theme)
                         }
-                        Label { text: qsTr("Fillers"); color: Theme.onSurfaceVariant(Material.theme); font.pixelSize: AppScale.fs(15) }
-                        Label {
-                            text: (sessionData.fillerPercent !== undefined ? Number(sessionData.fillerPercent).toFixed(0) : "0") + " %"
-                            color: Theme.onSurface(Material.theme)
-                            font.pixelSize: AppScale.fs(15)
-                            Layout.alignment: Qt.AlignRight
+                        MetricTile {
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            Layout.preferredWidth: 1
+                            color: Theme.surfaceContainer(Material.theme)
+                            icon: Icons.faWaveSquare
+                            label: qsTr("Fillers")
+                            value: root.number("fillerPercent", 0)
+                            unit: "%"
+                            progress: sessionData.fillerPercent !== undefined ? Number(sessionData.fillerPercent) / 100 : 0
+                            accent: Theme.tertiary(Material.theme)
                         }
-                        Label { text: qsTr("Pauses"); color: Theme.onSurfaceVariant(Material.theme); font.pixelSize: AppScale.fs(15) }
-                        Label {
-                            text: (sessionData.phrasePauses !== undefined ? Number(sessionData.phrasePauses).toFixed(2) : "0.00") + " " + qsTr("sec")
-                            color: Theme.onSurface(Material.theme)
-                            font.pixelSize: AppScale.fs(15)
-                            Layout.alignment: Qt.AlignRight
+                        MetricTile {
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            Layout.preferredWidth: 1
+                            color: Theme.surfaceContainer(Material.theme)
+                            icon: Icons.faPause
+                            label: qsTr("Pauses")
+                            value: root.number("phrasePauses", 2)
+                            unit: qsTr("sec")
+                            accent: Theme.secondary(Material.theme)
                         }
-                        Label { text: qsTr("Speech"); color: Theme.onSurfaceVariant(Material.theme); font.pixelSize: AppScale.fs(15) }
-                        Label {
-                            text: (sessionData.speechDuration !== undefined ? Number(sessionData.speechDuration).toFixed(0) : "0") + " " + qsTr("sec")
-                            color: Theme.onSurface(Material.theme)
-                            font.pixelSize: AppScale.fs(15)
-                            Layout.alignment: Qt.AlignRight
+                        MetricTile {
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            Layout.preferredWidth: 1
+                            color: Theme.surfaceContainer(Material.theme)
+                            icon: Icons.faStopwatch
+                            label: qsTr("Speech")
+                            value: root.number("speechDuration", 0)
+                            unit: qsTr("sec")
+                            accent: Theme.zoneColor(0, Material.theme)
                         }
                     }
                 }
@@ -137,52 +160,74 @@ Page {
 
             Label {
                 Layout.fillWidth: true
+                wrapMode: Text.Wrap
                 text: qsTr("Each point is one change shown on Home.")
                 font.pixelSize: AppScale.fs(14)
                 color: Theme.onSurfaceVariant(Material.theme)
             }
 
-            MetricChart {
-                Layout.fillWidth: true
-                Layout.preferredHeight: 240
-                chartTitle: qsTr("Speech rate")
-                unit: qsTr("wpm")
-                decimals: 0
-                valueKey: "speechRate"
-                points: sessionData.segments ? sessionData.segments : []
-            }
-            MetricChart {
-                Layout.fillWidth: true
-                chartTitle: qsTr("Articulation")
-                unit: qsTr("wpm")
-                decimals: 0
-                valueKey: "articulationRate"
-                points: sessionData.segments ? sessionData.segments : []
-            }
-            MetricChart {
-                Layout.fillWidth: true
-                chartTitle: qsTr("Fillers")
-                unit: "%"
-                decimals: 0
-                valueKey: "fillerPercent"
-                points: sessionData.segments ? sessionData.segments : []
-            }
-            MetricChart {
-                Layout.fillWidth: true
-                chartTitle: qsTr("Pauses")
-                unit: qsTr("sec")
-                decimals: 2
-                valueKey: "phrasePauses"
-                points: sessionData.segments ? sessionData.segments : []
-            }
-            MetricChart {
+            GridLayout {
                 Layout.fillWidth: true
                 Layout.bottomMargin: AppScale.pagePadding
-                chartTitle: qsTr("Speech")
-                unit: qsTr("sec")
-                decimals: 0
-                valueKey: "speechDuration"
-                points: sessionData.segments ? sessionData.segments : []
+                columns: root.wideLayout ? 2 : 1
+                columnSpacing: AppScale.pageSpacing
+                rowSpacing: AppScale.pageSpacing
+
+                MetricChart {
+                    Layout.fillWidth: true
+                    Layout.preferredWidth: 1
+                    Layout.columnSpan: root.wideLayout ? 2 : 1
+                    Layout.preferredHeight: 260
+                    chartTitle: qsTr("Speech rate")
+                    icon: Icons.faGaugeHigh
+                    unit: qsTr("wpm")
+                    decimals: 0
+                    valueKey: "speechRate"
+                    points: root.segments
+                }
+                MetricChart {
+                    Layout.fillWidth: true
+                    Layout.preferredWidth: 1
+                    chartTitle: qsTr("Articulation")
+                    icon: Icons.faCommentDots
+                    unit: qsTr("wpm")
+                    decimals: 0
+                    valueKey: "articulationRate"
+                    points: root.segments
+                }
+                MetricChart {
+                    Layout.fillWidth: true
+                    Layout.preferredWidth: 1
+                    chartTitle: qsTr("Fillers")
+                    icon: Icons.faWaveSquare
+                    lineColor: Theme.tertiary(Material.theme)
+                    unit: "%"
+                    decimals: 0
+                    valueKey: "fillerPercent"
+                    points: root.segments
+                }
+                MetricChart {
+                    Layout.fillWidth: true
+                    Layout.preferredWidth: 1
+                    chartTitle: qsTr("Pauses")
+                    icon: Icons.faPause
+                    lineColor: Theme.secondary(Material.theme)
+                    unit: qsTr("sec")
+                    decimals: 2
+                    valueKey: "phrasePauses"
+                    points: root.segments
+                }
+                MetricChart {
+                    Layout.fillWidth: true
+                    Layout.preferredWidth: 1
+                    chartTitle: qsTr("Speech")
+                    icon: Icons.faStopwatch
+                    lineColor: Theme.zoneColor(0, Material.theme)
+                    unit: qsTr("sec")
+                    decimals: 0
+                    valueKey: "speechDuration"
+                    points: root.segments
+                }
             }
         }
     }

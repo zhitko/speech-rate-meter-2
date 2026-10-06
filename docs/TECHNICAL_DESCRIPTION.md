@@ -29,25 +29,25 @@ There is no waveform and no playback of recorded speech. The audio is deleted af
 
 All five values cover the open session: every phrase kept since Start, plus the phrase still open once it is long enough. They are not the mean of those phrases. Vowel lengths and gap lengths are joined, speech time is added, the longest vowel and gap runs are kept, and section 6 runs once on that collection. A phrase dropped for being too short is left out. After Stop, the numbers stay. Open File is one file and is not joined with a session. Each phrase is still analyzed on its own buffer, range `[0, 1]`. The samples are not kept after that.
 
-Speech rate is the only gauge. Articulation, fillers, pauses, and speech time are a text list under that number.
+Speech rate is the only gauge. Articulation, fillers, pauses, and speech time are four tiles next to it.
 
 | On screen | Meaning | Unit | Display |
 | --- | --- | --- | --- |
-| Speech rate | Pace since Start, pauses inside phrases included | words per minute | Large integer (`toFixed(0)`). The needle clamps to `[Min RS, Max RS]`. The printed number does not. |
-| Articulation | Pace while speech is actually going | words per minute | Integer. No needle. |
-| Fillers | How much of the speech is stretched sounds | percent | Integer and ` %`, from section 6.5. No needle. |
-| Pauses | Extra gaps inside the kept phrases | seconds | Two decimals and ` sec`. No needle. |
+| Speech rate | Pace since Start, pauses inside phrases included | words per minute | Large integer (`toFixed(0)`). The gauge marker clamps to `[Min RS, Max RS]`. The printed number does not. |
+| Articulation | Pace while speech is actually going | words per minute | Integer. No gauge. |
+| Fillers | How much of the speech is stretched sounds | percent | Integer and ` %`, from section 6.5, with a thin bar for the same percent. |
+| Pauses | Extra gaps inside the kept phrases | seconds | Two decimals and ` sec`. No gauge. |
 | Speech | Analyzed speech since Start | seconds | Integer and ` sec`. Silence that ends a phrase is not included. This is not the `mm:ss` timer. |
 
-The gauge is one semicircle, start angle 90°, span 180°, min to max. A legend behind it runs green (`#066832`) → yellow (`#c8b219`) → red (`#b8181f`), labeled Slow / Average / Fast. The numbers under the arc are Min RS and Max RS in `wpm`. Defaults: 70 and 210. If the printed rate sits outside that range, the needle rests on the near end and the number still shows the real value.
+The gauge is a 240° arc open at the bottom, min at the lower left and max at the lower right. It is split into three equal zones, Slow / Average / Fast, drawn green → amber → red (light theme `#1E8E5A`, `#D99A00`, `#D2382F`; dark theme `#5DD39E`, `#F4C04E`, `#FF8A80`). Each zone is a faint track that fills in full color up to the value, and a round marker sits at the value. The number, `wpm`, and the name of the current zone are in the middle of the arc. The value animates to each new update. The numbers under the two ends are Min RS and Max RS. Defaults: 70 and 210. If the printed rate sits outside that range, the marker rests on the near end and the number still shows the real value.
 
 Home, from top to bottom:
 
-1. One status line for the current state (section 1.2).
-2. The speech-rate gauge. Before a phrase has been long enough to publish, and only while the session is on, the needle rests at the middle. The speech-rate number and the four values stay hidden. While idle and nothing has been measured, that space holds the idle explanation and no gauge.
-3. The speech-rate number, then the other four values in a two-column list.
-4. A level meter, visible only while the session is on, so silence and speech are obvious.
-5. A round button: microphone and `Start` when idle, stop icon and `Stop` while the session is on. The timer for the open phrase sits with the status line, as `mm:ss`.
+1. The gauge card. A chip in its corner names the state (Ready, Listening, Too short, Measuring, Not saved, Microphone blocked); while the session is on it has a blinking dot and the open phrase timer, as `mm:ss`, sits on the right. The gauge is always shown. Until something has been measured the arc is empty and the number reads `– –`. Under the gauge, one line explains the current state (section 1.2).
+2. Four tiles: Articulation, Fillers, Pauses, Speech. They show `—` until something has been measured.
+3. A round button: microphone and `Start` when idle, stop icon and `Stop` while the session is on. While the session is on, a halo around it grows with the microphone level, so silence and speech are obvious.
+
+The layout follows the window. When the page is at least 720 px wide, or landscape and at least 560 px wide, the gauge card is on the left and the tiles and button are on the right. Otherwise everything is one column and the button is pinned to the bottom of the page, so it stays reachable on a phone while the rest scrolls. Content is capped at 1120 px wide and centered.
 
 Details is inside Advanced. It opens the intermediate statistics in section 7 for the same collection represented on Home, using the technical names from that section. During a live phrase, these fields use the same last-N snapshot average as the headline values; finalized and Open File results do not. Open File is an Advanced action on desktop only. There is no Save button.
 
@@ -106,7 +106,7 @@ Both sit in the Recording settings group. The UI edits them in seconds. The file
 
 Section 6 runs on the samples that would be written if the segment closed now: speech so far, plus the leading 300 ms when it exists.
 
-- Nothing is published until the speech span reaches Min recording time. Until then the last finalized result stays on screen. If there is none yet, Home shows the gauge with the needle at the middle and does not show a speech-rate number.
+- Nothing is published until the speech span reaches Min recording time. Until then the last finalized result stays on screen. If there is none yet, Home shows the gauge with an empty arc and `– –` instead of a speech-rate number.
 - After that, a new snapshot is started at most every 250 ms. If a newer buffer is ready before the previous analysis finishes, the older run is abandoned.
 - Each published snapshot is joined with the phrases already kept in this session, then shown. While the phrase is still open, Home shows the arithmetic mean of the last N of those joined snapshots. N is Display average (section 9), default 4. N = 1 shows each snapshot unchanged. Until N snapshots exist, the mean uses the ones received so far. A new phrase starts a new window.
 - When a segment closes, the final analysis of that buffer replaces its live snapshots inside the collection. The screen shows the collection, not the phrase alone and not the display average. The session file stores the phrase. The buffer is then released. Open File is a single analysis and is not averaged or joined.
@@ -459,7 +459,7 @@ R_s = K1 * N_v * 60 / T_s        # words per minute
 
 Printed value: `round-half-away-from-zero` via `toFixed(0)` (JavaScript, not C++ truncation).
 
-Gauge needle: clamp `R_s` into `[MinRS, MaxRS]`, default `[70, 210]`.
+Gauge marker: clamp `R_s` into `[MinRS, MaxRS]`, default `[70, 210]`.
 
 ### 6.3 Articulation rate
 
@@ -472,7 +472,7 @@ If `R_s > R_a`, the function returns `R_s`. Articulation rate is never shown bel
 
 If `N_c` is 0 the denominator is just `T_v`. If that is also 0 the current code divides by zero.
 
-The articulation value is printed as an integer only; there is no articulation gauge. Legacy articulation min/max settings are still synchronized with Min/Max RS but do not control a visible needle.
+The articulation value is printed as an integer only; there is no articulation gauge. Legacy articulation min/max settings are still synchronized with Min/Max RS but do not control a visible gauge.
 
 ### 6.4 Phrase pauses
 
@@ -564,6 +564,17 @@ Everyday labels use plain units. Silence Duration is edited in seconds and store
 General (language, theme, color, font size, navigation bar) stays visible. Delete user data stays at the bottom of General, asks for confirmation, and says that it deletes saved sessions. Recorded audio is already gone.
 
 Double-valued settings are edited as a spin box with 2 decimal places (internal integer = value × 100) and stored as the real coefficient.
+
+With Advanced on, the extra settings are shown as numbered cards in the order a phrase is processed. Each card names its stage and says in one line what it does:
+
+| Stage | Card | Settings |
+| --- | --- | --- |
+| 1 | Speech detection | VAD Method, Energy Threshold, Autocorr. Threshold, Autocorr. Threshold K, Autocorr Min/Max F0, Calibrate. Only used when Use Speech Autodetection is on. Energy shows only the energy threshold, Autocorrelation shows only the autocorrelation fields, Hybrid shows both. |
+| 2 | Intensity | Frame, Shift, Smooth Frame (section 4) |
+| 3 | Vowel detection | Segment length limit (section 5.1) |
+| 4 | Statistics | Mean value degree (section 6.1) |
+| 5 | Metrics | K1 under Speech rate, K2 under Articulation, K3 under Pauses, K4 / Min FS / Max FS under Fillers (sections 6.2–6.5) |
+| 6 | Display | Display average |
 
 | UI label | Symbol | Default | INI key | Visible without Advanced |
 | --- | --- | --- | --- | --- |
@@ -716,6 +727,6 @@ Do not implement these for behavioral parity:
 7. Means on the details screen and in the formulas are power means of degree 3, not arithmetic means.
 8. Even-count medians use integer division.
 9. `R_s`, `R_a` (with the `R_s` floor), `P`, and `F` match section 6, including the filler remap onto 120…240 → 0…100%.
-10. The single speech-rate gauge clamps its needle; printed wpm and the pause do not. Filler is clamped before percent conversion.
+10. The single speech-rate gauge clamps its marker; printed wpm and the pause do not. Filler is clamped before percent conversion.
 11. Settings defaults and the Advanced visibility rules match section 9. Advanced itself is not persisted.
 12. Each recording session is a JSON file of its kept segments, without audio, plus each change Home showed from Start to Stop. History lists sessions with the five metrics recomputed on all kept phrases together. Opening a session shows those values and one chart per metric against the times the numbers changed.

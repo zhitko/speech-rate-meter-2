@@ -52,24 +52,60 @@ Page {
     }
 
     ListView {
+        id: listView
+        readonly property real sideMargin: Math.max(AppScale.pagePadding, (width - 880) / 2)
         anchors.fill: parent
         visible: sessions.length > 0
         model: sessions
         clip: true
-        spacing: 8
+        spacing: AppScale.listSpacing
         topMargin: AppScale.pagePadding
         bottomMargin: AppScale.pagePadding
-        leftMargin: AppScale.pagePadding
-        rightMargin: AppScale.pagePadding
+        leftMargin: sideMargin
+        rightMargin: sideMargin
 
         delegate: ItemDelegate {
-            width: ListView.view.width - AppScale.pagePadding * 2
-            implicitHeight: textColumn.implicitHeight + 20
+            id: sessionDelegate
+            readonly property color zoneColor: Theme.zoneColor(
+                Theme.zoneForValue(Number(modelData.speechRate),
+                                   settingsApi ? settingsApi.slowWpm : 70,
+                                   settingsApi ? settingsApi.fastWpm : 210),
+                Material.theme)
+            width: ListView.view.width - listView.sideMargin * 2
+            implicitHeight: Math.max(textColumn.implicitHeight, rateBadge.height) + 28
+            leftPadding: 14
+            rightPadding: 14
 
             Accessible.name: qsTr("Open session %1").arg(modelData.title)
 
             contentItem: RowLayout {
-                spacing: 12
+                spacing: 14
+
+                Rectangle {
+                    id: rateBadge
+                    Layout.alignment: Qt.AlignVCenter
+                    implicitWidth: AppScale.isCompact ? 56 : 64
+                    implicitHeight: implicitWidth
+                    radius: width / 2
+                    color: Qt.alpha(sessionDelegate.zoneColor, 0.16)
+
+                    Column {
+                        anchors.centerIn: parent
+                        Text {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            text: Number(modelData.speechRate).toFixed(0)
+                            font.pixelSize: AppScale.fs(AppScale.isCompact ? 17 : 19)
+                            font.weight: Font.Bold
+                            color: sessionDelegate.zoneColor
+                        }
+                        Text {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            text: qsTr("wpm")
+                            font.pixelSize: AppScale.fs(10)
+                            color: sessionDelegate.zoneColor
+                        }
+                    }
+                }
 
                 Column {
                     id: textColumn
@@ -80,15 +116,15 @@ Page {
                         text: modelData.title
                         elide: Text.ElideRight
                         font.pixelSize: AppScale.fs(16)
-                        font.bold: true
+                        font.weight: Font.DemiBold
                         color: Theme.onSurface(Material.theme)
                     }
                     Label {
                         width: parent.width
-                        text: qsTr("%1 · %2 · %3 wpm")
+                        text: qsTr("%1 · %2")
                             .arg(qsTr("%n phrases", "", modelData.phraseCount))
                             .arg(qsTr("%n updates", "", modelData.updateCount))
-                            .arg(Number(modelData.speechRate).toFixed(0))
+                        elide: Text.ElideRight
                         font.pixelSize: AppScale.fs(14)
                         color: Theme.onSurface(Material.theme)
                     }
@@ -112,8 +148,12 @@ Page {
             }
 
             background: Rectangle {
-                radius: 12
-                color: parent.hovered ? Theme.surfaceContainerHigh(Material.theme) : Theme.surfaceContainerLow(Material.theme)
+                radius: Theme.shapeLarge
+                color: sessionDelegate.down ? Theme.surfaceContainerHighest(Material.theme)
+                     : (sessionDelegate.hovered ? Theme.surfaceContainerHigh(Material.theme)
+                                                : Theme.surfaceContainerLow(Material.theme))
+                border.width: sessionDelegate.visualFocus ? 2 : 0
+                border.color: Theme.primary(Material.theme)
             }
 
             onClicked: {

@@ -435,6 +435,20 @@ Item {
         return theme === Material.Dark ? darkTheme.success : lightTheme.success;
     }
 
+    // Speech-rate zones: 0 = Slow, 1 = Average, 2 = Fast.
+    readonly property var zoneColorsLight: ["#1E8E5A", "#D99A00", "#D2382F"]
+    readonly property var zoneColorsDark: ["#5DD39E", "#F4C04E", "#FF8A80"]
+    function zoneColor(zone, theme) {
+        let colors = theme === Material.Dark ? zoneColorsDark : zoneColorsLight;
+        return colors[Math.max(0, Math.min(2, zone))];
+    }
+    function zoneForValue(value, minimum, maximum) {
+        if (!(maximum > minimum))
+            return 1;
+        let fraction = (value - minimum) / (maximum - minimum);
+        return Math.max(0, Math.min(2, Math.floor(fraction * 3)));
+    }
+
     function background(theme) {
         return theme === Material.Dark ? darkTheme.background : lightTheme.background;
     }

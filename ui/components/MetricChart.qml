@@ -1,25 +1,37 @@
 import QtQuick
+import QtQuick.Layouts
 import QtQuick.Controls.Material 6.8
 import "../utils"
 
-Item {
+Rectangle {
     id: root
     property string chartTitle: ""
     property string unit: ""
     property string valueKey: "speechRate"
     property int decimals: 0
     property var points: []
+    property string icon: ""
+    property color lineColor: Theme.primary(Material.theme)
 
     readonly property color axisColor: Theme.outlineVariant(Material.theme)
     readonly property color labelColor: Theme.onSurfaceVariant(Material.theme)
-    readonly property color lineColor: Theme.primary(Material.theme)
     readonly property int paintTheme: Material.theme
+    readonly property var values: {
+        var result = []
+        for (var i = 0; i < points.length; ++i) {
+            var point = points[i]
+            var value = point ? Number(point[valueKey]) : NaN
+            if (isFinite(value))
+                result.push({ value: value, clock: point.clock ? point.clock : "" })
+        }
+        return result
+    }
 
-    implicitHeight: 180
+    implicitHeight: 240
+    radius: Theme.shapeExtraLarge
+    color: Theme.surfaceContainerLow(Material.theme)
 
-    onPointsChanged: canvas.requestPaint()
-    onValueKeyChanged: canvas.requestPaint()
-    onDecimalsChanged: canvas.requestPaint()
+    onValuesChanged: canvas.requestPaint()
     onUnitChanged: canvas.requestPaint()
     onWidthChanged: canvas.requestPaint()
     onHeightChanged: canvas.requestPaint()
@@ -28,30 +40,57 @@ Item {
     onLineColorChanged: canvas.requestPaint()
     onPaintThemeChanged: canvas.requestPaint()
 
-    function hasRenderablePoints() {
-        for (var i = 0; i < points.length; ++i) {
-            var value = points[i] ? Number(points[i][valueKey]) : NaN
-            if (isFinite(value))
-                return true
-        }
-        return false
-    }
-
-    Text {
-        id: titleLabel
+    RowLayout {
+        id: header
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: parent.top
-        text: root.chartTitle
-        color: Theme.onSurface(Material.theme)
-        font.pixelSize: AppScale.fs(16)
-        font.bold: true
+        anchors.margins: 16
+        spacing: 8
+
+        Rectangle {
+            visible: root.icon.length > 0
+            implicitWidth: 28
+            implicitHeight: 28
+            radius: Theme.shapeSmall
+            color: Qt.alpha(root.lineColor, 0.14)
+
+            Text {
+                anchors.centerIn: parent
+                text: root.icon
+                font.family: Icons.familySolid
+                font.weight: Font.Black
+                font.pixelSize: AppScale.fs(13)
+                color: root.lineColor
+            }
+        }
+
+        Text {
+            Layout.fillWidth: true
+            text: root.chartTitle
+            elide: Text.ElideRight
+            color: Theme.onSurface(Material.theme)
+            font.pixelSize: AppScale.fs(16)
+            font.weight: Font.DemiBold
+        }
+
+        Text {
+            visible: root.values.length > 0
+            text: root.values.length > 0
+                  ? root.values[root.values.length - 1].value.toFixed(root.decimals)
+                    + (root.unit.length > 0 ? " " + root.unit : "")
+                  : ""
+            color: Theme.onSurface(Material.theme)
+            font.pixelSize: AppScale.fs(15)
+            font.weight: Font.DemiBold
+            font.features: { "tnum": 1 }
+        }
     }
 
     Text {
         anchors.centerIn: canvas
         width: Math.max(0, canvas.width - 32)
-        visible: !root.hasRenderablePoints()
+        visible: root.values.length === 0
         text: qsTr("No measurements to chart")
         horizontalAlignment: Text.AlignHCenter
         wrapMode: Text.Wrap
@@ -61,35 +100,28 @@ Item {
 
     Canvas {
         id: canvas
-        anchors.top: titleLabel.bottom
-        anchors.topMargin: 8
+        anchors.top: header.bottom
+        anchors.topMargin: 12
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: parent.bottom
+        anchors.leftMargin: 12
+        anchors.rightMargin: 16
+        anchors.bottomMargin: 12
 
         onPaint: {
             var ctx = getContext("2d")
+            ctx.reset()
             ctx.clearRect(0, 0, width, height)
-            var values = []
-            var clocks = []
-            for (var i = 0; i < root.points.length; ++i) {
-                var point = root.points[i]
-                if (!point)
-                    continue
-                var value = Number(point[root.valueKey])
-                if (!isFinite(value))
-                    continue
-                values.push(value)
-                clocks.push(point.clock ? point.clock : "")
-            }
-            if (values.length === 0)
+            var data = root.values
+            if (data.length === 0)
                 return
 
-            var minValue = values[0]
-            var maxValue = values[0]
-            for (var n = 1; n < values.length; ++n) {
-                minValue = Math.min(minValue, values[n])
-                maxValue = Math.max(maxValue, values[n])
+            var minValue = data[0].value
+            var maxValue = data[0].value
+            for (var n = 1; n < data.length; ++n) {
+                minValue = Math.min(minValue, data[n].value)
+                maxValue = Math.max(maxValue, data[n].value)
             }
             var pad = root.decimals > 0 ? Math.pow(10, -root.decimals) : 1
             if (minValue === maxValue) {
@@ -97,73 +129,95 @@ Item {
                 maxValue += pad
             }
 
-            var left = root.unit.length > 0 ? (root.decimals > 0 ? 86 : 72)
-                                             : (root.decimals > 0 ? 58 : 44)
-            var right = 12
-            var top = 8
-            var bottom = 46
-            var plotWidth = Math.max(1, width - left - right)
+            var labelSize = AppScale.fs(11)
+            ctx.font = labelSize + "px sans-serif"
+            var unitSuffix = root.unit.length > 0 ? " " + root.unit : ""
+            var maxLabel = maxValue.toFixed(root.decimals) + unitSuffix
+            var minLabel = minValue.toFixed(root.decimals) + unitSuffix
+            var left = Math.max(ctx.measureText(maxLabel).width, ctx.measureText(minLabel).width) + 10
+            var top = Math.max(labelSize / 2, 6) + 2
+            var bottom = labelSize + 10
+            var plotWidth = Math.max(1, width - left)
             var plotHeight = Math.max(1, height - top - bottom)
+
+            var inset = 6
+            function px(index) {
+                return left + inset + (data.length === 1 ? (plotWidth - 2 * inset) / 2
+                                                         : index / (data.length - 1) * (plotWidth - 2 * inset))
+            }
+            function py(value) {
+                return top + (1 - (value - minValue) / (maxValue - minValue)) * plotHeight
+            }
 
             ctx.strokeStyle = root.axisColor
             ctx.lineWidth = 1
-            ctx.globalAlpha = 0.55
-            for (var g = 1; g <= 3; ++g) {
-                var gy = top + (g / 4) * plotHeight
+            for (var g = 0; g <= 3; ++g) {
+                var gy = Math.round(top + g / 3 * plotHeight) + 0.5
+                ctx.globalAlpha = g === 3 ? 1 : 0.6
                 ctx.beginPath()
                 ctx.moveTo(left, gy)
                 ctx.lineTo(left + plotWidth, gy)
                 ctx.stroke()
             }
             ctx.globalAlpha = 1
-            ctx.beginPath()
-            ctx.moveTo(left, top)
-            ctx.lineTo(left, top + plotHeight)
-            ctx.lineTo(left + plotWidth, top + plotHeight)
-            ctx.stroke()
 
             ctx.fillStyle = root.labelColor
-            ctx.font = AppScale.fs(11) + "px sans-serif"
             ctx.textAlign = "right"
             ctx.textBaseline = "middle"
-            var unitSuffix = root.unit.length > 0 ? " " + root.unit : ""
-            ctx.fillText(maxValue.toFixed(root.decimals) + unitSuffix, left - 6, top)
-            ctx.fillText(minValue.toFixed(root.decimals) + unitSuffix, left - 6, top + plotHeight)
+            ctx.fillText(maxLabel, left - 8, top)
+            ctx.fillText(minLabel, left - 8, top + plotHeight)
 
-            ctx.strokeStyle = root.lineColor
-            ctx.fillStyle = root.lineColor
-            ctx.lineWidth = 2
-            ctx.beginPath()
-            for (var p = 0; p < values.length; ++p) {
-                var x = left + (values.length === 1 ? plotWidth / 2 : (p / (values.length - 1)) * plotWidth)
-                var y = top + (1 - (values[p] - minValue) / (maxValue - minValue)) * plotHeight
-                if (p === 0)
-                    ctx.moveTo(x, y)
-                else
-                    ctx.lineTo(x, y)
-            }
-            if (values.length > 1)
-                ctx.stroke()
-            for (var d = 0; d < values.length; ++d) {
-                var dx = left + (values.length === 1 ? plotWidth / 2 : (d / (values.length - 1)) * plotWidth)
-                var dy = top + (1 - (values[d] - minValue) / (maxValue - minValue)) * plotHeight
+            if (data.length > 1) {
+                var gradient = ctx.createLinearGradient(0, top, 0, top + plotHeight)
+                gradient.addColorStop(0, Qt.alpha(root.lineColor, 0.28))
+                gradient.addColorStop(1, Qt.alpha(root.lineColor, 0.0))
                 ctx.beginPath()
-                ctx.arc(dx, dy, 3.5, 0, Math.PI * 2)
+                ctx.moveTo(px(0), top + plotHeight)
+                for (var a = 0; a < data.length; ++a)
+                    ctx.lineTo(px(a), py(data[a].value))
+                ctx.lineTo(px(data.length - 1), top + plotHeight)
+                ctx.closePath()
+                ctx.fillStyle = gradient
                 ctx.fill()
+
+                ctx.beginPath()
+                for (var p = 0; p < data.length; ++p) {
+                    if (p === 0)
+                        ctx.moveTo(px(p), py(data[p].value))
+                    else
+                        ctx.lineTo(px(p), py(data[p].value))
+                }
+                ctx.strokeStyle = root.lineColor
+                ctx.lineWidth = 2.5
+                ctx.lineJoin = "round"
+                ctx.lineCap = "round"
+                ctx.stroke()
+            }
+
+            var showAll = data.length <= 40
+            for (var d = 0; d < data.length; ++d) {
+                var last = d === data.length - 1
+                if (!showAll && !last)
+                    continue
+                ctx.beginPath()
+                ctx.arc(px(d), py(data[d].value), last ? 5 : 3.5, 0, Math.PI * 2)
+                ctx.fillStyle = last ? root.lineColor : root.color
+                ctx.fill()
+                ctx.lineWidth = 2
+                ctx.strokeStyle = last ? root.color : root.lineColor
+                ctx.stroke()
             }
 
             ctx.fillStyle = root.labelColor
-            ctx.textBaseline = "top"
-            if (clocks.length > 0) {
-                ctx.textAlign = "left"
-                ctx.fillText(clocks[0], left, top + plotHeight + 6)
+            ctx.textBaseline = "bottom"
+            if (data.length > 0) {
+                ctx.textAlign = data.length === 1 ? "center" : "left"
+                ctx.fillText(data[0].clock, px(0), height)
             }
-            if (clocks.length > 1) {
+            if (data.length > 1) {
                 ctx.textAlign = "right"
-                ctx.fillText(clocks[clocks.length - 1], left + plotWidth, top + plotHeight + 6)
+                ctx.fillText(data[data.length - 1].clock, left + plotWidth, height)
             }
-            ctx.textAlign = "center"
-            ctx.fillText(qsTr("Clock time"), left + plotWidth / 2, top + plotHeight + 22)
         }
     }
 }

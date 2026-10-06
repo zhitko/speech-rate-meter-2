@@ -14,6 +14,8 @@ ApplicationWindow {
     id: window
     width: AppScale.designWidth * AppScale.factor
     height: AppScale.designHeight * AppScale.factor
+    minimumWidth: 320 * AppScale.factor
+    minimumHeight: 480 * AppScale.factor
     visible: true
     title: qsTr("Speech Rate Meter 2")
 
@@ -104,9 +106,10 @@ ApplicationWindow {
     }
 
     Material.theme: window.theme
-    Material.primary: Theme.primary(window.theme)
-    Material.accent: Theme.accent(window.theme)
-    Material.background: Theme.background(window.theme)
+    // window.theme may be Material.System; Material.theme is the resolved Light/Dark value.
+    Material.primary: Theme.primary(Material.theme)
+    Material.accent: Theme.accent(Material.theme)
+    Material.background: Theme.background(Material.theme)
 
     Item {
         id: scaledRoot
@@ -385,6 +388,8 @@ ApplicationWindow {
                         contentItem: RowLayout {
                             spacing: 12
                             Text {
+                                Layout.preferredWidth: AppScale.fs(24)
+                                horizontalAlignment: Text.AlignHCenter
                                 font.family: Icons.familySolid
                                 font.weight: Font.Black
                                 text: drawerButton.modelData.icon
