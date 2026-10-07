@@ -120,7 +120,7 @@ Home
 ### Build Requirements
 
 - **CMake**: 3.16 or higher
-- **Qt**: 6.11 or higher with the following modules:
+- **Qt**: 6.12 or higher with the following modules:
   - Qt Quick
   - Qt Multimedia
   - Qt Linguist Tools
@@ -183,18 +183,48 @@ cmake ..
 cmake --build . --target appspeech-rate-meter-2 -- -j2
 ```
 
-#### Windows (with MSVC)
+#### Windows
+
+`scripts/build_windows.sh` builds a 64-bit folder and zip that includes the program, Qt, QML modules, multimedia plugins, the OpenMP runtime, and `settings.ini`.
+
+On Windows, run it from Git Bash with the Qt **MSVC 2022 64-bit** or **MinGW 13.1 64-bit** kit installed. On Linux it cross-compiles. 64-bit Wine (`wine64`) must be installed, and the Qt MinGW kit must sit next to the matching `gcc_64` kit.
+
+The released `aqtinstall` 3.3.0 cannot download Qt 6.12 Windows kits. It looks for `qt6_6120/qt6_6120/Updates.xml`, while Qt publishes the MinGW kit at `qt6_6120/qt6_6120_mingw/Updates.xml`. Install aqt from git, then install the kit:
 
 ```bash
-mkdir build
-cd build
-cmake -G "Visual Studio 17 2022" ..
-cmake --build . --config Release --target appspeech-rate-meter-2
+sudo apt install g++-mingw-w64-x86-64 binutils-mingw-w64-x86-64 wine64
+sudo update-alternatives --set x86_64-w64-mingw32-gcc /usr/bin/x86_64-w64-mingw32-gcc-posix
+sudo update-alternatives --set x86_64-w64-mingw32-g++ /usr/bin/x86_64-w64-mingw32-g++-posix
+
+python3 -m pip install --user --upgrade --force-reinstall --no-cache-dir "git+https://github.com/miurahr/aqtinstall.git"
+python3 -m aqt install-qt --outputdir "$HOME/Qt" windows desktop 6.12.0 win64_mingw -m qtmultimedia qttasktree
+ln -sfn win64_mingw "$HOME/Qt/6.12.0/mingw_64"
+```
+
+The compiler must be GCC 13 with the posix thread model. aqt writes the kit to `~/Qt/6.12.0/win64_mingw`; the symlink is the path the script expects. Then:
+
+```bash
+QT_ROOT="$HOME/Qt/6.12.0" ./scripts/build_windows.sh release
+```
+
+The zip is written to:
+
+```
+build_windows/SpeechRateMeter2-<version>-win64.zip
+```
+
+Extract it to a writable directory. Settings and sessions are stored beside `SpeechRateMeter2.exe`.
+
+To compile on Windows without packaging, from a Visual Studio 2022 x64 prompt:
+
+```bash
+cmake -G "Visual Studio 17 2022" -A x64 -S . -B build
+cmake --build build --config Release --target appspeech-rate-meter-2
 ```
 
 #### Android (arm64-v8a)
 
-From the project root, with Qt 6.11.1, NDK r27, and JDK 17 (see [scripts/android_build_guide.md](scripts/android_build_guide.md)):
+From the project root, with Qt 6.12.0, NDK r27, and JDK 17 (see [scripts/android_build_guide.md](scripts/android_build_guide.md)):
 
 ```bash
 ./scripts/build_android.sh arm64-v8a release
@@ -260,7 +290,7 @@ speech-rate-meter-2/
 ├── res/                                # Font Awesome, icons
 ├── i18n/                               # English and Russian (.ts)
 ├── android/                            # Manifest, Gradle, launcher icon
-├── scripts/                            # Android APK/AAB build, emulator, 16 KB check
+├── scripts/                            # Android APK/AAB and Windows package builds
 ├── docs/                               # Technical description, user guide, privacy policy
 ├── licenses/                           # Third-party notices bundled in the app
 ├── packaging/                          # Desktop entry and icons

@@ -12,7 +12,7 @@ Override any of these with environment variables; the values below are the scrip
 |---|---|
 | Qt for Android | `$QT_ROOT/android_arm64_v8a` (also `android_x86_64`, `android_armv7`) |
 | Qt host tools | `$QT_ROOT/gcc_64` |
-| `QT_ROOT` | `$HOME/Qt/6.11.1` |
+| `QT_ROOT` | `$HOME/Qt/6.12.0` |
 | Android SDK | `$ANDROID_SDK` → `$HOME/Android/Sdk` |
 | Android NDK | `$ANDROID_NDK` → `$ANDROID_SDK/ndk/27.2.12479018` (Clang 18) |
 | Build tools | `36.0.0` |
@@ -177,10 +177,10 @@ cmake \
   -DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON \
   -DANDROID_NDK="$HOME/Android/Sdk/ndk/27.2.12479018" \
   -DCMAKE_ANDROID_NDK="$HOME/Android/Sdk/ndk/27.2.12479018" \
-  -DCMAKE_FIND_ROOT_PATH="$HOME/Qt/6.11.1/android_arm64_v8a" \
-  -DCMAKE_PREFIX_PATH="$HOME/Qt/6.11.1/android_arm64_v8a" \
-  -DQT_HOST_PATH="$HOME/Qt/6.11.1/gcc_64" \
-  -DQT_HOST_PATH_CMAKE_DIR="$HOME/Qt/6.11.1/gcc_64/lib/cmake" \
+  -DCMAKE_FIND_ROOT_PATH="$HOME/Qt/6.12.0/android_arm64_v8a" \
+  -DCMAKE_PREFIX_PATH="$HOME/Qt/6.12.0/android_arm64_v8a" \
+  -DQT_HOST_PATH="$HOME/Qt/6.12.0/gcc_64" \
+  -DQT_HOST_PATH_CMAKE_DIR="$HOME/Qt/6.12.0/gcc_64/lib/cmake" \
   -DCMAKE_BUILD_TYPE=Release \
   -DANDROID_SDK_ROOT="$HOME/Android/Sdk"
 
@@ -217,7 +217,7 @@ export QT_ANDROID_KEYSTORE_KEY_PASS='<key-password>'
 
 The script passes `-DQT_ANDROID_SIGN_AAB=ON` (and `QT_ANDROID_SIGN_APK`) at configure time. The keystore env vars must stay exported during the Gradle/`androiddeployqt` step.
 
-See [QT_ANDROID_SIGN_AAB](https://doc.qt.io/qt-6.11/cmake-variable-qt-android-sign-aab.html) and [Publishing to Google Play](https://doc.qt.io/qt-6.11/android-publishing-to-googleplay.html).
+See [QT_ANDROID_SIGN_AAB](https://doc.qt.io/qt-6.12/cmake-variable-qt-android-sign-aab.html) and [Publishing to Google Play](https://doc.qt.io/qt-6.12/android-publishing-to-googleplay.html).
 
 ---
 

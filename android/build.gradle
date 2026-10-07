@@ -97,7 +97,7 @@ android {
 
     // Play Console native crash symbolication. AGP extracts DWARF from the
     // unstripped .so files in jniLibs into AAB metadata and still strips the
-    // packaged libraries. Based on Qt 6.11.1 android_arm64_v8a template.
+    // packaged libraries. Based on Qt 6.12.0 android_arm64_v8a template.
     buildTypes {
         release {
             ndk {

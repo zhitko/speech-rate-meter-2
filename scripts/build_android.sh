@@ -20,7 +20,7 @@ set -euo pipefail
 # ---------------------------------------------------------------------------
 # Configuration — override any of these via environment variables
 # ---------------------------------------------------------------------------
-QT_ROOT="${QT_ROOT:-$HOME/Qt/6.11.1}"
+QT_ROOT="${QT_ROOT:-$HOME/Qt/6.12.0}"
 ANDROID_SDK="${ANDROID_SDK:-$HOME/Android/Sdk}"
 ANDROID_NDK="${ANDROID_NDK:-$ANDROID_SDK/ndk/27.2.12479018}"
 # Android Gradle Plugin requires Java 17+

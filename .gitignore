@@ -35,6 +35,7 @@ qrc_*.cpp
 Thumbs.db
 *.res
 *.rc
+!res/icons/speechratemeter.rc
 /.qmake.cache
 /.qmake.stash
 .qmlls.ini

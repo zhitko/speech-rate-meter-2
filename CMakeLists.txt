@@ -6,7 +6,7 @@ project(speech-rate-meter-2 VERSION 1.2 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 17)
 
-find_package(Qt6 6.11 REQUIRED COMPONENTS Quick Multimedia LinguistTools)
+find_package(Qt6 6.12 REQUIRED COMPONENTS Quick Multimedia LinguistTools)
 
 # ---------------------------------------------------------------------------
 # OpenMP: on Android the NDK ships libomp (clang runtime) but CMake's
@@ -57,6 +57,7 @@ qt_standard_project_setup(REQUIRES 6.8 I18N_TRANSLATED_LANGUAGES en ru)
 
 qt_add_executable(appspeech-rate-meter-2
     main.cpp
+    src/mingw_libstdcxx_compat.cpp
     src/api/audioapi.h
     src/api/audioapi.cpp
     src/api/fileapi.h

@@ -8,7 +8,7 @@ The application's own source files are offered under the MIT License. The
 distributed executable also incorporates ALGLIB under the GNU GPL, so the
 combined executable is distributed under the GNU GPL terms described below.
 
-## Qt 6.11.1
+## Qt 6.12.0
 
 Copyright (C) The Qt Company Ltd. and other contributors.
 
@@ -17,11 +17,11 @@ under the GNU Lesser General Public License version 3. Qt is a registered
 trademark of The Qt Company Ltd.
 
 Corresponding Qt source:
-https://download.qt.io/official_releases/qt/6.11/6.11.1/submodules/
+https://download.qt.io/official_releases/qt/6.12/6.12.0/submodules/
 
 The Qt shared libraries in the Android package may be replaced with
 interface-compatible modified builds. Rebuild the application using the
-instructions in `README.md` and a Qt 6.11.1 Android kit built from the source
+instructions in `README.md` and a Qt 6.12.0 Android kit built from the source
 above. The generated APK can then be signed with your own key and installed on
 an Android device. No project term prohibits reverse engineering for debugging
 modifications to LGPL-covered Qt libraries.

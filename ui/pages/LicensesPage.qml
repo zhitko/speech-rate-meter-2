@@ -88,7 +88,7 @@ Page {
                 path: "../../3rdparty/alglib-cpp/gpl3.txt"
             },
             {
-                title: "Qt 6.11.1",
+                title: "Qt 6.12.0",
                 subtitle: "GNU LGPL version 3",
                 path: "../../licenses/LGPL-3.0.txt"
             },
