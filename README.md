@@ -194,7 +194,15 @@ cmake --build . --config Release --target appspeech-rate-meter-2
 
 #### Android (arm64-v8a)
 
-Build with a Qt 6.11 Android kit (Qt Creator or `qt-cmake` plus the NDK). The project already sets:
+From the project root, with Qt 6.11.1, NDK r27, and JDK 17 (see [scripts/android_build_guide.md](scripts/android_build_guide.md)):
+
+```bash
+./scripts/build_android.sh arm64-v8a release
+./scripts/build_android.sh x86_64 debug
+./scripts/run_emulator.sh Pixel7a_x86_64
+```
+
+The project already sets:
 
 - package name `by.intoncore.SpeechRateMeter2`
 - version name from `project(VERSION)` (currently `1.2`)
@@ -252,6 +260,7 @@ speech-rate-meter-2/
 ├── res/                                # Font Awesome, icons
 ├── i18n/                               # English and Russian (.ts)
 ├── android/                            # Manifest, Gradle, launcher icon
+├── scripts/                            # Android APK/AAB build, emulator, 16 KB check
 ├── docs/                               # Technical description, user guide, privacy policy
 ├── licenses/                           # Third-party notices bundled in the app
 ├── packaging/                          # Desktop entry and icons
