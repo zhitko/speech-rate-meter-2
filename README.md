@@ -44,7 +44,7 @@ Speech rate is vowels per minute scaled into words per minute (`K1`, default 0.7
 
 Home is the only screen with the record button.
 
-- A **speech-rate gauge** (240° arc, Slow / Average / Fast) shows the current pace. The marker sits between Slow and Fast (70 and 210 wpm by default). The printed number is the real value.
+- A **speech-rate gauge** (240° arc, Slow / Average / Fast) shows the current pace. The marker sits between Slow and Fast (70 and 210 wpm by default). The printed number is the real value. While the session is on, a microphone mark and a bar inside the gauge follow the input level, so it is obvious whether the microphone is hearing sound.
 - Four tiles beside it: Articulation, Fillers, Pauses, and Speech.
 - A round **Start / Stop** button. While the session is on, a halo around it grows with the microphone level.
 - A status chip names the state (Ready, Listening, Too short, Measuring, Not saved, Microphone blocked) and, during a session, the open phrase timer (`mm:ss`).

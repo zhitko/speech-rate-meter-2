@@ -987,6 +987,16 @@
         <source>wpm</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <location filename="../ui/components/SpeechRateGauge.qml" line="182"/>
+        <source>Microphone level</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/components/SpeechRateGauge.qml" line="183"/>
+        <source>%1 percent</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>UserGuidePage</name>

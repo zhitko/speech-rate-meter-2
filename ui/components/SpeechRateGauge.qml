@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Shapes
+import QtQuick.Layouts
 import QtQuick.Controls.Material 6.8
 import "../utils"
 
@@ -12,6 +13,9 @@ Item {
     property bool hasValue: true
     property string unit: qsTr("wpm")
     property color cardColor: Theme.surfaceContainerLow(Material.theme)
+    // Live input meter. Home sets these while a session is open.
+    property real micLevel: 0
+    property bool micActive: false
 
     implicitWidth: 320
     implicitHeight: 260
@@ -33,6 +37,14 @@ Item {
     property real animatedValue: hasValue ? value : minimum
     Behavior on animatedValue {
         NumberAnimation { duration: 650; easing.type: Easing.OutCubic }
+    }
+
+    readonly property real micClamped: Math.max(0, Math.min(1, micLevel))
+    // Square root so a quiet microphone still moves the bar.
+    readonly property real micTarget: micActive ? Math.sqrt(micClamped) : 0
+    property real micShown: micTarget
+    Behavior on micShown {
+        NumberAnimation { duration: 90; easing.type: Easing.OutQuad }
     }
 
     readonly property real fraction: Math.max(0, Math.min(1, (animatedValue - minimum) / range))
@@ -158,6 +170,48 @@ Item {
         }
 
         Item { width: 1; height: 6 }
+
+        RowLayout {
+            id: micRow
+            anchors.horizontalCenter: parent.horizontalCenter
+            visible: root.micActive
+            width: implicitWidth
+            height: implicitHeight
+            spacing: 6
+            Accessible.role: Accessible.ProgressBar
+            Accessible.name: qsTr("Microphone level")
+            Accessible.description: qsTr("%1 percent").arg(Math.round(root.micClamped * 100))
+
+            Text {
+                Layout.alignment: Qt.AlignVCenter
+                font.family: Icons.familySolid
+                font.pixelSize: AppScale.fs(13)
+                text: Icons.faMicrophone
+                color: root.micShown > 0.04
+                       ? Theme.primary(root.paintTheme)
+                       : Theme.onSurfaceVariant(root.paintTheme)
+                Behavior on color { ColorAnimation { duration: 120 } }
+            }
+
+            Rectangle {
+                id: micTrack
+                Layout.alignment: Qt.AlignVCenter
+                Layout.preferredWidth: Math.max(72, Math.min(128, root.radius * 0.72))
+                Layout.preferredHeight: 10
+                implicitWidth: Layout.preferredWidth
+                implicitHeight: 10
+                radius: height / 2
+                color: Qt.alpha(Theme.primary(root.paintTheme), 0.18)
+
+                Rectangle {
+                    width: Math.min(parent.width,
+                                    root.micShown <= 0 ? 0 : Math.max(height, parent.width * root.micShown))
+                    height: parent.height
+                    radius: height / 2
+                    color: Theme.primary(root.paintTheme)
+                }
+            }
+        }
 
         Rectangle {
             anchors.horizontalCenter: parent.horizontalCenter

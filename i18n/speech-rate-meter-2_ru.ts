@@ -1058,6 +1058,16 @@
         <source>wpm</source>
         <translation>сл/мин</translation>
     </message>
+    <message>
+        <location filename="../ui/components/SpeechRateGauge.qml" line="182"/>
+        <source>Microphone level</source>
+        <translation>Уровень микрофона</translation>
+    </message>
+    <message>
+        <location filename="../ui/components/SpeechRateGauge.qml" line="183"/>
+        <source>%1 percent</source>
+        <translation>%1 процентов</translation>
+    </message>
 </context>
 <context>
     <name>UserGuidePage</name>

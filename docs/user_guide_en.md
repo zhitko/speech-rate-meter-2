@@ -5,7 +5,7 @@ Speech Rate Meter 2 estimates how fast you are speaking. It does not recognize w
 ## Record
 
 1. Open **Home**.
-2. Press **Start** and speak naturally. The microphone stays open. With **Use Speech Autodetection** on, stay quiet while background noise is measured, then speak. With it off, the recording is analyzed from the first sample.
+2. Press **Start** and speak naturally. The microphone stays open. A meter inside the speech-rate gauge follows the microphone: if you are speaking and the bar stays empty, the microphone is not being heard. With **Use Speech Autodetection** on, stay quiet while background noise is measured, then speak. With it off, the recording is analyzed from the first sample.
 3. With **Use Speech Autodetection** on, a pause ends the phrase; it is saved, and the next one starts when you speak again. With it off, pauses do not end the phrase and the recording is saved in 15-second parts.
 4. Press **Stop** when the session is finished. Home then shows the result of the whole session, the same as in **History**.
 

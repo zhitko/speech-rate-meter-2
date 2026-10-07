@@ -353,6 +353,8 @@ Page {
                             minimum: root.slowWpm
                             maximum: root.fastWpm
                             cardColor: gaugeCard.color
+                            micActive: root.active
+                            micLevel: sessionApi ? sessionApi.audioLevel : 0
                         }
 
                         Label {
