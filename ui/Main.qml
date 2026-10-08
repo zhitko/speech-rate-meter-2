@@ -35,7 +35,11 @@ ApplicationWindow {
 
     SettingsApi {
         id: settingsApi
-        onThemeChanged: window.theme = getTheme()
+    }
+
+    // Used when the platform has not reported a color scheme yet.
+    SystemPalette {
+        id: systemPalette
     }
 
     SessionApi {
@@ -74,12 +78,22 @@ ApplicationWindow {
         return stackView.currentItem && stackView.currentItem.pageId ? stackView.currentItem.pageId : ""
     }
 
-    function getTheme() {
-        return settingsApi.theme === "dark" ? Material.Dark
-                : (settingsApi.theme === "light" ? Material.Light : Material.System);
+    // Material.System is resolved once, when it is assigned. On Linux that
+    // often happens before the desktop color scheme arrives, so the window
+    // stays light while pages opened later resolve to dark. Track the live
+    // scheme and assign Light or Dark explicitly.
+    readonly property int theme: {
+        if (settingsApi.theme === "dark")
+            return Material.Dark
+        if (settingsApi.theme === "light")
+            return Material.Light
+        if (Application.styleHints.colorScheme === Qt.ColorScheme.Dark)
+            return Material.Dark
+        if (Application.styleHints.colorScheme === Qt.ColorScheme.Light)
+            return Material.Light
+        return systemPalette.windowText.hslLightness > systemPalette.window.hslLightness
+                ? Material.Dark : Material.Light
     }
-
-    property var theme: getTheme()
 
     Binding {
         target: Theme
@@ -106,7 +120,6 @@ ApplicationWindow {
     }
 
     Material.theme: window.theme
-    // window.theme may be Material.System; Material.theme is the resolved Light/Dark value.
     Material.primary: Theme.primary(Material.theme)
     Material.accent: Theme.accent(Material.theme)
     Material.background: Theme.background(Material.theme)

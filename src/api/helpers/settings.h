@@ -54,7 +54,10 @@ public:
     static AppSettings getDefaultSettings();
 
     /**
-     * Desktop: directory of the executable.
+     * Unpackaged desktop build: directory of the executable.
+     * AppImage: directory containing the .AppImage file. The mounted payload
+     * cannot store settings or sessions. If that directory cannot be written,
+     * AppDataLocation is used.
      * Android: writable AppDataLocation, where startup extracts bundled assets.
      */
     static QString getAppDataDir();

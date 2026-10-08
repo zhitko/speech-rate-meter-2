@@ -1,0 +1,6 @@
+#!/bin/sh
+# Launcher copied into the AppImage. Exec the real binary so Qt resolves
+# qt.conf, plugins, and translations from usr/bin.
+set -eu
+here=$(dirname "$(readlink -f "$0")")
+exec "$here/usr/bin/appspeech-rate-meter-2" "$@"

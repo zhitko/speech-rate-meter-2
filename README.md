@@ -183,6 +183,24 @@ cmake ..
 cmake --build . --target appspeech-rate-meter-2 -- -j2
 ```
 
+#### Linux AppImage
+
+`scripts/build_appimage.sh` builds an x86_64 AppImage with the program, Qt, QML modules, the FFmpeg multimedia plugin, the OpenMP runtime, and `settings.ini`.
+
+It needs the Qt **gcc_64** kit. The image runs on systems whose glibc is at least as new as the machine that built it. The microphone uses the host PulseAudio or PipeWire library.
+
+```bash
+QT_ROOT="$HOME/Qt/6.12.0" ./scripts/build_appimage.sh release
+```
+
+The image is written to:
+
+```
+build_appimage/SpeechRateMeter2-<version>-x86_64.AppImage
+```
+
+Keep that file in a writable directory. `settings.ini` and `data/sessions` are stored beside it.
+
 #### Windows
 
 `scripts/build_windows.sh` builds a 64-bit folder and zip that includes the program, Qt, QML modules, multimedia plugins, the OpenMP runtime, and `settings.ini`.
@@ -290,7 +308,7 @@ speech-rate-meter-2/
 ├── res/                                # Font Awesome, icons
 ├── i18n/                               # English and Russian (.ts)
 ├── android/                            # Manifest, Gradle, launcher icon
-├── scripts/                            # Android APK/AAB and Windows package builds
+├── scripts/                            # Android, Windows, and Linux AppImage builds
 ├── docs/                               # Technical description, user guide, privacy policy
 ├── licenses/                           # Third-party notices bundled in the app
 ├── packaging/                          # Desktop entry and icons

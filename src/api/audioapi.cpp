@@ -2,13 +2,11 @@
 #include <QPointF>
 #include "helpers/logger.h"
 #include "helpers/settings.h"
-#include <QCoreApplication>
 #include <QDateTime>
 #include <QDebug>
 #include <QDir>
 #include <QIODevice>
 #include <QMediaDevices>
-#include <QStandardPaths>
 #include <QUrl>
 
 #include <algorithm>
@@ -27,13 +25,8 @@ AudioApi::AudioApi(QObject* parent)
     m_format.setSampleRate(8000);
     m_format.setChannelCount(1);
     m_format.setSampleFormat(QAudioFormat::Int16);
-    #ifdef Q_OS_ANDROID
     m_wavFileService = std::unique_ptr<WavFileService>(new WavFileService(
-        QStandardPaths::writableLocation(QStandardPaths::AppDataLocation).toStdString()));
-#else
-    m_wavFileService = std::unique_ptr<WavFileService>(new WavFileService(
-        QCoreApplication::applicationDirPath().toStdString()));
-#endif
+        Settings::getAppDataDir().toStdString()));
 
     m_vadService = std::unique_ptr<VADEnergyService>(new VADEnergyService(this));
     m_vadAutocorrService = std::unique_ptr<VADAutocorrelationService>(new VADAutocorrelationService(this));

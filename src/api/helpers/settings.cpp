@@ -5,6 +5,7 @@
 #include <QCoreApplication>
 #include <QDate>
 #include <QDir>
+#include <QFile>
 #include <QFileInfo>
 #include <QMutex>
 #include <QMutexLocker>
@@ -33,6 +34,31 @@ QString& appDataOverride()
     return path;
 }
 
+void seedBundledSettings()
+{
+    if (qgetenv("APPIMAGE").isEmpty())
+        return;
+
+    const QString dest = Settings::getAppDataDir() + QStringLiteral("/settings.ini");
+    if (QFile::exists(dest))
+        return;
+
+    const QString bundled = QCoreApplication::applicationDirPath()
+        + QStringLiteral("/settings.ini");
+    if (!QFile::exists(bundled))
+        return;
+    if (QFileInfo(bundled).absoluteFilePath() == QFileInfo(dest).absoluteFilePath())
+        return;
+
+    QDir().mkpath(QFileInfo(dest).absolutePath());
+    if (!QFile::copy(bundled, dest)) {
+        LOG_WARNING() << "Failed to copy default settings to" << dest;
+        return;
+    }
+    QFile::setPermissions(dest,
+        QFile::permissions(dest) | QFileDevice::ReadOwner | QFileDevice::WriteOwner);
+}
+
 } // namespace
 
 AppSettings
@@ -52,6 +78,13 @@ Settings::getAppDataDir()
 #ifdef Q_OS_ANDROID
     return QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
 #else
+    const QByteArray appImage = qgetenv("APPIMAGE");
+    if (!appImage.isEmpty()) {
+        const QString portableDir = QFileInfo(QString::fromLocal8Bit(appImage)).absolutePath();
+        if (QFileInfo(portableDir).isWritable())
+            return portableDir;
+        return QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+    }
     return QCoreApplication::applicationDirPath();
 #endif
 }
@@ -84,6 +117,7 @@ AppSettings
 Settings::loadSettings()
 {
     QMutexLocker lock(&settingsMutex());
+    seedBundledSettings();
     AppSettings settings;
     QString absolutePath = QFileInfo(getSettingsFilePath()).absoluteFilePath();
     QSettings qsettings(absolutePath, QSettings::IniFormat);
