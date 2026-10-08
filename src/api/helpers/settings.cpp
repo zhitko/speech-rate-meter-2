@@ -139,6 +139,7 @@ Settings::loadSettings()
     settings.autoStopSilenceDuration = qsettings.value("autoStopSilenceDuration", 2000).toInt();
     settings.analysisWindowSec = std::clamp(qsettings.value("analysisWindowSec", 10).toInt(), 3, 30);
     settings.updatesPerMinute = std::clamp(qsettings.value("updatesPerMinute", 60).toInt(), 6, 240);
+    settings.gaugeAverageCount = std::clamp(qsettings.value("gaugeAverageCount", 3).toInt(), 1, 30);
     settings.vadMethod = qsettings.value("vadMethod", 0).toInt();
     settings.vadThreshold = qsettings.value("vadThreshold", 10000.0).toDouble();
     settings.autoCorrThreshold = qsettings.value("autoCorrThreshold", 0.3).toDouble();
@@ -209,6 +210,7 @@ void Settings::saveSettings(const AppSettings& settings)
     qsettings.setValue("autoStopSilenceDuration", settings.autoStopSilenceDuration);
     qsettings.setValue("analysisWindowSec", settings.analysisWindowSec);
     qsettings.setValue("updatesPerMinute", settings.updatesPerMinute);
+    qsettings.setValue("gaugeAverageCount", settings.gaugeAverageCount);
     qsettings.setValue("vadMethod", settings.vadMethod);
     qsettings.setValue("vadThreshold", settings.vadThreshold);
     qsettings.setValue("autoCorrThreshold", settings.autoCorrThreshold);

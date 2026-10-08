@@ -7,6 +7,7 @@
 #include <QVariantList>
 #include <QVariantMap>
 #include <atomic>
+#include <deque>
 #include <memory>
 
 class QThread;
@@ -17,7 +18,8 @@ class JobQueue;
 /**
  * Process-wide recording session. Capture, pause cutting, and analysis run
  * off the UI thread. While recording, Home reads metrics of the most recent
- * analysis window from here; after Stop, the whole-session result.
+ * analysis window from here; the speech-rate gauge shows the median of the last
+ * few of those readings. After Stop, the whole-session result.
  */
 class SessionApi : public QObject {
     Q_OBJECT
@@ -114,6 +116,7 @@ private:
     void setNoSpeech(bool noSpeech);
     void showMetrics(const QVariantMap& shown, double speechSeconds);
     void rememberShown(const QVariantMap& shown, double speechSeconds);
+    double smoothedSpeechRate(double rate, bool live);
 
     struct SessionAccumulator;
     std::unique_ptr<SessionAccumulator> m_accumulator;
@@ -132,6 +135,7 @@ private:
     bool m_hasResult = false;
     bool m_noSpeech = false;
     double m_speechRate = 0;
+    std::deque<double> m_speechRateWindow;
     double m_articulationRate = 0;
     double m_phrasePauses = 0;
     double m_speechDuration = 0;

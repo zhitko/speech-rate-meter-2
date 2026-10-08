@@ -1074,6 +1074,7 @@ void SessionApi::resetResultState()
 {
     const bool hadResult = m_hasResult;
     m_hasResult = false;
+    m_speechRateWindow.clear();
     m_speechRate = 0;
     m_articulationRate = 0;
     m_phrasePauses = 0;
@@ -1315,9 +1316,30 @@ void SessionApi::setNoSpeech(bool noSpeech)
         emit phaseChanged();
 }
 
+double SessionApi::smoothedSpeechRate(double rate, bool live)
+{
+    if (!live) {
+        m_speechRateWindow.clear();
+        return rate;
+    }
+
+    const int count = std::clamp(Settings::loadSettings().gaugeAverageCount, 1, 30);
+    m_speechRateWindow.push_back(rate);
+    while (static_cast<int>(m_speechRateWindow.size()) > count)
+        m_speechRateWindow.pop_front();
+
+    std::vector<double> samples(m_speechRateWindow.begin(), m_speechRateWindow.end());
+    std::sort(samples.begin(), samples.end());
+    const std::size_t mid = samples.size() / 2;
+    if (samples.size() % 2 == 1)
+        return samples[mid];
+    return (samples[mid - 1] + samples[mid]) / 2.0;
+}
+
 void SessionApi::showMetrics(const QVariantMap& shown, double speechSeconds)
 {
-    m_speechRate = shown.value(QStringLiteral("speechRate")).toDouble();
+    m_speechRate = smoothedSpeechRate(shown.value(QStringLiteral("speechRate")).toDouble(),
+        shown.value(QStringLiteral("live")).toBool());
     m_articulationRate = shown.value(QStringLiteral("articulationRate")).toDouble();
     m_phrasePauses = shown.value(QStringLiteral("phrasePauses")).toDouble();
     m_speechDuration = speechSeconds;
@@ -1341,7 +1363,7 @@ void SessionApi::rememberShown(const QVariantMap& shown, double speechSeconds)
         return;
 
     const AppSettings settings = Settings::loadSettings();
-    const int speechRate = roundHalfAway(shown.value(QStringLiteral("speechRate")).toDouble());
+    const int speechRate = roundHalfAway(m_speechRate);
     const int articulation = roundHalfAway(shown.value(QStringLiteral("articulationRate")).toDouble());
     const int pauses = roundHalfAway(shown.value(QStringLiteral("phrasePauses")).toDouble() * 100.0);
     const int duration = roundHalfAway(speechSeconds);

@@ -308,6 +308,19 @@ void SettingsApi::setUpdatesPerMinute(int count)
     emit updatesPerMinuteChanged();
 }
 
+int SettingsApi::gaugeAverageCount() const
+{
+    return m_settings.gaugeAverageCount;
+}
+
+void SettingsApi::setGaugeAverageCount(int count)
+{
+    if (!assignIfChanged(m_settings.gaugeAverageCount, std::clamp(count, 1, 30)))
+        return;
+    save();
+    emit gaugeAverageCountChanged();
+}
+
 int SettingsApi::pauseSec() const
 {
     return m_settings.autoStopSilenceDuration / 1000;
@@ -480,6 +493,7 @@ void SettingsApi::load()
     emit autoCorrEnergyThresholdChanged();
     emit analysisWindowSecChanged();
     emit updatesPerMinuteChanged();
+    emit gaugeAverageCountChanged();
     emit pauseSecChanged();
     emit slowWpmChanged();
     emit fastWpmChanged();

@@ -785,6 +785,16 @@
         <translation>Правый край шкалы темпа речи.</translation>
     </message>
     <message>
+        <location filename="../ui/pages/SettingsPage.qml" line="421"/>
+        <source>Gauge median</source>
+        <translation>Медиана шкалы</translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SettingsPage.qml" line="435"/>
+        <source>The speech-rate gauge shows the median of this many latest readings. 1 shows the current reading.</source>
+        <translation>Шкала темпа речи показывает медиану такого числа последних значений. 1 — текущее значение.</translation>
+    </message>
+    <message>
         <location filename="../ui/pages/SettingsPage.qml" line="433"/>
         <source>Show advanced settings</source>
         <translation>Показывать расширенные настройки</translation>

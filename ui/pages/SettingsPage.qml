@@ -417,6 +417,25 @@ Page {
                             color: Theme.onSurfaceVariant(Material.theme)
                             font.pixelSize: AppScale.fs(12)
                         }
+
+                        FieldLabel { text: qsTr("Gauge median") }
+                        SpinBox {
+                            from: 1
+                            to: 30
+                            editable: true
+                            value: settingsApi ? settingsApi.gaugeAverageCount : 3
+                            onValueModified: if (settingsApi)
+                                settingsApi.gaugeAverageCount = value
+                            Layout.fillWidth: true
+                        }
+                        Label {
+                            Layout.columnSpan: parent.columns
+                            Layout.fillWidth: true
+                            wrapMode: Text.Wrap
+                            text: qsTr("The speech-rate gauge shows the median of this many latest readings. 1 shows the current reading.")
+                            color: Theme.onSurfaceVariant(Material.theme)
+                            font.pixelSize: AppScale.fs(12)
+                        }
                     }
 
                     RowLayout {

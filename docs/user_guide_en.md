@@ -27,6 +27,7 @@ Under **Measurement**:
 
 - **Analysis window** is how many recent seconds of speech Home uses while recording. Shorter reacts faster but jumps more.
 - **Updates per minute** is how often the numbers are recalculated.
+- **Gauge median** is how many latest speech-rate readings the gauge takes the median of. The default is 3. Set it to 1 to show the current reading.
 - **Pause** is the silence that ends a phrase.
 - **Use Speech Autodetection** measures background noise after **Start**, then listens for speech. When it is off, the recording is analyzed from the first sample and a pause does not end the phrase.
 

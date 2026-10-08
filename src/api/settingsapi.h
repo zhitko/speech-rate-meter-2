@@ -31,6 +31,7 @@ class SettingsApi : public QObject {
     Q_PROPERTY(bool advanced READ advanced WRITE setAdvanced NOTIFY advancedChanged)
     Q_PROPERTY(int analysisWindowSec READ analysisWindowSec WRITE setAnalysisWindowSec NOTIFY analysisWindowSecChanged)
     Q_PROPERTY(int updatesPerMinute READ updatesPerMinute WRITE setUpdatesPerMinute NOTIFY updatesPerMinuteChanged)
+    Q_PROPERTY(int gaugeAverageCount READ gaugeAverageCount WRITE setGaugeAverageCount NOTIFY gaugeAverageCountChanged)
     Q_PROPERTY(int pauseSec READ pauseSec WRITE setPauseSec NOTIFY pauseSecChanged)
     Q_PROPERTY(double slowWpm READ slowWpm WRITE setSlowWpm NOTIFY slowWpmChanged)
     Q_PROPERTY(double fastWpm READ fastWpm WRITE setFastWpm NOTIFY fastWpmChanged)
@@ -107,6 +108,8 @@ public:
     void setAnalysisWindowSec(int seconds);
     int updatesPerMinute() const;
     void setUpdatesPerMinute(int count);
+    int gaugeAverageCount() const;
+    void setGaugeAverageCount(int count);
     int pauseSec() const;
     void setPauseSec(int seconds);
     double slowWpm() const;
@@ -161,6 +164,7 @@ signals:
     void advancedChanged();
     void analysisWindowSecChanged();
     void updatesPerMinuteChanged();
+    void gaugeAverageCountChanged();
     void pauseSecChanged();
     void slowWpmChanged();
     void fastWpmChanged();

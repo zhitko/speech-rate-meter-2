@@ -33,7 +33,7 @@ Speech rate is the only gauge. Articulation, fillers, pauses, and speech time ar
 
 | On screen | Meaning | Unit | Display |
 | --- | --- | --- | --- |
-| Speech rate | Pace since Start, pauses inside phrases included | words per minute | Large integer (`toFixed(0)`). The gauge marker clamps to `[Min RS, Max RS]`. The printed number does not. |
+| Speech rate | Pace since Start, pauses inside phrases included | words per minute | Large integer (`toFixed(0)`). While recording, the gauge shows the median of the last Gauge median readings. The gauge marker clamps to `[Min RS, Max RS]`. The printed number does not. |
 | Articulation | Pace while speech is actually going | words per minute | Integer. No gauge. |
 | Fillers | How much of the speech is stretched sounds | percent | Integer and ` %`, from section 6.5, with a thin bar for the same percent. |
 | Pauses | Extra gaps inside the kept phrases | seconds | Two decimals and ` sec`. No gauge. |
@@ -110,7 +110,7 @@ The analysis window is the audio of the kept segments of this session, joined en
 
 - Nothing is published until the window holds 1.5 s of audio. Until then the last result stays on screen. If there is none yet, Home shows the gauge with an empty arc and `– –` instead of a speech-rate number.
 - After that, a new snapshot is started at most every `60000 / Updates per minute` ms (`General/updatesPerMinute`, default 60, range 6…240). With autodetection on, snapshots start only on speech frames. If a newer buffer is ready before the previous analysis finishes, the older run is abandoned.
-- Each published snapshot is shown as computed. It is not joined with earlier phrases and not averaged with earlier snapshots. Details shows the same window.
+- Articulation, fillers, pauses, and speech are shown as computed. They are not joined with earlier phrases and not averaged with earlier snapshots. The speech-rate gauge shows the median of the last Gauge median live readings (`General/gaugeAverageCount`, default 3, range 1…30). Fewer readings than that use the ones already collected. An odd count takes the middle value after sorting. An even count takes the arithmetic mean of the two central values. Start clears those readings. After Stop the gauge shows the whole session, not that median. Details shows the current window.
 - A snapshot with no measurable speech (section 5.4) is not shown. The numbers stay and the state chip reads Listening until a window with speech arrives.
 - When a segment closes, its final analysis is stored in the session file and added to the session collection. The screen keeps the window numbers; only Speech grows. The buffer is then released.
 - After Stop, once the last segment is stored, Home shows the session collection. That final switch is not recorded as a shown change.
@@ -190,7 +190,7 @@ One JSON file per session, under `data/sessions/` next to `data/records/` (execu
 }
 ```
 
-Times are local, zero-padded, use a 24-hour `HH` field, and include milliseconds. The session file has no audio path. `shown` contains the exact five-value snapshots displayed on Home; each entry is timestamped by `at`. Every segment contains both its finalized headline result and the analysis inputs needed to recompute a combined session result. The five headline numbers are stored before display rounding except `fillerPercent`, which is already the integer label value:
+Times are local, zero-padded, use a 24-hour `HH` field, and include milliseconds. The session file has no audio path. `shown` contains the five values Home displayed; each entry is timestamped by `at`. While recording, its speech rate is the gauge median from section 1.2, rounded half away from zero. The other four values are that snapshot as computed. Every segment contains both its finalized headline result and the analysis inputs needed to recompute a combined session result. The five headline numbers are stored before display rounding except `fillerPercent`, which is already the integer label value:
 
 | Field | Value |
 | --- | --- |
@@ -572,6 +572,7 @@ Everyday labels use plain units. Silence Duration is edited in seconds and store
 | --- | --- | --- | --- |
 | Analysis window (s) | `General/analysisWindowSec` | 10 s | While recording, Home shows the pace of this much recent speech. Range 3…30. |
 | Updates per minute | `General/updatesPerMinute` | 60 | How often the numbers on Home are recalculated. Range 6…240. |
+| Gauge median | `General/gaugeAverageCount` | 3 | The speech-rate gauge shows the median of this many latest readings. Range 1…30. 1 shows the current reading. |
 | Pause | `General/autoStopSilenceDuration` | 2 s | Silence that ends a phrase. |
 | Use Speech Autodetection | `General/autoCalibrate` | off | After Start, measure background noise, then listen for speech. Off measures the recording from the first sample. |
 | Slow | Min RS | 70 wpm | Left end of the speech-rate gauge. Also copies to articulation min. |
@@ -607,7 +608,7 @@ With Advanced on, the extra settings are shown as numbered cards in the order a 
 | Min FS | `F_min` | 120 | `fillerSounds/Min` | no |
 | Max FS | `F_max` | 240 | `fillerSounds/Max` | no |
 
-The Measurement card (Analysis window, Updates per minute, Pause, Use Speech Autodetection) is always visible. It is not hidden with Advanced, and its values are not speech-rate coefficients. Silence Duration (`General/autoStopSilenceDuration` = 2000) is the pause that closes a phrase. The segment length limits are fixed (section 1.2). Older INI files may still hold `metricAverageCount`, `minRecordingTimeMs`, and `maxRecordingTimeMs`; they are ignored and removed on the next save.
+The Measurement card (Analysis window, Updates per minute, Gauge median, Pause, Use Speech Autodetection) is always visible. It is not hidden with Advanced, and its values are not speech-rate coefficients. Silence Duration (`General/autoStopSilenceDuration` = 2000) is the pause that closes a phrase. The segment length limits are fixed (section 1.2). Older INI files may still hold `metricAverageCount`, `minRecordingTimeMs`, and `maxRecordingTimeMs`; they are ignored and removed on the next save.
 
 Also present in the config object but not on this screen, and not used by the headline path:
 
@@ -727,7 +728,7 @@ Do not implement these for behavioral parity:
 
 ## 14. Parity checklist
 
-1. Keep a background session. Cut a kept segment at a pause or at 15 s, drop a segment shorter than 1 s, resample to 8000 Hz mono s16le, and analyze that buffer with sections 2–11. Live snapshots analyze the last Analysis window seconds of kept plus open audio and are shown unjoined and unaveraged. Silence must not produce nuclei (section 5.4). Delete the segment audio once its metrics are in the session file.
+1. Keep a background session. Cut a kept segment at a pause or at 15 s, drop a segment shorter than 1 s, resample to 8000 Hz mono s16le, and analyze that buffer with sections 2–11. Live snapshots analyze the last Analysis window seconds of kept plus open audio. Articulation, fillers, pauses, and speech are shown unjoined and unaveraged. The speech-rate gauge shows the median of the last Gauge median live readings (default 3). Silence must not produce nuclei (section 5.4). Delete the segment audio once its metrics are in the session file.
 2. Intensity uses mean absolute amplitude, full-window divisor, hop 120, window 240, and the exact loop bounds.
 3. Normalize to [0, 1], then the moving average with even length, full-window divisor, and the `index > 0` edge rule.
 4. Nuclei are `I_norm - S > 0.009`, stored length is `run_samples - 1`, runs of one sample are dropped at the default minimum, and a nucleus still open at the last sample is dropped.

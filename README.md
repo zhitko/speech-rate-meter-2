@@ -66,7 +66,7 @@ An **Advanced** toggle at the top of the page is not saved and turns off when yo
 | Section | What you control |
 | --- | --- |
 | **General (always visible)** | UI language (EN/RU), light/dark/system theme, accent color (Blue/Green/Purple/Orange/Red), navigation menu, font size, delete user data |
-| **Measurement (always visible)** | Analysis window, updates per minute, pause length, Use Speech Autodetection, Slow and Fast ends of the gauge |
+| **Measurement (always visible)** | Analysis window, updates per minute, gauge median, pause length, Use Speech Autodetection, Slow and Fast ends of the gauge |
 | **Advanced (hidden behind the toggle)** | Voice-activity method and thresholds, calibration, intensity frame/shift/smooth, vowel-length limit, power-mean degree, coefficients K1–K4 and the filler range, Open File (desktop) |
 
 **Use Speech Autodetection** measures background noise after Start, then finds speech and pauses. When it is off, the recording is analyzed from the first sample and a pause does not end the phrase.
