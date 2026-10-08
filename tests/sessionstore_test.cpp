@@ -6,6 +6,7 @@
 #include <QFile>
 #include <QTemporaryDir>
 
+#include <cmath>
 #include <cstdlib>
 #include <iostream>
 
@@ -78,6 +79,44 @@ void testRoundTripAndClear()
     expect(SessionStore::recordsAreEmpty(), "clear removes scratch records");
 }
 
+void testDurationWeightedSessionMean()
+{
+    const QString id = QStringLiteral("20261006-230100-000");
+    const QString started = QStringLiteral("2026-10-06T23:01:00.000");
+    QVariantMap first = measuredSegment();
+    QVariantMap second = measuredSegment();
+    second.insert(QStringLiteral("endedAt"), QStringLiteral("2026-10-06T23:01:08.000"));
+    second.insert(QStringLiteral("speechDuration"), 4.0);
+    second.insert(QStringLiteral("speechRate"), 180.0);
+    second.insert(QStringLiteral("articulationRate"), 210.0);
+    second.insert(QStringLiteral("phrasePauses"), 0.40);
+    second.insert(QStringLiteral("fillerPercent"), 30);
+
+    expect(SessionStore::appendSegment(id, started, first), "append first phrase");
+    expect(SessionStore::appendSegment(id, started, second), "append second phrase");
+
+    const QVariantMap loaded = SessionStore::loadSession(id);
+    const double duration = 6.0;
+    const auto near = [](double left, double right) {
+        return std::fabs(left - right) < 1e-6;
+    };
+    expect(near(loaded.value(QStringLiteral("speechDuration")).toDouble(), duration),
+        "speech is the sum");
+    expect(near(loaded.value(QStringLiteral("speechRate")).toDouble(),
+                (first.value(QStringLiteral("speechRate")).toDouble() * 2.0 + 180.0 * 4.0) / duration),
+        "speech rate is the duration-weighted mean");
+    expect(near(loaded.value(QStringLiteral("articulationRate")).toDouble(),
+                (first.value(QStringLiteral("articulationRate")).toDouble() * 2.0 + 210.0 * 4.0) / duration),
+        "articulation is the duration-weighted mean");
+    expect(near(loaded.value(QStringLiteral("phrasePauses")).toDouble(),
+                (first.value(QStringLiteral("phrasePauses")).toDouble() * 2.0 + 0.40 * 4.0) / duration),
+        "pauses are the duration-weighted mean");
+    expect(near(loaded.value(QStringLiteral("fillerPercent")).toDouble(), (12.0 * 2.0 + 30.0 * 4.0) / duration),
+        "fillers are the duration-weighted mean");
+
+    SessionStore::clearAll();
+}
+
 void testMalformedJsonIsQuarantined()
 {
     QDir().mkpath(SessionStore::sessionsDir());
@@ -104,6 +143,7 @@ int main(int argc, char** argv)
     Settings::setAppDataDirForTests(root.path());
 
     testRoundTripAndClear();
+    testDurationWeightedSessionMean();
     testMalformedJsonIsQuarantined();
 
     Settings::clearAppDataDirForTests();

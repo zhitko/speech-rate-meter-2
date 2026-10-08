@@ -19,7 +19,7 @@ Package id: `by.intoncore.SpeechRateMeter2`. Version name `1.2`, version code `1
 1. Press **Start**. The microphone stays open for the whole session.
 2. With **Use Speech Autodetection** on, a pause ends the current phrase, the phrase is measured, and the next one starts when you speak again. With it off, the take is measured from the first sample and is split into 15-second parts.
 3. While you speak, speech rate, articulation, fillers, and pauses follow the **analysis window** — the most recent kept speech (10 seconds by default) — so a change of pace shows within a few seconds. **Speech** is the total time measured since Start.
-4. Press **Stop**. Home and History then show one result for every phrase kept from Start to Stop. A phrase shorter than one second is dropped.
+4. Press **Stop**. Home and History then show the mean speech rate, articulation, fillers, and pauses of every phrase kept from Start to Stop. Speech is the total time. The screen is labeled **Mean values**. A phrase shorter than one second is dropped.
 5. The scratch WAV is deleted once that phrase’s numbers are in the session file. There is no waveform and no playback.
 
 All processing is local. The Android package requests only microphone access (`RECORD_AUDIO`).
@@ -47,7 +47,7 @@ Home is the only screen with the record button.
 - A **speech-rate gauge** (240° arc, Slow / Average / Fast) shows the current pace. The marker sits between Slow and Fast (70 and 210 wpm by default). The printed number is the real value. While the session is on, a microphone mark and a bar inside the gauge follow the input level, so it is obvious whether the microphone is hearing sound.
 - Four tiles beside it: Articulation, Fillers, Pauses, and Speech.
 - A round **Start / Stop** button. While the session is on, a halo around it grows with the microphone level.
-- A status chip names the state (Ready, Listening, Too short, Measuring, Not saved, Microphone blocked) and, during a session, the open phrase timer (`mm:ss`).
+- A status chip names the state (Ready, Listening, Too short, Measuring, Not saved, Microphone blocked, and Mean values after Stop) and, during a session, the open phrase timer (`mm:ss`).
 
 On a wide or landscape window the gauge sits on the left and the tiles and button on the right. On a phone the button stays pinned to the bottom of the page.
 
@@ -55,9 +55,9 @@ While a session is running, a **Recording** chip stays in the toolbar on every p
 
 ### 2. History
 
-History lists every finished session, newest first. A row shows the date and clock span, how many phrases were kept, how many times the numbers changed, and the pace from Start to Stop.
+History lists every finished session, newest first. A row shows the date and clock span, how many phrases were kept, how many times the numbers changed, and the mean pace from Start to Stop.
 
-Opening a row repeats those five session values, then five charts — one point for each change that appeared on Home. These are metric charts, not a waveform.
+Opening a row repeats those five session values under a **Mean values** label, then five charts — one point for each change that appeared on Home. These are metric charts, not a waveform.
 
 ### 3. Settings
 

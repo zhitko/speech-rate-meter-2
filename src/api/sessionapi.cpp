@@ -980,6 +980,33 @@ struct SessionApi::SessionAccumulator {
     double fillerMax = 240;
     bool ready = false;
     bool pooled = true;
+    double weight = 0;
+    double speechRateSum = 0;
+    double articulationSum = 0;
+    double pausesSum = 0;
+    double fillerSum = 0;
+
+    void addPhrase(const speechrate::Metrics& phrase)
+    {
+        const double used = phrase.speechDuration > 0 ? phrase.speechDuration : 1.0;
+        weight += used;
+        speechRateSum += phrase.speechRate * used;
+        articulationSum += phrase.articulationRate * used;
+        pausesSum += phrase.phrasePauses * used;
+        fillerSum += phrase.fillerScore * used;
+    }
+
+    speechrate::Metrics meanHeadlines() const
+    {
+        speechrate::Metrics out = metrics;
+        if (!(weight > 0))
+            return out;
+        out.speechRate = speechRateSum / weight;
+        out.articulationRate = articulationSum / weight;
+        out.phrasePauses = pausesSum / weight;
+        out.fillerScore = fillerSum / weight;
+        return out;
+    }
 };
 
 SessionApi::SessionApi(QObject* parent)
@@ -1074,6 +1101,7 @@ void SessionApi::resetResultState()
 {
     const bool hadResult = m_hasResult;
     m_hasResult = false;
+    setShowingMean(false);
     m_speechRateWindow.clear();
     m_speechRate = 0;
     m_articulationRate = 0;
@@ -1223,6 +1251,7 @@ void SessionApi::applyMetrics(const QVariantMap& metrics)
             return;
         m_shownSessionId.clear();
         m_shownSessionStartedAt.clear();
+        setShowingMean(false);
         showMetrics(metrics, metrics.value(QStringLiteral("speechDuration")).toDouble());
         return;
     }
@@ -1281,6 +1310,8 @@ void SessionApi::applyMetrics(const QVariantMap& metrics)
     }
     if (!acc.ready)
         return;
+    if (phrase.valid)
+        acc.addPhrase(phrase);
     if (!m_hasResult) {
         showMetrics(metricsToMap(acc.metrics, acc.fillerMin, acc.fillerMax, false, 0, true),
             acc.metrics.speechDuration);
@@ -1297,13 +1328,32 @@ void SessionApi::applySessionEnded(quint64 generation)
 {
     if (!m_alive.load() || generation != m_captureGeneration || (m_sessionActive && !m_stopPending))
         return;
+    if (!m_accumulator->ready)
+        return;
+    showSessionMean();
+}
+
+void SessionApi::showSessionMean()
+{
     const SessionAccumulator& acc = *m_accumulator;
     if (!acc.ready)
         return;
-    // After Stop, Home shows the whole session, matching its History row.
+    // Headlines are the duration-weighted mean of kept phrases. Speech duration
+    // stays the sum. Vowel and gap statistics stay those of the joined collection.
+    const speechrate::Metrics mean = acc.meanHeadlines();
+    QVariantMap shown = metricsToMap(mean, acc.fillerMin, acc.fillerMax, false, 0, true);
+    shown.insert(QStringLiteral("speechDuration"), acc.metrics.speechDuration);
     m_shownSessionId.clear();
-    showMetrics(metricsToMap(acc.metrics, acc.fillerMin, acc.fillerMax, false, 0, true),
-        acc.metrics.speechDuration);
+    showMetrics(shown, acc.metrics.speechDuration);
+    setShowingMean(acc.weight > 0);
+}
+
+void SessionApi::setShowingMean(bool showing)
+{
+    if (m_showingMean == showing)
+        return;
+    m_showingMean = showing;
+    emit showingMeanChanged();
 }
 
 void SessionApi::setNoSpeech(bool noSpeech)

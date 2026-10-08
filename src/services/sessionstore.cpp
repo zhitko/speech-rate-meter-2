@@ -55,13 +55,6 @@ double weightedMean(const QVariantList& segments, const QString& key)
     return weight > 0 ? acc / weight : 0;
 }
 
-int roundHalfAway(double value)
-{
-    if (value >= 0)
-        return static_cast<int>(std::floor(value + 0.5));
-    return static_cast<int>(std::ceil(value - 0.5));
-}
-
 std::vector<int> intList(const QVariant& value)
 {
     std::vector<int> lengths;
@@ -79,46 +72,6 @@ QVariantList variantList(const std::vector<int>& lengths)
     for (int length : lengths)
         list.append(length);
     return list;
-}
-
-bool collectSegments(const QVariantList& segments, speechrate::Metrics& metrics, int& fillerPercent)
-{
-    if (segments.isEmpty())
-        return false;
-
-    speechrate::Parts all;
-    speechrate::Config config;
-    double fillerMin = 120;
-    double fillerMax = 240;
-    bool haveConfig = false;
-    for (const QVariant& item : segments) {
-        speechrate::Parts parts;
-        speechrate::Config rowConfig;
-        double rowMin = 0;
-        double rowMax = 0;
-        if (!SessionStore::takeMeasurement(item.toMap(), parts, rowConfig, rowMin, rowMax))
-            return false;
-        if (!haveConfig) {
-            config = rowConfig;
-            haveConfig = true;
-        } else if (!speechrate::sameMeasurement(config, rowConfig)) {
-            return false;
-        }
-        speechrate::appendParts(all, parts);
-        fillerMin = rowMin;
-        fillerMax = rowMax;
-    }
-
-    metrics = speechrate::metricsFromLengths(all.vowelLengths,
-        all.gapLengths,
-        all.speechDuration,
-        config,
-        all.vowelMaxFrames,
-        all.gapMaxFrames);
-    if (!metrics.valid)
-        return false;
-    fillerPercent = roundHalfAway(speechrate::fillerPercent(metrics.fillerScore, fillerMin, fillerMax));
-    return true;
 }
 
 QString sessionTitle(const QString& startedAt, const QString& endedAt)
@@ -417,21 +370,11 @@ QVariantMap SessionStore::summarize(const QVariantMap& root)
         return summary;
     }
 
-    speechrate::Metrics collected;
-    int fillerPercent = 0;
-    if (collectSegments(segments, collected, fillerPercent)) {
-        summary.insert(QStringLiteral("speechRate"), collected.speechRate);
-        summary.insert(QStringLiteral("articulationRate"), collected.articulationRate);
-        summary.insert(QStringLiteral("phrasePauses"), collected.phrasePauses);
-        summary.insert(QStringLiteral("speechDuration"), collected.speechDuration);
-        summary.insert(QStringLiteral("fillerPercent"), fillerPercent);
-    } else {
-        summary.insert(QStringLiteral("speechRate"), weightedMean(segments, QStringLiteral("speechRate")));
-        summary.insert(QStringLiteral("articulationRate"), weightedMean(segments, QStringLiteral("articulationRate")));
-        summary.insert(QStringLiteral("phrasePauses"), weightedMean(segments, QStringLiteral("phrasePauses")));
-        summary.insert(QStringLiteral("speechDuration"), sumOf(segments, QStringLiteral("speechDuration")));
-        summary.insert(QStringLiteral("fillerPercent"), weightedMean(segments, QStringLiteral("fillerPercent")));
-    }
+    summary.insert(QStringLiteral("speechRate"), weightedMean(segments, QStringLiteral("speechRate")));
+    summary.insert(QStringLiteral("articulationRate"), weightedMean(segments, QStringLiteral("articulationRate")));
+    summary.insert(QStringLiteral("phrasePauses"), weightedMean(segments, QStringLiteral("phrasePauses")));
+    summary.insert(QStringLiteral("speechDuration"), sumOf(segments, QStringLiteral("speechDuration")));
+    summary.insert(QStringLiteral("fillerPercent"), weightedMean(segments, QStringLiteral("fillerPercent")));
     return summary;
 }
 

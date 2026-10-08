@@ -18,6 +18,7 @@ Page {
 
     readonly property bool active: !!sessionApi && sessionApi.sessionActive
     readonly property bool hasResult: !!sessionApi && sessionApi.hasResult
+    readonly property bool showingMean: !!sessionApi && sessionApi.showingMean && !active
     readonly property real slowWpm: settingsApi ? settingsApi.slowWpm : 70
     readonly property real fastWpm: settingsApi ? settingsApi.fastWpm : 210
 
@@ -37,6 +38,8 @@ Page {
     }
 
     function phaseTitle() {
+        if (showingMean)
+            return qsTr("Mean values")
         switch (phase()) {
         case SessionApi.Listening:
             return qsTr("Listening")
@@ -54,6 +57,8 @@ Page {
     }
 
     function phaseColor() {
+        if (showingMean)
+            return Theme.primary(Material.theme)
         switch (phase()) {
         case SessionApi.Listening:
         case SessionApi.Measuring:
@@ -70,7 +75,9 @@ Page {
     function hintText() {
         switch (phase()) {
         case SessionApi.IdleReady:
-            return qsTr("Whole-session result. Press Start to measure again.")
+            return showingMean
+                   ? qsTr("Speech is the total time. Press Start to measure again.")
+                   : qsTr("Whole-session result. Press Start to measure again.")
         case SessionApi.Listening:
             return qsTr("Listening…")
         case SessionApi.Measuring:

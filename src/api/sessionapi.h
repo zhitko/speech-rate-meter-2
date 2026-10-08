@@ -19,7 +19,9 @@ class JobQueue;
  * Process-wide recording session. Capture, pause cutting, and analysis run
  * off the UI thread. While recording, Home reads metrics of the most recent
  * analysis window from here; the speech-rate gauge shows the median of the last
- * few of those readings. After Stop, the whole-session result.
+ * few of those readings. After Stop, speech rate, articulation, fillers, and
+ * pauses become the duration-weighted mean of every kept phrase. Speech stays
+ * the total. Home labels that state Mean values.
  */
 class SessionApi : public QObject {
     Q_OBJECT
@@ -28,6 +30,7 @@ class SessionApi : public QObject {
     Q_PROPERTY(int phraseSeconds READ phraseSeconds NOTIFY phraseSecondsChanged)
     Q_PROPERTY(qreal audioLevel READ audioLevel NOTIFY audioLevelChanged)
     Q_PROPERTY(bool hasResult READ hasResult NOTIFY hasResultChanged)
+    Q_PROPERTY(bool showingMean READ showingMean NOTIFY showingMeanChanged)
     Q_PROPERTY(double speechRate READ speechRate NOTIFY metricsChanged)
     Q_PROPERTY(double articulationRate READ articulationRate NOTIFY metricsChanged)
     Q_PROPERTY(double phrasePauses READ phrasePauses NOTIFY metricsChanged)
@@ -61,6 +64,7 @@ public:
     int phraseSeconds() const { return m_phraseSeconds; }
     qreal audioLevel() const { return m_audioLevel; }
     bool hasResult() const { return m_hasResult; }
+    bool showingMean() const { return m_showingMean; }
     double speechRate() const { return m_speechRate; }
     double articulationRate() const { return m_articulationRate; }
     double phrasePauses() const { return m_phrasePauses; }
@@ -88,6 +92,7 @@ signals:
     void phraseSecondsChanged();
     void audioLevelChanged();
     void hasResultChanged();
+    void showingMeanChanged();
     void metricsChanged();
     void sessionsChanged();
     void openFileBusyChanged();
@@ -115,6 +120,8 @@ private:
     void setOpenFileError(const QString& error);
     void setNoSpeech(bool noSpeech);
     void showMetrics(const QVariantMap& shown, double speechSeconds);
+    void showSessionMean();
+    void setShowingMean(bool showing);
     void rememberShown(const QVariantMap& shown, double speechSeconds);
     double smoothedSpeechRate(double rate, bool live);
 
@@ -133,6 +140,7 @@ private:
     int m_epoch = 0;
     qreal m_audioLevel = 0;
     bool m_hasResult = false;
+    bool m_showingMean = false;
     bool m_noSpeech = false;
     double m_speechRate = 0;
     std::deque<double> m_speechRateWindow;

@@ -245,6 +245,16 @@
         <translation>Готово</translation>
     </message>
     <message>
+        <location filename="../ui/pages/HomePage.qml" line="41"/>
+        <source>Mean values</source>
+        <translation>Средние значения</translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/HomePage.qml" line="75"/>
+        <source>Speech is the total time. Press Start to measure again.</source>
+        <translation>Речь — суммарное время. Нажмите «Старт», чтобы измерить снова.</translation>
+    </message>
+    <message>
         <location filename="../ui/pages/HomePage.qml" line="73"/>
         <source>Whole-session result. Press Start to measure again.</source>
         <translation>Итог всей сессии. Нажмите «Старт», чтобы измерить снова.</translation>
@@ -532,6 +542,11 @@
 </context>
 <context>
     <name>SessionPage</name>
+    <message>
+        <location filename="../ui/pages/SessionPage.qml" line="94"/>
+        <source>Mean values</source>
+        <translation>Средние значения</translation>
+    </message>
     <message>
         <location filename="../ui/pages/SessionPage.qml" line="10"/>
         <source>History</source>

@@ -4,7 +4,7 @@ This document describes the behavior that a reimplementation must reproduce. It 
 
 The application does not recognize words and does not use a speech-recognition model. It estimates speaking tempo from vowel-like intensity peaks.
 
-Section 1.2 is the version 2 recorder. A session stays open in the background, metrics of the most recent speech update while speech is still going, and each pause-bounded segment becomes its own record. Sections 2–11 apply to each analyzed buffer. After Stop, Home and History join every kept segment from Start to Stop into one result. Section 1.3 stores the segments and shows that joined result, plus per-metric charts.
+Section 1.2 is the version 2 recorder. A session stays open in the background, metrics of the most recent speech update while speech is still going, and each pause-bounded segment becomes its own record. Sections 2–11 apply to each analyzed buffer. After Stop, Home and History show the duration-weighted mean of every kept phrase from Start to Stop. Speech time stays the sum. Section 1.3 stores the segments and shows that mean, plus per-metric charts.
 
 ## 1. What the user sees
 
@@ -27,13 +27,13 @@ There is no waveform and no playback of recorded speech. The audio is deleted af
 
 ### 1.1 Headline results
 
-While a session is on, speech rate, articulation, fillers, and pauses describe the analysis window: the most recent Analysis window seconds of kept speech (section 1.2, default 10 s), so a change of pace shows within a few seconds. Speech is the exception: it is the total analyzed speech since Start. After Stop, all five values switch to the whole session: every phrase kept since Start, joined. They are not the mean of those phrases. Vowel lengths and gap lengths are joined, speech time is added, the longest vowel and gap runs are kept, and section 6 runs once on that collection. That is the same result as the session's History row. A phrase dropped for being too short is left out. Open File is one file and is not joined with a session.
+While a session is on, speech rate, articulation, fillers, and pauses describe the analysis window: the most recent Analysis window seconds of kept speech (section 1.2, default 10 s), so a change of pace shows within a few seconds. Speech is the exception: it is the total analyzed speech since Start. After Stop, speech rate, articulation, fillers, and pauses switch to the duration-weighted mean of every phrase kept since Start. A longer phrase counts more than a shorter one. Speech stays the sum of those phrases. The gauge chip is labeled `Mean values`. That is the same result as the session's History row. A phrase dropped for being too short is left out. Open File is one file, is not averaged, and is not labeled Mean values.
 
 Speech rate is the only gauge. Articulation, fillers, pauses, and speech time are four tiles next to it.
 
 | On screen | Meaning | Unit | Display |
 | --- | --- | --- | --- |
-| Speech rate | Pace since Start, pauses inside phrases included | words per minute | Large integer (`toFixed(0)`). While recording, the gauge shows the median of the last Gauge median readings. The gauge marker clamps to `[Min RS, Max RS]`. The printed number does not. |
+| Speech rate | Pace of the analysis window while recording; after Stop, the duration-weighted mean of kept phrases | words per minute | Large integer (`toFixed(0)`). While recording, the gauge shows the median of the last Gauge median readings. After Stop the gauge shows the session mean. The gauge marker clamps to `[Min RS, Max RS]`. The printed number does not. |
 | Articulation | Pace while speech is actually going | words per minute | Integer. No gauge. |
 | Fillers | How much of the speech is stretched sounds | percent | Integer and ` %`, from section 6.5, with a thin bar for the same percent. |
 | Pauses | Extra gaps inside the kept phrases | seconds | Two decimals and ` sec`. No gauge. |
@@ -43,13 +43,13 @@ The gauge is a 240° arc open at the bottom, min at the lower left and max at th
 
 Home, from top to bottom:
 
-1. The gauge card. A chip in its corner names the state (Ready, Listening, Too short, Measuring, Not saved, Microphone blocked); while the session is on it has a blinking dot and the open phrase timer, as `mm:ss`, sits on the right. The gauge is always shown. Until something has been measured the arc is empty and the number reads `– –`. Under the gauge, one line explains the current state (section 1.2).
+1. The gauge card. A chip in its corner names the state (Ready, Listening, Too short, Measuring, Not saved, Microphone blocked, and Mean values after Stop); while the session is on it has a blinking dot and the open phrase timer, as `mm:ss`, sits on the right. The gauge is always shown. Until something has been measured the arc is empty and the number reads `– –`. Under the gauge, one line explains the current state (section 1.2).
 2. Four tiles: Articulation, Fillers, Pauses, Speech. They show `—` until something has been measured.
 3. A round button: microphone and `Start` when idle, stop icon and `Stop` while the session is on. While the session is on, a halo around it grows with the microphone level, so silence and speech are obvious.
 
 The layout follows the window. When the page is at least 720 px wide, or landscape and at least 560 px wide, the gauge card is on the left and the tiles and button are on the right. Otherwise everything is one column and the button is pinned to the bottom of the page, so it stays reachable on a phone while the rest scrolls. Content is capped at 1120 px wide and centered.
 
-Details is inside Advanced. It opens the intermediate statistics in section 7 for the same buffer represented on Home, using the technical names from that section: the analysis window while recording, the session collection after Stop, or the opened file. Open File is an Advanced action on desktop only. There is no Save button.
+Details is inside Advanced. It opens the intermediate statistics in section 7. While recording those statistics are the analysis window. After Stop they are the joined vowel and gap collection, except Mean Filler Sounds, which is the same duration-weighted mean as the Fillers tile. Open File uses the opened file. Open File is an Advanced action on desktop only. There is no Save button.
 
 ### 1.2 Recording
 
@@ -62,7 +62,7 @@ These lines are the only status copy on Home. Each replaces the previous one.
 | State | Status line |
 | --- | --- |
 | Idle, nothing measured yet | `Press Start and speak naturally. The numbers follow your recent speech.` |
-| Idle, after a session | `Whole-session result. Press Start to measure again.` |
+| Idle, after a session with kept phrases | `Speech is the total time. Press Start to measure again.` The gauge chip reads `Mean values`. |
 | Session on, waiting for speech, or the latest window has no measurable speech (section 5.4) | `Listening…` The last numbers stay. |
 | Less than 1.5 s of audio in the window | `Keep speaking. There is not enough speech to measure yet.` The last published numbers stay. |
 | Window long enough | `The numbers follow your last N seconds of speech.` with N = Analysis window. |
@@ -110,10 +110,10 @@ The analysis window is the audio of the kept segments of this session, joined en
 
 - Nothing is published until the window holds 1.5 s of audio. Until then the last result stays on screen. If there is none yet, Home shows the gauge with an empty arc and `– –` instead of a speech-rate number.
 - After that, a new snapshot is started at most every `60000 / Updates per minute` ms (`General/updatesPerMinute`, default 60, range 6…240). With autodetection on, snapshots start only on speech frames. If a newer buffer is ready before the previous analysis finishes, the older run is abandoned.
-- Articulation, fillers, pauses, and speech are shown as computed. They are not joined with earlier phrases and not averaged with earlier snapshots. The speech-rate gauge shows the median of the last Gauge median live readings (`General/gaugeAverageCount`, default 3, range 1…30). Fewer readings than that use the ones already collected. An odd count takes the middle value after sorting. An even count takes the arithmetic mean of the two central values. Start clears those readings. After Stop the gauge shows the whole session, not that median. Details shows the current window.
+- Articulation, fillers, pauses, and speech are shown as computed. They are not joined with earlier phrases and not averaged with earlier snapshots. The speech-rate gauge shows the median of the last Gauge median live readings (`General/gaugeAverageCount`, default 3, range 1…30). Fewer readings than that use the ones already collected. An odd count takes the middle value after sorting. An even count takes the arithmetic mean of the two central values. Start clears those readings. After Stop the gauge and the tiles show the duration-weighted mean of the kept phrases, not that median. Speech stays the total. The gauge chip is labeled Mean values. Details keeps the joined vowel and gap statistics.
 - A snapshot with no measurable speech (section 5.4) is not shown. The numbers stay and the state chip reads Listening until a window with speech arrives.
 - When a segment closes, its final analysis is stored in the session file and added to the session collection. The screen keeps the window numbers; only Speech grows. The buffer is then released.
-- After Stop, once the last segment is stored, Home shows the session collection. That final switch is not recorded as a shown change.
+- After Stop, once the last segment is stored, Home shows that mean. That final switch is not recorded as a shown change.
 - Speech is the sum of the stored segment lengths since Start plus the open segment. It can disagree with the timer by up to one second, by the 300 ms pads, and by the sample-rate rule in section 3.
 - Open File is a single whole-file analysis and is not windowed or joined.
 
@@ -210,7 +210,7 @@ Newest session first. A row is scannable without opening it:
 - Subtitle: phrase count, how many times the on-screen numbers changed, and the session speech rate, such as `8 phrases · 46 updates · 128 wpm`.
 - Third line: the other four session values, in the Home order, with the same rounding as the live labels.
 
-Those five values are section 6 on the joined vowel lengths, gap lengths, and speech durations of the kept phrases. Speech rate therefore weights a longer phrase more than a shorter one. Pauses and fillers use the joined runs, so they are not the mean of the per-phrase numbers. Speech is the sum. Each segment also stores `vowelLengths`, `gapLengths`, `vowelMaxFrames`, `gapMaxFrames`, and the coefficients used (`frame`, `shift`, `smooth`, `minLengthMs`, `degree`, `k1`–`k4`, `fillerMin`, `fillerMax`). The filler percent uses the last phrase’s filler range. If those lists are missing, or the coefficients differ inside one session, the row falls back to a duration-weighted mean of the stored headline values and the sum of the speech durations. An empty list says `No sessions yet. Start on Home and speak.`
+Those five values are the duration-weighted mean of the kept phrases’ headline numbers, except speech, which is the sum of their speech durations. A longer phrase therefore counts more than a shorter one. Each segment also stores `vowelLengths`, `gapLengths`, `vowelMaxFrames`, `gapMaxFrames`, and the coefficients used (`frame`, `shift`, `smooth`, `minLengthMs`, `degree`, `k1`–`k4`, `fillerMin`, `fillerMax`). The filler percent is the duration-weighted mean of the phrases’ filler percents. An empty list says `No sessions yet. Start on Home and speak.`
 
 **Session charts**
 
@@ -728,7 +728,7 @@ Do not implement these for behavioral parity:
 
 ## 14. Parity checklist
 
-1. Keep a background session. Cut a kept segment at a pause or at 15 s, drop a segment shorter than 1 s, resample to 8000 Hz mono s16le, and analyze that buffer with sections 2–11. Live snapshots analyze the last Analysis window seconds of kept plus open audio. Articulation, fillers, pauses, and speech are shown unjoined and unaveraged. The speech-rate gauge shows the median of the last Gauge median live readings (default 3). Silence must not produce nuclei (section 5.4). Delete the segment audio once its metrics are in the session file.
+1. Keep a background session. Cut a kept segment at a pause or at 15 s, drop a segment shorter than 1 s, resample to 8000 Hz mono s16le, and analyze that buffer with sections 2–11. Live snapshots analyze the last Analysis window seconds of kept plus open audio. Articulation, fillers, pauses, and speech are shown unjoined and unaveraged. The speech-rate gauge shows the median of the last Gauge median live readings (default 3). After Stop, the gauge and tiles show the duration-weighted mean of the kept phrases, speech stays the total, and the screen is labeled Mean values. Silence must not produce nuclei (section 5.4). Delete the segment audio once its metrics are in the session file.
 2. Intensity uses mean absolute amplitude, full-window divisor, hop 120, window 240, and the exact loop bounds.
 3. Normalize to [0, 1], then the moving average with even length, full-window divisor, and the `index > 0` edge rule.
 4. Nuclei are `I_norm - S > 0.009`, stored length is `run_samples - 1`, runs of one sample are dropped at the default minimum, and a nucleus still open at the last sample is dropped.

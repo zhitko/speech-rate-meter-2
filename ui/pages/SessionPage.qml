@@ -91,6 +91,16 @@ Page {
                     columnSpacing: 16
                     rowSpacing: 12
 
+                    Label {
+                        Layout.fillWidth: true
+                        Layout.columnSpan: root.wideLayout ? 2 : 1
+                        visible: Number(sessionData.phraseCount) > 0
+                        text: qsTr("Mean values")
+                        font.pixelSize: AppScale.fs(13)
+                        font.weight: Font.DemiBold
+                        color: Theme.primary(Material.theme)
+                    }
+
                     SpeechRateGauge {
                         Layout.fillWidth: true
                         Layout.preferredWidth: root.wideLayout ? 1 : -1

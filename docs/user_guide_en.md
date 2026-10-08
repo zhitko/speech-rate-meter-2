@@ -7,7 +7,7 @@ Speech Rate Meter 2 estimates how fast you are speaking. It does not recognize w
 1. Open **Home**.
 2. Press **Start** and speak naturally. The microphone stays open. A meter inside the speech-rate gauge follows the microphone: if you are speaking and the bar stays empty, the microphone is not being heard. With **Use Speech Autodetection** on, stay quiet while background noise is measured, then speak. With it off, the recording is analyzed from the first sample.
 3. With **Use Speech Autodetection** on, a pause ends the phrase; it is saved, and the next one starts when you speak again. With it off, pauses do not end the phrase and the recording is saved in 15-second parts.
-4. Press **Stop** when the session is finished. Home then shows the result of the whole session, the same as in **History**.
+4. Press **Stop** when the session is finished. Home then shows the mean speech rate, articulation, fillers, and pauses for the whole session. The gauge chip is labeled **Mean values**. Speech is the total time. History shows the same means.
 
 While recording, speech rate, articulation, fillers, and pauses come from the **Analysis window**: your most recent kept speech (10 seconds by default). A change of pace shows within a few seconds. **Speech** is the total time measured since **Start**.
 
@@ -17,7 +17,7 @@ While a session is running, **Recording** stays in the toolbar on every page. Ta
 
 ## History
 
-**History** lists each session, newest first. A row shows the date, how many phrases were kept, how many times the numbers changed, and the pace from **Start** to **Stop**. Open a row to see those same measures, then a chart of every change that appeared on Home.
+**History** lists each session, newest first. A row shows the date, how many phrases were kept, how many times the numbers changed, and the mean pace from **Start** to **Stop**. Open a row to see those same mean values, labeled **Mean values**, then a chart of every change that appeared on Home.
 
 ## Settings
 
