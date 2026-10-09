@@ -25,7 +25,7 @@ Dialog {
     signal calibrationDoneEnergy(real threshold)
     signal calibrationDoneAutocorrelation(real threshold)
 
-    title: qsTr("VAD Calibration")
+    title: qsTr("Measuring background noise")
     modal: true
     anchors.centerIn: parent
     width: 380

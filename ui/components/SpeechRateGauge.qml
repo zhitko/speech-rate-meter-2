@@ -231,6 +231,15 @@ Item {
                 color: root.zoneColor
             }
         }
+
+        Text {
+            anchors.horizontalCenter: parent.horizontalCenter
+            text: qsTr("Speech rate")
+            font.pixelSize: AppScale.fs(12)
+            font.weight: Font.DemiBold
+            color: Theme.onSurface(Material.theme)
+            Accessible.ignored: true
+        }
     }
 
     Text {

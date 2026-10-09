@@ -23,67 +23,67 @@
     </message>
     <message>
         <location filename="../ui/components/DetailsDialog.qml" line="47"/>
-        <source>Record Length</source>
+        <source>Speech time (s)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../ui/components/DetailsDialog.qml" line="48"/>
-        <source>Consonants &amp; Silence Length</source>
+        <source>Consonants and silence, total (s)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../ui/components/DetailsDialog.qml" line="49"/>
-        <source>Consonants &amp; Silence Count</source>
+        <source>Consonants and silence, count</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../ui/components/DetailsDialog.qml" line="50"/>
-        <source>Consonants &amp; Silence Max</source>
+        <source>Longest consonants and silence (s)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../ui/components/DetailsDialog.qml" line="51"/>
-        <source>Consonants &amp; Silence Mean Duration</source>
+        <source>Mean consonants and silence (s)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../ui/components/DetailsDialog.qml" line="52"/>
-        <source>Consonants &amp; Silence Median Duration</source>
+        <source>Median consonants and silence (s)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../ui/components/DetailsDialog.qml" line="53"/>
-        <source>Vowels Length</source>
+        <source>Vowels, total (s)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../ui/components/DetailsDialog.qml" line="54"/>
-        <source>Vowels Count</source>
+        <source>Vowel count</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../ui/components/DetailsDialog.qml" line="55"/>
-        <source>Vowels Max</source>
+        <source>Longest vowel (s)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../ui/components/DetailsDialog.qml" line="56"/>
-        <source>Vowels Mean Duration</source>
+        <source>Mean vowel (s)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../ui/components/DetailsDialog.qml" line="57"/>
-        <source>Vowels Median Duration</source>
+        <source>Median vowel (s)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../ui/components/DetailsDialog.qml" line="58"/>
-        <source>Vowels Speaking Rate</source>
+        <source>Vowels per second</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../ui/components/DetailsDialog.qml" line="59"/>
-        <source>Mean Filler Sounds</source>
+        <source>Filler score</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -101,7 +101,8 @@
     </message>
     <message>
         <location filename="../ui/pages/HistoryPage.qml" line="37"/>
-        <location filename="../ui/pages/HistoryPage.qml" line="103"/>
+        <location filename="../ui/pages/HistoryPage.qml" line="82"/>
+        <location filename="../ui/pages/HistoryPage.qml" line="111"/>
         <source>wpm</source>
         <translation type="unfinished"></translation>
     </message>
@@ -118,25 +119,30 @@
     </message>
     <message>
         <location filename="../ui/pages/HistoryPage.qml" line="79"/>
-        <source>Open session %1</source>
+        <source>Open session %1, speech rate %2 %3</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/HistoryPage.qml" line="124"/>
+        <location filename="../ui/pages/HistoryPage.qml" line="122"/>
+        <source>Speech rate</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../ui/pages/HistoryPage.qml" line="144"/>
+        <source>numbers changed %n times</source>
+        <translation>
+            <numerusform>numbers changed %n time</numerusform>
+            <numerusform>numbers changed %n times</numerusform>
+        </translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/HistoryPage.qml" line="142"/>
         <source>%1 · %2</source>
         <translation type="unfinished"></translation>
     </message>
     <message numerus="yes">
-        <location filename="../ui/pages/HistoryPage.qml" line="125"/>
+        <location filename="../ui/pages/HistoryPage.qml" line="143"/>
         <source>%n phrases</source>
-        <translation type="unfinished">
-            <numerusform></numerusform>
-            <numerusform></numerusform>
-        </translation>
-    </message>
-    <message numerus="yes">
-        <location filename="../ui/pages/HistoryPage.qml" line="126"/>
-        <source>%n updates</source>
         <translation type="unfinished">
             <numerusform></numerusform>
             <numerusform></numerusform>
@@ -151,119 +157,135 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <location filename="../ui/pages/HomePage.qml" line="42"/>
+        <source>Mean values</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/HomePage.qml" line="51"/>
+        <source>Too short to save</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/HomePage.qml" line="79"/>
+        <source>Averages for the whole session. Speech is the total time. Press Start to measure again.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/HomePage.qml" line="80"/>
+        <source>Result for this recording. Press Start to measure again.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <location filename="../ui/pages/HomePage.qml" line="82"/>
+        <source>Silence is not counted. Speak when you are ready.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/HomePage.qml" line="89"/>
         <source>That phrase was too short and was not saved.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/HomePage.qml" line="84"/>
+        <location filename="../ui/pages/HomePage.qml" line="91"/>
         <source>The microphone is blocked. Allow access in the system settings, then press Start again.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/HomePage.qml" line="103"/>
-        <location filename="../ui/pages/HomePage.qml" line="493"/>
+        <location filename="../ui/pages/HomePage.qml" line="110"/>
+        <location filename="../ui/pages/HomePage.qml" line="280"/>
+        <location filename="../ui/pages/HomePage.qml" line="316"/>
         <source>Open File</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/HomePage.qml" line="104"/>
+        <location filename="../ui/pages/HomePage.qml" line="111"/>
         <source>WAV files (*.wav)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/HomePage.qml" line="405"/>
+        <location filename="../ui/pages/HomePage.qml" line="491"/>
         <source>Analyzing audio</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/HomePage.qml" line="413"/>
+        <location filename="../ui/pages/HomePage.qml" line="499"/>
         <source>Analyzing audio…</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/HomePage.qml" line="436"/>
+        <location filename="../ui/pages/HomePage.qml" line="521"/>
+        <source>Pace while speaking, gaps left out</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/HomePage.qml" line="523"/>
         <source>wpm</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/HomePage.qml" line="434"/>
+        <location filename="../ui/pages/HomePage.qml" line="520"/>
         <source>Articulation</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/HomePage.qml" line="42"/>
+        <location filename="../ui/pages/HomePage.qml" line="45"/>
         <source>Listening</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/HomePage.qml" line="44"/>
+        <location filename="../ui/pages/HomePage.qml" line="47"/>
         <source>Too short</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/HomePage.qml" line="46"/>
+        <location filename="../ui/pages/HomePage.qml" line="49"/>
         <source>Measuring</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/HomePage.qml" line="48"/>
-        <source>Not saved</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../ui/pages/HomePage.qml" line="50"/>
+        <location filename="../ui/pages/HomePage.qml" line="53"/>
         <source>Microphone blocked</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/HomePage.qml" line="52"/>
+        <location filename="../ui/pages/HomePage.qml" line="55"/>
         <source>Ready</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/HomePage.qml" line="336"/>
+        <location filename="../ui/pages/HomePage.qml" line="417"/>
         <source>Phrase time %1</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/HomePage.qml" line="444"/>
+        <location filename="../ui/pages/HomePage.qml" line="531"/>
         <source>Fillers</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/HomePage.qml" line="455"/>
+        <location filename="../ui/pages/HomePage.qml" line="543"/>
         <source>Pauses</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/HomePage.qml" line="457"/>
-        <location filename="../ui/pages/HomePage.qml" line="467"/>
+        <location filename="../ui/pages/HomePage.qml" line="546"/>
+        <location filename="../ui/pages/HomePage.qml" line="557"/>
         <source>sec</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/HomePage.qml" line="465"/>
+        <location filename="../ui/pages/HomePage.qml" line="554"/>
         <source>Speech</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/HomePage.qml" line="170"/>
+        <location filename="../ui/pages/HomePage.qml" line="182"/>
         <source>Microphone level</source>
         <translation type="unfinished"></translation>
     </message>
-    <message>
-        <location filename="../ui/pages/HomePage.qml" line="73"/>
-        <source>Whole-session result. Press Start to measure again.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../ui/pages/HomePage.qml" line="75"/>
-        <source>Listening…</source>
-        <translation type="unfinished"></translation>
-    </message>
     <message numerus="yes">
-        <location filename="../ui/pages/HomePage.qml" line="77"/>
+        <location filename="../ui/pages/HomePage.qml" line="84"/>
         <source>The numbers follow your last %n second(s) of speech.</source>
         <translation>
             <numerusform>The numbers follow your last %n second of speech.</numerusform>
@@ -271,42 +293,57 @@
         </translation>
     </message>
     <message>
-        <location filename="../ui/pages/HomePage.qml" line="80"/>
+        <location filename="../ui/pages/HomePage.qml" line="87"/>
         <source>Keep speaking. There is not enough speech to measure yet.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/HomePage.qml" line="86"/>
+        <location filename="../ui/pages/HomePage.qml" line="93"/>
         <source>Press Start and speak naturally. The numbers follow your recent speech.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/HomePage.qml" line="171"/>
+        <location filename="../ui/pages/HomePage.qml" line="183"/>
         <source>%1 percent</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/HomePage.qml" line="205"/>
+        <location filename="../ui/pages/HomePage.qml" line="217"/>
         <source>Stop recording</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/HomePage.qml" line="205"/>
+        <location filename="../ui/pages/HomePage.qml" line="217"/>
         <source>Start recording</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/HomePage.qml" line="236"/>
+        <location filename="../ui/pages/HomePage.qml" line="248"/>
         <source>Stop</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/HomePage.qml" line="236"/>
+        <location filename="../ui/pages/HomePage.qml" line="248"/>
         <source>Start</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/HomePage.qml" line="485"/>
+        <location filename="../ui/pages/HomePage.qml" line="532"/>
+        <source>Drawn-out sounds, not words</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/HomePage.qml" line="544"/>
+        <source>Longer gaps, not all silence</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/HomePage.qml" line="555"/>
+        <source>Total time counted as speech</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/HomePage.qml" line="575"/>
         <source>Details</source>
         <translation type="unfinished"></translation>
     </message>
@@ -378,61 +415,61 @@
     <name>Main</name>
     <message>
         <location filename="../ui/Main.qml" line="20"/>
-        <location filename="../ui/Main.qml" line="169"/>
-        <location filename="../ui/Main.qml" line="363"/>
+        <location filename="../ui/Main.qml" line="182"/>
+        <location filename="../ui/Main.qml" line="376"/>
         <source>Speech Rate Meter 2</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/Main.qml" line="186"/>
+        <location filename="../ui/Main.qml" line="199"/>
         <source>Recording in progress. Return to Home</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/Main.qml" line="210"/>
+        <location filename="../ui/Main.qml" line="223"/>
         <source>Recording</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/Main.qml" line="254"/>
-        <location filename="../ui/Main.qml" line="374"/>
+        <location filename="../ui/Main.qml" line="267"/>
+        <location filename="../ui/Main.qml" line="387"/>
         <source>Home</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/Main.qml" line="255"/>
-        <location filename="../ui/Main.qml" line="375"/>
+        <location filename="../ui/Main.qml" line="268"/>
+        <location filename="../ui/Main.qml" line="388"/>
         <source>History</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/Main.qml" line="256"/>
-        <location filename="../ui/Main.qml" line="376"/>
+        <location filename="../ui/Main.qml" line="269"/>
+        <location filename="../ui/Main.qml" line="389"/>
         <source>Settings</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/Main.qml" line="272"/>
+        <location filename="../ui/Main.qml" line="285"/>
         <source>Current page</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/Main.qml" line="377"/>
+        <location filename="../ui/Main.qml" line="390"/>
         <source>User Guide</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/Main.qml" line="378"/>
+        <location filename="../ui/Main.qml" line="391"/>
         <source>Privacy Policy</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/Main.qml" line="379"/>
+        <location filename="../ui/Main.qml" line="392"/>
         <source>Open-source licences</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/Main.qml" line="438"/>
+        <location filename="../ui/Main.qml" line="451"/>
         <source>Version %1</source>
         <translation type="unfinished"></translation>
     </message>
@@ -472,34 +509,6 @@
     </message>
 </context>
 <context>
-    <name>SessionApi</name>
-    <message>
-        <location filename="../src/api/sessionapi.cpp" line="148"/>
-        <location filename="../src/api/sessionapi.cpp" line="152"/>
-        <location filename="../src/api/sessionapi.cpp" line="332"/>
-        <location filename="../src/api/sessionapi.cpp" line="1102"/>
-        <source>The selected file cannot be opened.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../src/api/sessionapi.cpp" line="155"/>
-        <location filename="../src/api/sessionapi.cpp" line="169"/>
-        <location filename="../src/api/sessionapi.cpp" line="181"/>
-        <source>The selected file is not a valid WAV file.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../src/api/sessionapi.cpp" line="193"/>
-        <source>Use a PCM WAV file: 8000 Hz, mono, signed 16-bit little-endian.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../src/api/sessionapi.cpp" line="344"/>
-        <source>No measurable speech was found in the file.</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
     <name>SessionPage</name>
     <message>
         <location filename="../ui/pages/SessionPage.qml" line="10"/>
@@ -517,51 +526,76 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/SessionPage.qml" line="118"/>
-        <location filename="../ui/pages/SessionPage.qml" line="191"/>
+        <location filename="../ui/pages/SessionPage.qml" line="98"/>
+        <source>Mean values</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SessionPage.qml" line="128"/>
+        <location filename="../ui/pages/SessionPage.qml" line="205"/>
         <source>Articulation</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/SessionPage.qml" line="120"/>
-        <location filename="../ui/pages/SessionPage.qml" line="183"/>
-        <location filename="../ui/pages/SessionPage.qml" line="193"/>
+        <location filename="../ui/pages/SessionPage.qml" line="129"/>
+        <source>Pace while speaking, gaps left out</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SessionPage.qml" line="131"/>
+        <location filename="../ui/pages/SessionPage.qml" line="197"/>
+        <location filename="../ui/pages/SessionPage.qml" line="207"/>
         <source>wpm</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/SessionPage.qml" line="129"/>
-        <location filename="../ui/pages/SessionPage.qml" line="201"/>
+        <location filename="../ui/pages/SessionPage.qml" line="140"/>
+        <location filename="../ui/pages/SessionPage.qml" line="215"/>
         <source>Fillers</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../ui/pages/SessionPage.qml" line="141"/>
-        <location filename="../ui/pages/SessionPage.qml" line="212"/>
+        <source>Drawn-out sounds, not words</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SessionPage.qml" line="153"/>
+        <location filename="../ui/pages/SessionPage.qml" line="226"/>
         <source>Pauses</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/SessionPage.qml" line="143"/>
         <location filename="../ui/pages/SessionPage.qml" line="154"/>
-        <location filename="../ui/pages/SessionPage.qml" line="215"/>
-        <location filename="../ui/pages/SessionPage.qml" line="226"/>
+        <source>Longer gaps, not all silence</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SessionPage.qml" line="156"/>
+        <location filename="../ui/pages/SessionPage.qml" line="168"/>
+        <location filename="../ui/pages/SessionPage.qml" line="229"/>
+        <location filename="../ui/pages/SessionPage.qml" line="240"/>
         <source>sec</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/SessionPage.qml" line="152"/>
-        <location filename="../ui/pages/SessionPage.qml" line="223"/>
+        <location filename="../ui/pages/SessionPage.qml" line="165"/>
+        <location filename="../ui/pages/SessionPage.qml" line="237"/>
         <source>Speech</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/SessionPage.qml" line="164"/>
-        <source>Each point is one change shown on Home.</source>
+        <location filename="../ui/pages/SessionPage.qml" line="166"/>
+        <source>Total time counted as speech</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/SessionPage.qml" line="181"/>
+        <location filename="../ui/pages/SessionPage.qml" line="178"/>
+        <source>Each point is one moment the numbers on Home changed.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SessionPage.qml" line="195"/>
         <source>Speech rate</source>
         <translation type="unfinished"></translation>
     </message>
@@ -575,13 +609,13 @@
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="127"/>
-        <location filename="../ui/pages/SettingsPage.qml" line="275"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="278"/>
         <source>Delete user data</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="128"/>
-        <source>This permanently deletes saved sessions on this device. Recorded audio is already gone.</source>
+        <source>This permanently deletes saved sessions on this device. Recordings are not kept, so there is no audio to delete.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -671,226 +705,301 @@
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="250"/>
+        <source>Shows Home, History, and Settings along the bottom. The menu button stays in the toolbar.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SettingsPage.qml" line="253"/>
         <source>Font Size</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="254"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="257"/>
         <source>Normal</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="255"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="258"/>
         <source>Large</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="256"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="259"/>
         <source>Extra large</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="357"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="350"/>
         <source>Pause (s)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="371"/>
-        <source>Silence that ends a phrase.</source>
+        <location filename="../ui/pages/SettingsPage.qml" line="489"/>
+        <source>Energy uses loudness. Autocorrelation uses pitch. Hybrid requires both.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="376"/>
-        <source>Use Speech Autodetection</source>
+        <location filename="../ui/pages/SettingsPage.qml" line="492"/>
+        <source>Energy threshold</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="386"/>
-        <source>After Start, measure background noise, then listen for speech. Off measures the recording from the first sample.</source>
+        <location filename="../ui/pages/SettingsPage.qml" line="502"/>
+        <source>Sound louder than this counts as speech. Higher ignores more of a quiet voice. Calibrate sets it from the room.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="391"/>
-        <source>Slow (wpm)</source>
+        <location filename="../ui/pages/SettingsPage.qml" line="505"/>
+        <source>Autocorrelation threshold</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="405"/>
-        <source>Left end of the speech-rate gauge.</source>
+        <location filename="../ui/pages/SettingsPage.qml" line="515"/>
+        <source>How clearly a sound must repeat to count as a voice. Higher ignores more noise.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="410"/>
-        <source>Fast (wpm)</source>
+        <location filename="../ui/pages/SettingsPage.qml" line="517"/>
+        <source>Threshold factor</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="424"/>
-        <source>Right end of the speech-rate gauge.</source>
+        <location filename="../ui/pages/SettingsPage.qml" line="527"/>
+        <source>Used when you calibrate. The threshold becomes the room average times this number. Higher asks for a clearer voice.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="433"/>
-        <source>Show advanced settings</source>
+        <location filename="../ui/pages/SettingsPage.qml" line="529"/>
+        <source>Lowest pitch (Hz)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="447"/>
-        <source>Calibration, coefficients, and Open File.</source>
+        <location filename="../ui/pages/SettingsPage.qml" line="539"/>
+        <source>Lowest voice pitch to look for, in hertz.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="468"/>
-        <source>Advanced</source>
+        <location filename="../ui/pages/SettingsPage.qml" line="541"/>
+        <source>Highest pitch (Hz)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="476"/>
-        <source>Grouped by analysis stage, in the order a phrase is processed.</source>
+        <location filename="../ui/pages/SettingsPage.qml" line="551"/>
+        <source>Highest voice pitch to look for, in hertz.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="484"/>
-        <source>Speech detection</source>
+        <location filename="../ui/pages/SettingsPage.qml" line="562"/>
+        <source>Measures the room and fills in the thresholds. Stay quiet until it closes.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="485"/>
-        <source>Finds where each phrase starts and ends. Used only when Use Speech Autodetection is on.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="555"/>
-        <source>Intensity</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="556"/>
-        <source>Turns the phrase into a loudness curve and a smoothed copy of it. Values are in samples at 8000 Hz.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="590"/>
-        <source>Vowel detection</source>
+        <location filename="../ui/pages/SettingsPage.qml" line="569"/>
+        <source>Turns the phrase into a loudness curve and a smoothed copy. Frame and shift are audio samples at 8000 Hz, so 8000 is one second. The smooth window counts points on the curve.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="591"/>
-        <source>Vowels are where the loudness curve rises above its smoothed copy. Shorter peaks are dropped.</source>
+        <source>How far the next window moves. Smaller gives a finer curve.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="607"/>
-        <source>Statistics</source>
+        <location filename="../ui/pages/SettingsPage.qml" line="592"/>
+        <source>Smooth window</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="608"/>
-        <source>Averages the vowel and gap durations. A higher degree gives long sounds more weight.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="624"/>
-        <source>Metrics</source>
+        <location filename="../ui/pages/SettingsPage.qml" line="601"/>
+        <source>How many points are averaged. Longer follows the loudness more slowly.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="625"/>
-        <source>Coefficients of the formulas that turn the statistics into the values on Home.</source>
+        <source>Averages the vowel and gap durations.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="628"/>
-        <source>Speech rate</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="636"/>
-        <source>Articulation</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="644"/>
-        <source>Pauses</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="652"/>
-        <source>Fillers</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="681"/>
-        <source>The filler score between Min FS and Max FS maps to 0–100 %.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="611"/>
-        <source>Mean value degree</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="629"/>
-        <source>K1</source>
+        <source>Long-sound weight</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="637"/>
-        <source>K2</source>
+        <source>1 treats every sound equally. A higher number makes long sounds count more.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="645"/>
-        <source>K3</source>
+        <location filename="../ui/pages/SettingsPage.qml" line="674"/>
+        <source>Filler scale</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="653"/>
-        <source>K4</source>
+        <location filename="../ui/pages/SettingsPage.qml" line="680"/>
+        <source>Higher raises the filler score before it is shown as a percent.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="559"/>
-        <source>Frame</source>
+        <location filename="../ui/pages/SettingsPage.qml" line="681"/>
+        <source>Low filler score</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SettingsPage.qml" line="690"/>
+        <source>A score at or below this is shown as 0%.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SettingsPage.qml" line="691"/>
+        <source>High filler score</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SettingsPage.qml" line="700"/>
+        <source>A score at or above this is shown as 100%. Scores between the low and high values fill in 0–100%.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SettingsPage.qml" line="374"/>
+        <source>Slow (wpm)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SettingsPage.qml" line="388"/>
+        <source>Fast (wpm)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SettingsPage.qml" line="420"/>
+        <source>Show advanced settings</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SettingsPage.qml" line="434"/>
+        <source>How speech is detected, how loudness is measured, and the coefficients behind the numbers. The switch turns off when you leave the app.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SettingsPage.qml" line="455"/>
+        <source>Advanced</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SettingsPage.qml" line="471"/>
+        <source>Speech detection</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="568"/>
+        <source>Intensity</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SettingsPage.qml" line="606"/>
+        <source>Vowel detection</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SettingsPage.qml" line="607"/>
+        <source>Vowels are where the loudness curve rises above its smoothed copy. Shorter peaks are dropped.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SettingsPage.qml" line="610"/>
+        <source>Shortest vowel (ms)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SettingsPage.qml" line="619"/>
+        <source>Vowel peaks shorter than this are ignored.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SettingsPage.qml" line="624"/>
+        <source>Statistics</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SettingsPage.qml" line="642"/>
+        <source>Metrics</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SettingsPage.qml" line="643"/>
+        <source>Coefficients of the formulas that turn the statistics into the values on Home.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SettingsPage.qml" line="646"/>
+        <source>Speech rate</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SettingsPage.qml" line="647"/>
+        <source>Speech-rate scale</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SettingsPage.qml" line="653"/>
+        <source>Higher raises the speech-rate number.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SettingsPage.qml" line="655"/>
+        <source>Articulation</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SettingsPage.qml" line="656"/>
+        <source>Articulation scale</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SettingsPage.qml" line="662"/>
+        <source>Higher usually lowers articulation.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SettingsPage.qml" line="664"/>
+        <source>Pauses</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SettingsPage.qml" line="665"/>
+        <source>Pause scale</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SettingsPage.qml" line="671"/>
+        <source>Higher raises the Pauses number.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SettingsPage.qml" line="673"/>
+        <source>Fillers</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SettingsPage.qml" line="572"/>
+        <source>Frame</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SettingsPage.qml" line="581"/>
+        <source>Length of each loudness window.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SettingsPage.qml" line="582"/>
         <source>Shift</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="577"/>
-        <source>Smooth Frame</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="594"/>
-        <source>Segment length limit (millisec)</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="659"/>
-        <source>Min FS</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="668"/>
-        <source>Max FS</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="488"/>
-        <source>VAD Method</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="307"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="310"/>
         <source>Measurement</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="319"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="322"/>
         <source>Analysis window (s)</source>
         <translation type="unfinished"></translation>
     </message>
@@ -900,57 +1009,82 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="338"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="336"/>
         <source>Updates per minute</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="352"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="347"/>
         <source>How often the numbers on Home are recalculated while you speak.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="492"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="361"/>
+        <source>Silence this long ends the phrase and saves it. Used only when Detect speech automatically is on.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SettingsPage.qml" line="364"/>
+        <source>Detect speech automatically</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SettingsPage.qml" line="371"/>
+        <source>After Start, measures background noise, then waits for you to speak. A pause ends the phrase. Off starts measuring when you press Start, a pause does not end the phrase, and the recording is saved in 15-second parts.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SettingsPage.qml" line="385"/>
+        <source>The slow end of the speech-rate gauge. From here to Fast, the arc is split equally into Slow, Average, and Fast.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SettingsPage.qml" line="399"/>
+        <source>The fast end of the speech-rate gauge.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SettingsPage.qml" line="402"/>
+        <source>Gauge median</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SettingsPage.qml" line="413"/>
+        <source>The gauge shows the middle of this many latest speech-rate readings, so one jump moves it less. 1 shows the current reading.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SettingsPage.qml" line="463"/>
+        <source>These change how the numbers on Home are calculated. The groups follow the order a phrase is processed.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SettingsPage.qml" line="472"/>
+        <source>Finds where each phrase starts and ends. Used only when Detect speech automatically is on.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SettingsPage.qml" line="475"/>
+        <source>Detection method</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SettingsPage.qml" line="479"/>
         <source>Energy</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="493"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="480"/>
         <source>Autocorrelation</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="494"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="481"/>
         <source>Hybrid</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="502"/>
-        <source>Energy Threshold</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="511"/>
-        <source>Autocorr. Threshold</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="519"/>
-        <source>Autocorr. Threshold K</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="527"/>
-        <source>Autocorr Min F0 (Hz)</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="535"/>
-        <source>Autocorr Max F0 (Hz)</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="547"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="557"/>
         <source>Calibrate</source>
         <translation type="unfinished"></translation>
     </message>
@@ -958,32 +1092,33 @@
 <context>
     <name>SpeechRateGauge</name>
     <message>
-        <location filename="../ui/components/SpeechRateGauge.qml" line="20"/>
+        <location filename="../ui/components/SpeechRateGauge.qml" line="24"/>
+        <location filename="../ui/components/SpeechRateGauge.qml" line="237"/>
         <source>Speech rate</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/components/SpeechRateGauge.qml" line="23"/>
+        <location filename="../ui/components/SpeechRateGauge.qml" line="27"/>
         <source>No measurement yet</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/components/SpeechRateGauge.qml" line="26"/>
+        <location filename="../ui/components/SpeechRateGauge.qml" line="30"/>
         <source>Slow</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/components/SpeechRateGauge.qml" line="26"/>
+        <location filename="../ui/components/SpeechRateGauge.qml" line="30"/>
         <source>Average</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/components/SpeechRateGauge.qml" line="26"/>
+        <location filename="../ui/components/SpeechRateGauge.qml" line="30"/>
         <source>Fast</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/components/SpeechRateGauge.qml" line="13"/>
+        <location filename="../ui/components/SpeechRateGauge.qml" line="14"/>
         <source>wpm</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1015,11 +1150,11 @@
     <name>VadCalibrationDialog</name>
     <message>
         <location filename="../ui/components/VadCalibrationDialog.qml" line="28"/>
-        <source>VAD Calibration</source>
+        <source>Measuring background noise</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/components/VadCalibrationDialog.qml" line="66"/>
+        <location filename="../ui/components/VadCalibrationDialog.qml" line="87"/>
         <source>Please stay quiet for %1 seconds so the background noise level can be measured.</source>
         <translation type="unfinished"></translation>
     </message>

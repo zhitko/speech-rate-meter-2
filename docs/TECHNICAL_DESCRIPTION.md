@@ -37,19 +37,21 @@ Speech rate is the only gauge. Articulation, fillers, pauses, and speech time ar
 | Articulation | Pace while speech is actually going | words per minute | Integer. No gauge. |
 | Fillers | How much of the speech is stretched sounds | percent | Integer and ` %`, from section 6.5, with a thin bar for the same percent. |
 | Pauses | Extra gaps inside the kept phrases | seconds | Two decimals and ` sec`. No gauge. |
-| Speech | Analyzed speech since Start | seconds | Integer and ` sec`. Silence that ends a phrase is not included. This is not the `mm:ss` timer. |
+| Speech | Analyzed speech since Start | seconds | Integer and ` sec`. Silence that ends a phrase is not included. This is not the `mm:ss` timer. Tile hint: `Total time counted as speech`. |
 
-The gauge is a 240° arc open at the bottom, min at the lower left and max at the lower right. It is split into three equal zones, Slow / Average / Fast, drawn green → amber → red (light theme `#1E8E5A`, `#D99A00`, `#D2382F`; dark theme `#5DD39E`, `#F4C04E`, `#FF8A80`). Each zone is a faint track that fills in full color up to the value, and a round marker sits at the value. The number, `wpm`, and the name of the current zone are in the middle of the arc. The value animates to each new update. The numbers under the two ends are Min RS and Max RS. Defaults: 70 and 210. If the printed rate sits outside that range, the marker rests on the near end and the number still shows the real value. While a session is on, a microphone mark and a bar sit under the unit, in the theme primary color. The bar is the square root of the same microphone level that grows the Start button halo, so quiet speech still moves it. Silence leaves the bar empty and the mark muted. The meter is hidden when the session is off, and History does not show it.
+The other tile hints are Articulation `Pace while speaking, gaps left out`, Fillers `Drawn-out sounds, not words`, and Pauses `Longer gaps, not all silence`.
+
+The gauge is a 240° arc open at the bottom, min at the lower left and max at the lower right. It is split into three equal zones, Slow / Average / Fast, drawn green → amber → red (light theme `#1E8E5A`, `#D99A00`, `#D2382F`; dark theme `#5DD39E`, `#F4C04E`, `#FF8A80`). Each zone is a faint track that fills in full color up to the value, and a round marker sits at the value. The number, `wpm`, the name of the current zone, and the words `Speech rate` are in the middle of the arc. The value animates to each new update. The numbers under the two ends are Min RS and Max RS. Defaults: 70 and 210. If the printed rate sits outside that range, the marker rests on the near end and the number still shows the real value. While a session is on, a microphone mark and a bar sit under the unit, in the theme primary color. The bar is the square root of the same microphone level that grows the Start button halo, so quiet speech still moves it. Silence leaves the bar empty and the mark muted. The meter is hidden when the session is off, and History does not show it.
 
 Home, from top to bottom:
 
-1. The gauge card. A chip in its corner names the state (Ready, Listening, Too short, Measuring, Not saved, Microphone blocked, and Mean values after Stop); while the session is on it has a blinking dot and the open phrase timer, as `mm:ss`, sits on the right. The gauge is always shown. Until something has been measured the arc is empty and the number reads `– –`. Under the gauge, one line explains the current state (section 1.2).
+1. The gauge card. A chip in its corner names the state (Ready, Listening, Too short, Measuring, Too short to save, Microphone blocked, and Mean values after Stop); while the session is on it has a blinking dot and the open phrase timer, as `mm:ss`, sits on the right. The gauge is always shown. Until something has been measured the arc is empty and the number reads `– –`. Under the gauge, one line explains the current state (section 1.2).
 2. Four tiles: Articulation, Fillers, Pauses, Speech. They show `—` until something has been measured.
-3. A round button: microphone and `Start` when idle, stop icon and `Stop` while the session is on. While the session is on, a halo around it grows with the microphone level, so silence and speech are obvious.
+3. A round button: microphone and `Start` when idle, stop icon and `Stop` while the session is on. While the session is on, a halo around it grows with the microphone level, so silence and speech are obvious. On desktop, a smaller Open File button sits to the right of Start while the session is off. It is not shown on Android.
 
 The layout follows the window. When the page is at least 720 px wide, or landscape and at least 560 px wide, the gauge card is on the left and the tiles and button are on the right. Otherwise everything is one column and the button is pinned to the bottom of the page, so it stays reachable on a phone while the rest scrolls. Content is capped at 1120 px wide and centered.
 
-Details is inside Advanced. It opens the intermediate statistics in section 7. While recording those statistics are the analysis window. After Stop they are the joined vowel and gap collection, except Mean Filler Sounds, which is the same duration-weighted mean as the Fillers tile. Open File uses the opened file. Open File is an Advanced action on desktop only. There is no Save button.
+Details is inside Advanced. It opens the intermediate statistics in section 7. While recording those statistics are the analysis window. After Stop they are the joined vowel and gap collection, except Filler score, which is the same duration-weighted mean as the Fillers tile. Open File uses the opened file. There is no Save button.
 
 ### 1.2 Recording
 
@@ -62,23 +64,24 @@ These lines are the only status copy on Home. Each replaces the previous one.
 | State | Status line |
 | --- | --- |
 | Idle, nothing measured yet | `Press Start and speak naturally. The numbers follow your recent speech.` |
-| Idle, after a session with kept phrases | `Speech is the total time. Press Start to measure again.` The gauge chip reads `Mean values`. |
-| Session on, waiting for speech, or the latest window has no measurable speech (section 5.4) | `Listening…` The last numbers stay. |
+| Idle, after a session with kept phrases | `Averages for the whole session. Speech is the total time. Press Start to measure again.` The gauge chip reads `Mean values`. |
+| Idle, with a result that is not a session average (Open File, or a session that kept no phrase) | `Result for this recording. Press Start to measure again.` |
+| Session on, waiting for speech, or the latest window has no measurable speech (section 5.4) | `Silence is not counted. Speak when you are ready.` The chip reads `Listening`. The last numbers stay. |
 | Less than 1.5 s of audio in the window | `Keep speaking. There is not enough speech to measure yet.` The last published numbers stay. |
 | Window long enough | `The numbers follow your last N seconds of speech.` with N = Analysis window. |
-| Phrase dropped at a pause | `That phrase was too short and was not saved.` It clears when the next speech starts. |
-| Phrase stored | Back to `Listening…`. The stored numbers stay until the next phrase is long enough to replace them. |
+| Phrase dropped at a pause | `That phrase was too short and was not saved.` The chip reads `Too short to save`. It clears when the next speech starts. |
+| Phrase stored | Back to `Silence is not counted. Speak when you are ready.` The chip reads `Listening`. The stored numbers stay until the next phrase is long enough to replace them. |
 | Microphone denied | `The microphone is blocked. Allow access in the system settings, then press Start again.` |
 
 **Session**
 
-1. Press Start. On Android, microphone permission is checked and, if necessary, requested before capture or calibration begins. A denial leaves the session stopped. When Use Speech Autodetection is on (`autoCalibrate`, default off), the user then stays quiet for the `vadCalibrationDurationMs` calibration (default 2000 ms); capture remains open afterward and speech and pauses are found by the voice-activity detector. When the setting is off, the whole take is the phrase: measurement starts at the first sample (including silence), a pause does not close it, and the numbers update once the analysis window holds 1.5 s. The choice is fixed for that session. The timer starts at `00:00` and shows the current phrase length (`mm:ss`), incrementing once per second. It resets when the next phrase starts.
+1. Press Start. On Android, microphone permission is checked and, if necessary, requested before capture or calibration begins. A denial leaves the session stopped. When Detect speech automatically is on (`autoCalibrate`, default off), the user then stays quiet for the `vadCalibrationDurationMs` calibration (default 2000 ms); capture remains open afterward and speech and pauses are found by the voice-activity detector. When the setting is off, the whole take is the phrase: measurement starts at the first sample (including silence), a pause does not close it, and the numbers update once the analysis window holds 1.5 s. The choice is fixed for that session. The timer starts at `00:00` and shows the current phrase length (`mm:ss`), incrementing once per second. It resets when the next phrase starts.
 2. Press Stop to end the session. Capture stops. An open phrase is kept or dropped by the min-length rule below.
 3. `RECORD_AUDIO` is the only Android permission. It is requested on Start, not at application launch.
 
 **Cutting at pauses**
 
-When Use Speech Autodetection is on, speech and pause come from the recorder’s voice-activity detector and its thresholds. Method `0` is energy, `1` is autocorrelation, and `2` is the public Hybrid choice, requiring both detectors (logical AND). The worker also understands internal value `3` as logical OR for compatibility, but the Settings UI does not offer it. A pause is a run of non-speech that lasts at least Silence Duration (`autoStopSilenceDuration`, default 2000 ms). That pause is a record boundary. It is not the Phrase Pauses number in section 6.4, which is still computed inside one segment. When autodetection is off, Silence Duration does not close the take. The 15 s segment limit still splits it.
+When Detect speech automatically is on, speech and pause come from the recorder’s voice-activity detector and its thresholds. Method `0` is energy, `1` is autocorrelation, and `2` is the public Hybrid choice, requiring both detectors (logical AND). The worker also understands internal value `3` as logical OR for compatibility, but the Settings UI does not offer it. A pause is a run of non-speech that lasts at least Silence Duration (`autoStopSilenceDuration`, default 2000 ms). That pause is a record boundary. It is not the Phrase Pauses number in section 6.4, which is still computed inside one segment. When autodetection is off, Silence Duration does not close the take. The 15 s segment limit still splits it.
 
 A segment closes in either of these cases:
 
@@ -207,14 +210,15 @@ Times are local, zero-padded, use a 24-hour `HH` field, and include milliseconds
 Newest session first. A row is scannable without opening it:
 
 - Title: local date and start–end clock time, such as `5 Oct 2026, 23:10–23:12`.
-- Subtitle: phrase count, how many times the on-screen numbers changed, and the session speech rate, such as `8 phrases · 46 updates · 128 wpm`.
+- The speech-rate badge is labeled `Speech rate`, with the value and `wpm`.
+- Subtitle: phrase count and how many times the on-screen numbers changed, such as `8 phrases · numbers changed 46 times`. English uses `numbers changed 1 time` when the count is 1.
 - Third line: the other four session values, in the Home order, with the same rounding as the live labels.
 
 Those five values are the duration-weighted mean of the kept phrases’ headline numbers, except speech, which is the sum of their speech durations. A longer phrase therefore counts more than a shorter one. Each segment also stores `vowelLengths`, `gapLengths`, `vowelMaxFrames`, `gapMaxFrames`, and the coefficients used (`frame`, `shift`, `smooth`, `minLengthMs`, `degree`, `k1`–`k4`, `fillerMin`, `fillerMax`). The filler percent is the duration-weighted mean of the phrases’ filler percents. An empty list says `No sessions yet. Start on Home and speak.`
 
 **Session charts**
 
-Choosing a row opens that session. The header repeats the list title and the five session values. Under it: `Each point is one change shown on Home.`
+Choosing a row opens that session. The header repeats the list title and the five session values, with the same tile hints as Home. Under it: `Each point is one moment the numbers on Home changed.`
 
 Five charts follow, speech rate first and taller than the others. Titles are the Home labels. Each point is one moment when a printed number changed: speech rate or articulation to the nearest word per minute, fillers to the nearest percent, pauses to two decimals, or speech to the nearest second. The horizontal axis is that moment as clock time, in order. The vertical axis is the value Home was showing (`wpm`, `%`, or `sec`) and is not clamped to the gauge. A session whose labels never changed is a single point. Older files that have no shown changes plot one point per phrase instead. These are metric charts, not a waveform. Back returns to the list.
 
@@ -531,19 +535,19 @@ Shown only from the recorder, and only while Advanced is checked. Same collectio
 
 | Label | Value | Format |
 | --- | --- | --- |
-| Record Length | `T_s` | 2 decimals |
-| Consonants & Silence Length | `seconds(sum(L_c))` | 2 decimals |
-| Consonants & Silence Count | `N_c` | integer |
-| Consonants & Silence Max | longest run of mask value `0`, in seconds | 2 decimals |
-| Consonants & Silence Mean Duration | `T_c_mean` (power mean, not arithmetic) | 2 decimals |
-| Consonants & Silence Median Duration | `T_c_med` | default number-to-string, no fixed decimals |
-| Vowels Length | `T_v` | 2 decimals |
-| Vowels Count | `N_v` | integer |
-| Vowels Max | longest run of mask value `1`, in seconds | 2 decimals |
-| Vowels Mean Duration | `T_v_mean` | 2 decimals |
-| Vowels Median Duration | `T_v_med` | default number-to-string |
-| Vowels Speaking Rate | `N_v / T_s` nuclei per second | 2 decimals |
-| Mean Filler Sounds | raw `F` from section 6.5, not the percent | 3 decimals |
+| Speech time (s) | `T_s` | 2 decimals |
+| Consonants and silence, total (s) | `seconds(sum(L_c))` | 2 decimals |
+| Consonants and silence, count | `N_c` | integer |
+| Longest consonants and silence (s) | longest run of mask value `0`, in seconds | 2 decimals |
+| Mean consonants and silence (s) | `T_c_mean` (power mean, not arithmetic) | 2 decimals |
+| Median consonants and silence (s) | `T_c_med` | default number-to-string, no fixed decimals |
+| Vowels, total (s) | `T_v` | 2 decimals |
+| Vowel count | `N_v` | integer |
+| Longest vowel (s) | longest run of mask value `1`, in seconds | 2 decimals |
+| Mean vowel (s) | `T_v_mean` | 2 decimals |
+| Median vowel (s) | `T_v_med` | default number-to-string |
+| Vowels per second | `N_v / T_s` nuclei per second | 2 decimals |
+| Filler score | raw `F` from section 6.5, not the percent | 3 decimals |
 
 Variance, skewness, and kurtosis are implemented (section 8) and are not shown.
 
@@ -564,7 +568,7 @@ kurtosis = mean(z^4) - 3                    # excess kurtosis
 
 Stored in `settings.ini` beside the executable (desktop) or in application-local data (Android), INI format. The file is read only when the root key `date_v3` exists. Until the user changes something, every value below is the in-code default and the file may be absent. The first save writes `date_v3` as an empty `QDate`, which is enough to make later launches load the file. General application and recorder values are under the `[General]` group; analysis coefficients retain their named groups.
 
-Advanced is a process-global boolean. It is not written to the INI and resets to off on restart. When it is off, Settings shows General, the phrase controls (including Use Speech Autodetection), and the speech-rate gauge range. Coefficients, filler calibration, signal-processing parameters, voice-activity calibration, and Open File are hidden, not reset.
+Advanced is a process-global boolean. It is not written to the INI and resets to off on restart. When it is off, Settings shows General, the phrase controls (including Detect speech automatically), and the speech-rate gauge range. The switch’s own note says it turns off when you leave the app. Show Navigation Menu, in General, shows Home, History, and Settings along the bottom; the toolbar menu button stays. Coefficients, filler calibration, signal-processing parameters, and voice-activity calibration are hidden, not reset.
 
 Everyday labels use plain units. Silence Duration is edited in seconds and stored as milliseconds.
 
@@ -572,13 +576,13 @@ Everyday labels use plain units. Silence Duration is edited in seconds and store
 | --- | --- | --- | --- |
 | Analysis window (s) | `General/analysisWindowSec` | 10 s | While recording, Home shows the pace of this much recent speech. Range 3…30. |
 | Updates per minute | `General/updatesPerMinute` | 60 | How often the numbers on Home are recalculated. Range 6…240. |
-| Gauge median | `General/gaugeAverageCount` | 3 | The speech-rate gauge shows the median of this many latest readings. Range 1…30. 1 shows the current reading. |
-| Pause | `General/autoStopSilenceDuration` | 2 s | Silence that ends a phrase. |
-| Use Speech Autodetection | `General/autoCalibrate` | off | After Start, measure background noise, then listen for speech. Off measures the recording from the first sample. |
-| Slow | Min RS | 70 wpm | Left end of the speech-rate gauge. Also copies to articulation min. |
-| Fast | Max RS | 210 wpm | Right end of the speech-rate gauge. Also copies to articulation max. |
+| Gauge median | `General/gaugeAverageCount` | 3 | The gauge shows the middle of this many latest speech-rate readings, so one jump moves it less. Range 1…30. 1 shows the current reading. An odd count is the middle value after sorting. An even count is the mean of the two central values. |
+| Pause | `General/autoStopSilenceDuration` | 2 s | Silence this long ends the phrase and saves it. Used only when Detect speech automatically is on. |
+| Detect speech automatically | `General/autoCalibrate` | off | After Start, measures background noise, then waits for speech. A pause ends the phrase. Off starts measuring when Start is pressed, a pause does not end the phrase, and the recording is saved in 15-second parts. |
+| Slow | Min RS | 70 wpm | The slow end of the speech-rate gauge. From here to Fast, the arc is split equally into Slow, Average, and Fast. Also copies to articulation min. |
+| Fast | Max RS | 210 wpm | The fast end of the speech-rate gauge. Also copies to articulation max. |
 
-General (language, theme, color, font size, navigation bar) stays visible. Delete user data stays at the bottom of General, asks for confirmation, and says that it deletes saved sessions. Recorded audio is already gone.
+General (language, theme, color, font size, navigation bar) stays visible. Delete user data stays at the bottom of General, asks for confirmation, and says that it deletes saved sessions. Recordings are not kept, so there is no audio to delete. The calibration dialog is titled `Measuring background noise`.
 
 Double-valued settings are edited as a spin box with 2 decimal places (internal integer = value × 100) and stored as the real coefficient.
 
@@ -586,29 +590,29 @@ With Advanced on, the extra settings are shown as numbered cards in the order a 
 
 | Stage | Card | Settings |
 | --- | --- | --- |
-| 1 | Speech detection | VAD Method, Energy Threshold, Autocorr. Threshold, Autocorr. Threshold K, Autocorr Min/Max F0, Calibrate. Only used when Use Speech Autodetection is on. Energy shows only the energy threshold, Autocorrelation shows only the autocorrelation fields, Hybrid shows both. |
-| 2 | Intensity | Frame, Shift, Smooth Frame (section 4) |
-| 3 | Vowel detection | Segment length limit (section 5.1) |
-| 4 | Statistics | Mean value degree (section 6.1) |
-| 5 | Metrics | K1 under Speech rate, K2 under Articulation, K3 under Pauses, K4 / Min FS / Max FS under Fillers (sections 6.2–6.5) |
+| 1 | Speech detection | Detection method, Energy threshold, Autocorrelation threshold, Threshold factor, Lowest pitch (Hz), Highest pitch (Hz), Calibrate. Only used when Detect speech automatically is on. Energy shows only the energy threshold, Autocorrelation shows only the autocorrelation fields, Hybrid shows both. Each field has a one-line hint. |
+| 2 | Intensity | Frame, Shift, Smooth window (section 4). Frame and shift are audio samples at 8000 Hz. The smooth window counts points on the loudness curve. |
+| 3 | Vowel detection | Shortest vowel (ms) (section 5.1). Peaks shorter than this are ignored. |
+| 4 | Statistics | Long-sound weight (section 6.1). 1 treats every sound equally. A higher number makes long sounds count more. |
+| 5 | Metrics | Speech-rate scale, Articulation scale, Pause scale, Filler scale, Low filler score, High filler score (sections 6.2–6.5). |
 
 | UI label | Symbol | Default | INI key | Visible without Advanced |
 | --- | --- | --- | --- | --- |
-| Mean value degry | `d` | 3 | `speechRate/MeanValueDegry` | no |
-| K1 | `K1` | 0.71 | `speechRate/K1` | no |
+| Long-sound weight | `d` | 3 | `speechRate/MeanValueDegry` | no. Labeled Long-sound weight. |
+| Speech-rate scale | `K1` | 0.71 | `speechRate/K1` | no |
 | Min RS | `MinRS` | 70 | `speechRate/Min` | yes, labeled Slow. Also copies to articulation min. |
 | Max RS | `MaxRS` | 210 | `speechRate/Max` | yes, labeled Fast. Also copies to articulation max. |
-| K2 | `K2` | 1.2 | `articulationRate/K2` | no |
-| K3 | `K3` | 0.30 | `meanPauses/Max` | no |
+| Articulation scale | `K2` | 1.2 | `articulationRate/K2` | no |
+| Pause scale | `K3` | 0.30 | `meanPauses/Max` | no |
 | Frame | `FRAME` | 240 | `intensity/frame` | no. Spin range 0…1024. |
 | Shift | `SHIFT` | 120 | `intensity/shift` | no. Spin range 0…512. |
-| Smooth Frame | `SMOOTH` | 120 | `intensity/smoothFrame` | no. Spin range 0…1024. |
-| Segment length limit (millisec) | `MIN_LENGTH_MS` | 5 | `segmentsByIntensity/minimumLength` | no. Spin range 0…2000. |
-| K4 | `K4` | 100 | `fillerSounds/K4` | no |
-| Min FS | `F_min` | 120 | `fillerSounds/Min` | no |
-| Max FS | `F_max` | 240 | `fillerSounds/Max` | no |
+| Smooth window | `SMOOTH` | 120 | `intensity/smoothFrame` | no. Spin range 0…1024. |
+| Shortest vowel (ms) | `MIN_LENGTH_MS` | 5 | `segmentsByIntensity/minimumLength` | no. Spin range 0…2000. |
+| Filler scale | `K4` | 100 | `fillerSounds/K4` | no |
+| Low filler score | `F_min` | 120 | `fillerSounds/Min` | no |
+| High filler score | `F_max` | 240 | `fillerSounds/Max` | no |
 
-The Measurement card (Analysis window, Updates per minute, Gauge median, Pause, Use Speech Autodetection) is always visible. It is not hidden with Advanced, and its values are not speech-rate coefficients. Silence Duration (`General/autoStopSilenceDuration` = 2000) is the pause that closes a phrase. The segment length limits are fixed (section 1.2). Older INI files may still hold `metricAverageCount`, `minRecordingTimeMs`, and `maxRecordingTimeMs`; they are ignored and removed on the next save.
+The Measurement card (Analysis window, Updates per minute, Gauge median, Pause, Detect speech automatically) is always visible. It is not hidden with Advanced, and its values are not speech-rate coefficients. Silence Duration (`General/autoStopSilenceDuration` = 2000) is the pause that closes a phrase. The segment length limits are fixed (section 1.2). Older INI files may still hold `metricAverageCount`, `minRecordingTimeMs`, and `maxRecordingTimeMs`; they are ignored and removed on the next save.
 
 Also present in the config object but not on this screen, and not used by the headline path:
 

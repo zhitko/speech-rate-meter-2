@@ -44,19 +44,19 @@ Dialog {
 
             Repeater {
                 model: [
-                    [qsTr("Record Length"), root.textOf(root.details.speechDuration, 2)],
-                    [qsTr("Consonants & Silence Length"), root.textOf(root.details.gapLength, 2)],
-                    [qsTr("Consonants & Silence Count"), root.textOf(root.details.gapCount, 0)],
-                    [qsTr("Consonants & Silence Max"), root.textOf(root.details.gapMax, 2)],
-                    [qsTr("Consonants & Silence Mean Duration"), root.textOf(root.details.gapMean, 2)],
-                    [qsTr("Consonants & Silence Median Duration"), root.textOf(root.details.gapMedian)],
-                    [qsTr("Vowels Length"), root.textOf(root.details.vowelLength, 2)],
-                    [qsTr("Vowels Count"), root.textOf(root.details.vowelCount, 0)],
-                    [qsTr("Vowels Max"), root.textOf(root.details.vowelMax, 2)],
-                    [qsTr("Vowels Mean Duration"), root.textOf(root.details.vowelMean, 2)],
-                    [qsTr("Vowels Median Duration"), root.textOf(root.details.vowelMedian)],
-                    [qsTr("Vowels Speaking Rate"), root.textOf(root.details.vowelsPerSecond, 2)],
-                    [qsTr("Mean Filler Sounds"), root.textOf(root.details.fillerScore, 3)]
+                    [qsTr("Speech time (s)"), root.textOf(root.details.speechDuration, 2)],
+                    [qsTr("Consonants and silence, total (s)"), root.textOf(root.details.gapLength, 2)],
+                    [qsTr("Consonants and silence, count"), root.textOf(root.details.gapCount, 0)],
+                    [qsTr("Longest consonants and silence (s)"), root.textOf(root.details.gapMax, 2)],
+                    [qsTr("Mean consonants and silence (s)"), root.textOf(root.details.gapMean, 2)],
+                    [qsTr("Median consonants and silence (s)"), root.textOf(root.details.gapMedian)],
+                    [qsTr("Vowels, total (s)"), root.textOf(root.details.vowelLength, 2)],
+                    [qsTr("Vowel count"), root.textOf(root.details.vowelCount, 0)],
+                    [qsTr("Longest vowel (s)"), root.textOf(root.details.vowelMax, 2)],
+                    [qsTr("Mean vowel (s)"), root.textOf(root.details.vowelMean, 2)],
+                    [qsTr("Median vowel (s)"), root.textOf(root.details.vowelMedian)],
+                    [qsTr("Vowels per second"), root.textOf(root.details.vowelsPerSecond, 2)],
+                    [qsTr("Filler score"), root.textOf(root.details.fillerScore, 3)]
                 ]
                 delegate: RowLayout {
                     Layout.fillWidth: true

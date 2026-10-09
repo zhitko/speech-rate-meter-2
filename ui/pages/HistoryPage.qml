@@ -72,38 +72,57 @@ Page {
                                    settingsApi ? settingsApi.fastWpm : 210),
                 Material.theme)
             width: ListView.view.width - listView.sideMargin * 2
-            implicitHeight: Math.max(textColumn.implicitHeight, rateBadge.height) + 28
+            implicitHeight: Math.max(textColumn.implicitHeight, rateColumn.implicitHeight) + 28
             leftPadding: 14
             rightPadding: 14
 
-            Accessible.name: qsTr("Open session %1").arg(modelData.title)
+            Accessible.name: qsTr("Open session %1, speech rate %2 %3")
+                    .arg(modelData.title)
+                    .arg(Number(modelData.speechRate).toFixed(0))
+                    .arg(qsTr("wpm"))
 
             contentItem: RowLayout {
                 spacing: 14
 
-                Rectangle {
-                    id: rateBadge
+                Column {
+                    id: rateColumn
                     Layout.alignment: Qt.AlignVCenter
-                    implicitWidth: AppScale.isCompact ? 56 : 64
-                    implicitHeight: implicitWidth
-                    radius: width / 2
-                    color: Qt.alpha(sessionDelegate.zoneColor, 0.16)
+                    spacing: 4
 
-                    Column {
-                        anchors.centerIn: parent
-                        Text {
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            text: Number(modelData.speechRate).toFixed(0)
-                            font.pixelSize: AppScale.fs(AppScale.isCompact ? 17 : 19)
-                            font.weight: Font.Bold
-                            color: sessionDelegate.zoneColor
+                    Rectangle {
+                        id: rateBadge
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        implicitWidth: AppScale.isCompact ? 56 : 64
+                        implicitHeight: implicitWidth
+                        radius: width / 2
+                        color: Qt.alpha(sessionDelegate.zoneColor, 0.16)
+
+                        Column {
+                            anchors.centerIn: parent
+                            Text {
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                text: Number(modelData.speechRate).toFixed(0)
+                                font.pixelSize: AppScale.fs(AppScale.isCompact ? 17 : 19)
+                                font.weight: Font.Bold
+                                color: sessionDelegate.zoneColor
+                            }
+                            Text {
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                text: qsTr("wpm")
+                                font.pixelSize: AppScale.fs(10)
+                                color: sessionDelegate.zoneColor
+                            }
                         }
-                        Text {
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            text: qsTr("wpm")
-                            font.pixelSize: AppScale.fs(10)
-                            color: sessionDelegate.zoneColor
-                        }
+                    }
+
+                    Text {
+                        width: rateBadge.width + 8
+                        horizontalAlignment: Text.AlignHCenter
+                        wrapMode: Text.Wrap
+                        text: qsTr("Speech rate")
+                        font.pixelSize: AppScale.fs(10)
+                        color: Theme.onSurfaceVariant(Material.theme)
+                        Accessible.ignored: true
                     }
                 }
 
@@ -123,7 +142,7 @@ Page {
                         width: parent.width
                         text: qsTr("%1 · %2")
                             .arg(qsTr("%n phrases", "", modelData.phraseCount))
-                            .arg(qsTr("%n updates", "", modelData.updateCount))
+                            .arg(qsTr("numbers changed %n times", "", modelData.updateCount))
                         elide: Text.ElideRight
                         font.pixelSize: AppScale.fs(14)
                         color: Theme.onSurface(Material.theme)

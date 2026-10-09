@@ -17,7 +17,7 @@ Package id: `by.intoncore.SpeechRateMeter2`. Version name `1.2`, version code `1
 ### Core Concept
 
 1. Press **Start**. The microphone stays open for the whole session.
-2. With **Use Speech Autodetection** on, a pause ends the current phrase, the phrase is measured, and the next one starts when you speak again. With it off, the take is measured from the first sample and is split into 15-second parts.
+2. With **Detect speech automatically** on, a pause ends the current phrase, the phrase is measured, and the next one starts when you speak again. With it off, measuring starts when you press Start, a pause does not end the phrase, and the take is split into 15-second parts.
 3. While you speak, speech rate, articulation, fillers, and pauses follow the **analysis window** — the most recent kept speech (10 seconds by default) — so a change of pace shows within a few seconds. **Speech** is the total time measured since Start.
 4. Press **Stop**. Home and History then show the mean speech rate, articulation, fillers, and pauses of every phrase kept from Start to Stop. Speech is the total time. The screen is labeled **Mean values**. A phrase shorter than one second is dropped.
 5. The scratch WAV is deleted once that phrase’s numbers are in the session file. There is no waveform and no playback.
@@ -28,11 +28,11 @@ All processing is local. The Android package requests only microphone access (`R
 
 | On screen | Meaning | Unit |
 | --- | --- | --- |
-| **Speech rate** | Pace since Start, pauses inside phrases included | words per minute |
-| **Articulation** | Pace while speech is actually going | words per minute |
-| **Fillers** | How much of the speech is stretched sounds | percent |
-| **Pauses** | Extra gaps inside the kept phrases | seconds |
-| **Speech** | Analyzed speech since Start | seconds |
+| **Speech rate** | Overall pace. The gauge names it Slow, Average, or Fast | words per minute |
+| **Articulation** | Pace while speaking, with the gaps left out. Never below the speech rate | words per minute |
+| **Fillers** | How much some sounds are drawn out, such as a long “uh”. Not a count of words | percent |
+| **Pauses** | Length of the longer gaps. Not the total time spent silent | seconds |
+| **Speech** | Total time that counted as speech. While recording, the other four use the recent window and this one keeps the total | seconds |
 
 Speech rate is vowels per minute scaled into words per minute (`K1`, default 0.71). Articulation removes the typical gap between vowel nuclei. Pauses are the excess of long gaps over the typical gap. Fillers are the excess of long vowel nuclei over the typical nucleus, shown as a percent of a calibrated range. The full formulas are in [docs/TECHNICAL_DESCRIPTION.md](docs/TECHNICAL_DESCRIPTION.md).
 
@@ -47,7 +47,7 @@ Home is the only screen with the record button.
 - A **speech-rate gauge** (240° arc, Slow / Average / Fast) shows the current pace. The marker sits between Slow and Fast (70 and 210 wpm by default). The printed number is the real value. While the session is on, a microphone mark and a bar inside the gauge follow the input level, so it is obvious whether the microphone is hearing sound.
 - Four tiles beside it: Articulation, Fillers, Pauses, and Speech.
 - A round **Start / Stop** button. While the session is on, a halo around it grows with the microphone level.
-- A status chip names the state (Ready, Listening, Too short, Measuring, Not saved, Microphone blocked, and Mean values after Stop) and, during a session, the open phrase timer (`mm:ss`).
+- A status chip names the state (Ready, Listening, Too short, Measuring, Too short to save, Microphone blocked, and Mean values after Stop) and, during a session, the open phrase timer (`mm:ss`). The gauge is labeled Speech rate. Each tile has a one-line hint.
 
 On a wide or landscape window the gauge sits on the left and the tiles and button on the right. On a phone the button stays pinned to the bottom of the page.
 
@@ -57,7 +57,7 @@ While a session is running, a **Recording** chip stays in the toolbar on every p
 
 History lists every finished session, newest first. A row shows the date and clock span, how many phrases were kept, how many times the numbers changed, and the mean pace from Start to Stop.
 
-Opening a row repeats those five session values under a **Mean values** label, then five charts — one point for each change that appeared on Home. These are metric charts, not a waveform.
+Opening a row repeats those five session values under a **Mean values** label, then five charts. Each point is one moment the numbers on Home changed. These are metric charts, not a waveform.
 
 ### 3. Settings
 
@@ -66,14 +66,14 @@ An **Advanced** toggle at the top of the page is not saved and turns off when yo
 | Section | What you control |
 | --- | --- |
 | **General (always visible)** | UI language (EN/RU), light/dark/system theme, accent color (Blue/Green/Purple/Orange/Red), navigation menu, font size, delete user data |
-| **Measurement (always visible)** | Analysis window, updates per minute, gauge median, pause length, Use Speech Autodetection, Slow and Fast ends of the gauge |
-| **Advanced (hidden behind the toggle)** | Voice-activity method and thresholds, calibration, intensity frame/shift/smooth, vowel-length limit, power-mean degree, coefficients K1–K4 and the filler range, Open File (desktop) |
+| **Measurement (always visible)** | Analysis window, updates per minute, gauge median, pause length, Detect speech automatically, Slow and Fast ends of the gauge |
+| **Advanced (hidden behind the toggle)** | Voice-activity method and thresholds, calibration, intensity frame/shift/smooth, vowel-length limit, power-mean degree, coefficients K1–K4 and the filler range |
 
-**Use Speech Autodetection** measures background noise after Start, then finds speech and pauses. When it is off, the recording is analyzed from the first sample and a pause does not end the phrase.
+**Detect speech automatically** measures background noise after Start, then waits for speech. A pause ends the phrase. When it is off, measuring starts when you press Start, a pause does not end the phrase, and the recording is saved in 15-second parts.
 
-**Delete user data** removes saved sessions. Recorded audio is already gone. Settings are kept.
+**Delete user data** removes saved sessions. Recordings are not kept, so there is no audio to delete. Settings are kept.
 
-**Open File** (desktop, Advanced) measures one WAV without saving a session. It accepts only 8000 Hz, mono, signed 16-bit PCM.
+**Open File** (desktop, to the right of Start) measures one WAV without saving a session. It accepts only 8000 Hz, mono, signed 16-bit PCM.
 
 Settings take effect on the next phrase. The in-app [User Guide](docs/user_guide_en.md) describes the same flow for someone using the app.
 

@@ -9,6 +9,7 @@ Rectangle {
     property string label: ""
     property string value: "—"
     property string unit: ""
+    property string hint: ""
     property color accent: Theme.primary(Material.theme)
     // 0…1 draws a thin bar under the value; a negative value hides it.
     property real progress: -1
@@ -20,6 +21,7 @@ Rectangle {
 
     Accessible.role: Accessible.StaticText
     Accessible.name: label + ": " + value + (unit.length > 0 ? " " + unit : "")
+    Accessible.description: hint
 
     ColumnLayout {
         id: content
@@ -80,6 +82,17 @@ Rectangle {
                 font.pixelSize: AppScale.fs(13)
                 color: Theme.onSurfaceVariant(Material.theme)
             }
+        }
+
+        Text {
+            Layout.fillWidth: true
+            visible: root.hint.length > 0
+            text: root.hint
+            wrapMode: Text.Wrap
+            maximumLineCount: 3
+            elide: Text.ElideRight
+            font.pixelSize: AppScale.fs(11)
+            color: Theme.onSurfaceVariant(Material.theme)
         }
 
         Rectangle {

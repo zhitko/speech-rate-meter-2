@@ -48,7 +48,7 @@ Page {
         case SessionApi.Measuring:
             return qsTr("Measuring")
         case SessionApi.Dropped:
-            return qsTr("Not saved")
+            return qsTr("Too short to save")
         case SessionApi.MicDenied:
             return qsTr("Microphone blocked")
         default:
@@ -76,10 +76,10 @@ Page {
         switch (phase()) {
         case SessionApi.IdleReady:
             return showingMean
-                   ? qsTr("Speech is the total time. Press Start to measure again.")
-                   : qsTr("Whole-session result. Press Start to measure again.")
+                   ? qsTr("Averages for the whole session. Speech is the total time. Press Start to measure again.")
+                   : qsTr("Result for this recording. Press Start to measure again.")
         case SessionApi.Listening:
-            return qsTr("Listening…")
+            return qsTr("Silence is not counted. Speak when you are ready.")
         case SessionApi.Measuring:
             return qsTr("The numbers follow your last %n second(s) of speech.", "",
                         settingsApi ? settingsApi.analysisWindowSec : 10)
@@ -140,102 +140,184 @@ Page {
             sessionApi.startSession()
     }
 
+    function openRecording() {
+        if (!sessionApi || sessionApi.busy || sessionApi.sessionActive || !sessionApi.openFileAvailable)
+            return
+        wavDialog.currentFolder = sessionApi.testsFolderUrl()
+        wavDialog.open()
+    }
+
     Component {
         id: recordComponent
 
-        ColumnLayout {
-            spacing: 4
+        RowLayout {
+            id: recordRow
+            spacing: AppScale.isCompact ? 12 : 20
+            readonly property bool showOpenFile: !!sessionApi && sessionApi.openFileAvailable && !root.active
 
-            Item {
-                id: recordControl
-                readonly property real buttonSize: root.wideLayout ? (AppScale.isShort ? 80 : 96) : (AppScale.isShort || AppScale.isCompact ? 68 : 80)
-                readonly property real level: root.active && sessionApi
-                                              ? Math.max(0, Math.min(1, sessionApi.audioLevel)) : 0
-                readonly property color tone: root.active ? Theme.error(Material.theme)
-                                                          : Theme.primary(Material.theme)
-                Layout.alignment: Qt.AlignHCenter
-                implicitWidth: buttonSize * 1.5
-                implicitHeight: buttonSize * 1.25
+            ColumnLayout {
+                spacing: 4
+                Layout.alignment: Qt.AlignTop
 
-                Rectangle {
-                    anchors.centerIn: parent
-                    width: recordControl.buttonSize
-                    height: width
-                    radius: width / 2
-                    color: recordControl.tone
-                    opacity: root.active ? 0.22 : 0
-                    scale: 1 + recordControl.level * 0.45
-                    Accessible.role: Accessible.ProgressBar
-                    Accessible.name: qsTr("Microphone level")
-                    Accessible.description: qsTr("%1 percent").arg(Math.round(100 * recordControl.level))
-                    Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutQuad } }
-                    Behavior on opacity { NumberAnimation { duration: 200 } }
-                }
+                Item {
+                    id: recordControl
+                    readonly property real buttonSize: root.wideLayout ? (AppScale.isShort ? 80 : 96) : (AppScale.isShort || AppScale.isCompact ? 68 : 80)
+                    readonly property real level: root.active && sessionApi
+                                                  ? Math.max(0, Math.min(1, sessionApi.audioLevel)) : 0
+                    readonly property color tone: root.active ? Theme.error(Material.theme)
+                                                              : Theme.primary(Material.theme)
+                    Layout.alignment: Qt.AlignHCenter
+                    implicitWidth: buttonSize * 1.5
+                    implicitHeight: buttonSize * 1.25
 
-                Rectangle {
-                    id: pulseRing
-                    anchors.centerIn: parent
-                    width: recordControl.buttonSize
-                    height: width
-                    radius: width / 2
-                    color: "transparent"
-                    border.width: 2
-                    border.color: recordControl.tone
-                    opacity: 0
-                    visible: root.active
-
-                    ParallelAnimation {
-                        running: pulseRing.visible
-                        loops: Animation.Infinite
-                        NumberAnimation { target: pulseRing; property: "scale"; from: 1; to: 1.4; duration: 1600; easing.type: Easing.OutCubic }
-                        NumberAnimation { target: pulseRing; property: "opacity"; from: 0.5; to: 0; duration: 1600; easing.type: Easing.OutCubic }
-                    }
-                }
-
-                AbstractButton {
-                    id: recordButton
-                    anchors.centerIn: parent
-                    width: recordControl.buttonSize
-                    height: width
-                    enabled: sessionApi && !sessionApi.busy
-                    hoverEnabled: true
-                    focusPolicy: Qt.StrongFocus
-                    Accessible.role: Accessible.Button
-                    Accessible.name: root.active ? qsTr("Stop recording") : qsTr("Start recording")
-                    onClicked: root.toggleRecording()
-                    scale: pressed ? 0.94 : 1
-                    Behavior on scale { NumberAnimation { duration: 120 } }
-
-                    background: Rectangle {
+                    Rectangle {
+                        anchors.centerIn: parent
+                        width: recordControl.buttonSize
+                        height: width
                         radius: width / 2
-                        color: !recordButton.enabled
-                               ? Theme.surfaceContainerHighest(Material.theme)
-                               : (recordButton.hovered ? Qt.lighter(recordControl.tone, 1.08) : recordControl.tone)
-                        border.width: recordButton.visualFocus ? 3 : 0
-                        border.color: Theme.onSurface(Material.theme)
-                        Behavior on color { ColorAnimation { duration: 200 } }
+                        color: recordControl.tone
+                        opacity: root.active ? 0.22 : 0
+                        scale: 1 + recordControl.level * 0.45
+                        Accessible.role: Accessible.ProgressBar
+                        Accessible.name: qsTr("Microphone level")
+                        Accessible.description: qsTr("%1 percent").arg(Math.round(100 * recordControl.level))
+                        Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutQuad } }
+                        Behavior on opacity { NumberAnimation { duration: 200 } }
                     }
 
-                    contentItem: Text {
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                        font.family: Icons.familySolid
-                        font.weight: Font.Black
-                        text: root.active ? Icons.faStop : Icons.faMicrophone
-                        font.pixelSize: recordControl.buttonSize / 2.8
-                        color: !recordButton.enabled
-                               ? Theme.onSurfaceVariant(Material.theme)
-                               : (root.active ? Theme.onError(Material.theme) : Theme.onPrimary(Material.theme))
+                    Rectangle {
+                        id: pulseRing
+                        anchors.centerIn: parent
+                        width: recordControl.buttonSize
+                        height: width
+                        radius: width / 2
+                        color: "transparent"
+                        border.width: 2
+                        border.color: recordControl.tone
+                        opacity: 0
+                        visible: root.active
+
+                        ParallelAnimation {
+                            running: pulseRing.visible
+                            loops: Animation.Infinite
+                            NumberAnimation { target: pulseRing; property: "scale"; from: 1; to: 1.4; duration: 1600; easing.type: Easing.OutCubic }
+                            NumberAnimation { target: pulseRing; property: "opacity"; from: 0.5; to: 0; duration: 1600; easing.type: Easing.OutCubic }
+                        }
                     }
+
+                    AbstractButton {
+                        id: recordButton
+                        anchors.centerIn: parent
+                        width: recordControl.buttonSize
+                        height: width
+                        enabled: sessionApi && !sessionApi.busy
+                        hoverEnabled: true
+                        focusPolicy: Qt.StrongFocus
+                        Accessible.role: Accessible.Button
+                        Accessible.name: root.active ? qsTr("Stop recording") : qsTr("Start recording")
+                        onClicked: root.toggleRecording()
+                        scale: pressed ? 0.94 : 1
+                        Behavior on scale { NumberAnimation { duration: 120 } }
+
+                        background: Rectangle {
+                            radius: width / 2
+                            color: !recordButton.enabled
+                                   ? Theme.surfaceContainerHighest(Material.theme)
+                                   : (recordButton.hovered ? Qt.lighter(recordControl.tone, 1.08) : recordControl.tone)
+                            border.width: recordButton.visualFocus ? 3 : 0
+                            border.color: Theme.onSurface(Material.theme)
+                            Behavior on color { ColorAnimation { duration: 200 } }
+                        }
+
+                        contentItem: Text {
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                            font.family: Icons.familySolid
+                            font.weight: Font.Black
+                            text: root.active ? Icons.faStop : Icons.faMicrophone
+                            font.pixelSize: recordControl.buttonSize / 2.8
+                            color: !recordButton.enabled
+                                   ? Theme.onSurfaceVariant(Material.theme)
+                                   : (root.active ? Theme.onError(Material.theme) : Theme.onPrimary(Material.theme))
+                        }
+                    }
+                }
+
+                Label {
+                    Layout.alignment: Qt.AlignHCenter
+                    text: root.active ? qsTr("Stop") : qsTr("Start")
+                    font.pixelSize: AppScale.fs(root.wideLayout ? 16 : 14)
+                    font.weight: Font.DemiBold
+                    color: Theme.onSurface(Material.theme)
                 }
             }
 
-            Label {
-                Layout.alignment: Qt.AlignHCenter
-                text: root.active ? qsTr("Stop") : qsTr("Start")
-                font.pixelSize: AppScale.fs(root.wideLayout ? 16 : 14)
-                font.weight: Font.DemiBold
-                color: Theme.onSurface(Material.theme)
+            ColumnLayout {
+                id: openFileColumn
+                readonly property real labelCap: Math.max(recordControl.buttonSize * 1.6, 108)
+                visible: recordRow.showOpenFile
+                spacing: 4
+                Layout.alignment: Qt.AlignTop
+                Layout.preferredWidth: Math.max(recordControl.buttonSize * 0.72,
+                                                Math.min(openFileLabel.implicitWidth, labelCap))
+                Layout.maximumWidth: Math.max(recordControl.buttonSize * 0.72, labelCap)
+
+                Item {
+                    readonly property real buttonSize: recordControl.buttonSize * 0.72
+                    Layout.alignment: Qt.AlignHCenter
+                    implicitWidth: buttonSize
+                    implicitHeight: recordControl.implicitHeight
+
+                    AbstractButton {
+                        id: openFileButton
+                        anchors.centerIn: parent
+                        width: parent.buttonSize
+                        height: width
+                        enabled: sessionApi && !sessionApi.busy
+                        hoverEnabled: true
+                        focusPolicy: Qt.StrongFocus
+                        Accessible.role: Accessible.Button
+                        Accessible.name: qsTr("Open File")
+                        onClicked: root.openRecording()
+                        scale: pressed ? 0.94 : 1
+                        Behavior on scale { NumberAnimation { duration: 120 } }
+
+                        background: Rectangle {
+                            radius: width / 2
+                            color: !openFileButton.enabled
+                                   ? Theme.surfaceContainerHighest(Material.theme)
+                                   : (openFileButton.hovered
+                                      ? Qt.lighter(Theme.secondaryContainer(Material.theme), 1.06)
+                                      : Theme.secondaryContainer(Material.theme))
+                            border.width: openFileButton.visualFocus ? 3 : 0
+                            border.color: Theme.onSurface(Material.theme)
+                            Behavior on color { ColorAnimation { duration: 200 } }
+                        }
+
+                        contentItem: Text {
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                            font.family: Icons.familySolid
+                            font.weight: Font.Black
+                            text: Icons.faFolderOpen
+                            font.pixelSize: openFileButton.width / 2.6
+                            color: !openFileButton.enabled
+                                   ? Theme.onSurfaceVariant(Material.theme)
+                                   : Theme.onSecondaryContainer(Material.theme)
+                        }
+                    }
+                }
+
+                Label {
+                    id: openFileLabel
+                    Layout.fillWidth: true
+                    horizontalAlignment: Text.AlignHCenter
+                    wrapMode: Text.WordWrap
+                    text: qsTr("Open File")
+                    font.pixelSize: AppScale.fs(root.wideLayout ? 16 : 14)
+                    font.weight: Font.DemiBold
+                    color: Theme.onSurface(Material.theme)
+                }
             }
         }
     }
@@ -436,6 +518,7 @@ Page {
                             Layout.preferredWidth: 1
                             icon: Icons.faCommentDots
                             label: qsTr("Articulation")
+                            hint: qsTr("Pace while speaking, gaps left out")
                             value: root.hasResult ? sessionApi.articulationRate.toFixed(0) : "—"
                             unit: qsTr("wpm")
                             accent: Theme.primary(Material.theme)
@@ -446,6 +529,7 @@ Page {
                             Layout.preferredWidth: 1
                             icon: Icons.faWaveSquare
                             label: qsTr("Fillers")
+                            hint: qsTr("Drawn-out sounds, not words")
                             value: root.hasResult ? (root.fillerFraction() * 100).toFixed(0) : "—"
                             unit: "%"
                             progress: root.hasResult ? root.fillerFraction() : 0
@@ -457,6 +541,7 @@ Page {
                             Layout.preferredWidth: 1
                             icon: Icons.faPause
                             label: qsTr("Pauses")
+                            hint: qsTr("Longer gaps, not all silence")
                             value: root.hasResult ? sessionApi.phrasePauses.toFixed(2) : "—"
                             unit: qsTr("sec")
                             accent: Theme.secondary(Material.theme)
@@ -467,6 +552,7 @@ Page {
                             Layout.preferredWidth: 1
                             icon: Icons.faStopwatch
                             label: qsTr("Speech")
+                            hint: qsTr("Total time counted as speech")
                             value: root.hasResult ? sessionApi.speechDuration.toFixed(0) : "—"
                             unit: qsTr("sec")
                             accent: Theme.zoneColor(0, Material.theme)
@@ -482,26 +568,14 @@ Page {
 
                     RowLayout {
                         Layout.alignment: Qt.AlignHCenter
-                        visible: settingsApi && settingsApi.advanced
+                        visible: settingsApi && settingsApi.advanced && root.hasResult
                         spacing: 8
 
                         Button {
                             text: qsTr("Details")
                             flat: true
-                            visible: root.hasResult
                             enabled: sessionApi && !sessionApi.busy
                             onClicked: detailsDialog.open()
-                        }
-
-                        Button {
-                            text: qsTr("Open File")
-                            flat: true
-                            visible: sessionApi && sessionApi.openFileAvailable && !root.active
-                            enabled: sessionApi && !sessionApi.busy
-                            onClicked: {
-                                wavDialog.currentFolder = sessionApi.testsFolderUrl()
-                                wavDialog.open()
-                            }
                         }
                     }
                 }

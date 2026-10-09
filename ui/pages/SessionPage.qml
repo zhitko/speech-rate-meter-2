@@ -126,6 +126,7 @@ Page {
                             color: Theme.surfaceContainer(Material.theme)
                             icon: Icons.faCommentDots
                             label: qsTr("Articulation")
+                            hint: qsTr("Pace while speaking, gaps left out")
                             value: root.number("articulationRate", 0)
                             unit: qsTr("wpm")
                             accent: Theme.primary(Material.theme)
@@ -137,6 +138,7 @@ Page {
                             color: Theme.surfaceContainer(Material.theme)
                             icon: Icons.faWaveSquare
                             label: qsTr("Fillers")
+                            hint: qsTr("Drawn-out sounds, not words")
                             value: root.number("fillerPercent", 0)
                             unit: "%"
                             progress: sessionData.fillerPercent !== undefined ? Number(sessionData.fillerPercent) / 100 : 0
@@ -149,6 +151,7 @@ Page {
                             color: Theme.surfaceContainer(Material.theme)
                             icon: Icons.faPause
                             label: qsTr("Pauses")
+                            hint: qsTr("Longer gaps, not all silence")
                             value: root.number("phrasePauses", 2)
                             unit: qsTr("sec")
                             accent: Theme.secondary(Material.theme)
@@ -160,6 +163,7 @@ Page {
                             color: Theme.surfaceContainer(Material.theme)
                             icon: Icons.faStopwatch
                             label: qsTr("Speech")
+                            hint: qsTr("Total time counted as speech")
                             value: root.number("speechDuration", 0)
                             unit: qsTr("sec")
                             accent: Theme.zoneColor(0, Material.theme)
@@ -171,7 +175,7 @@ Page {
             Label {
                 Layout.fillWidth: true
                 wrapMode: Text.Wrap
-                text: qsTr("Each point is one change shown on Home.")
+                text: qsTr("Each point is one moment the numbers on Home changed.")
                 font.pixelSize: AppScale.fs(14)
                 color: Theme.onSurfaceVariant(Material.theme)
             }
