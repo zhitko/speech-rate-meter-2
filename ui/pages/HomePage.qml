@@ -22,9 +22,35 @@ Page {
     readonly property real slowWpm: settingsApi ? settingsApi.slowWpm : 70
     readonly property real fastWpm: settingsApi ? settingsApi.fastWpm : 210
 
-    readonly property real layoutWidth: Math.min(scrollView.availableWidth - scrollView.effectiveScrollBarWidth - AppScale.pagePadding * 2, 1120)
-    readonly property bool wideLayout: scrollView.availableWidth >= 720
-                                       || (scrollView.availableWidth >= 560 && scrollView.availableWidth > height * 1.15)
+    // With the navigation bar visible the page is shorter. Size the column from the
+    // full width so a scrollbar that we are about to remove cannot change the layout.
+    readonly property bool fitNavigation: !!settingsApi && settingsApi.showNavigationMenu
+    readonly property real layoutInnerWidth: fitNavigation ? scrollView.width
+                                                           : scrollView.availableWidth - scrollView.effectiveScrollBarWidth
+    readonly property real layoutWidth: Math.min(layoutInnerWidth - AppScale.pagePadding * 2, 1120)
+    readonly property bool wideLayout: layoutInnerWidth >= 720
+                                       || (layoutInnerWidth >= 560 && layoutInnerWidth > height * 1.15)
+    readonly property real viewportHeight: Math.max(0, height - footer.height)
+    readonly property real naturalGaugeHeight: wideLayout
+                                               ? Math.max(170, Math.min(height - AppScale.pagePadding * 2 - 110, 440))
+                                               : Math.max(200, Math.min(layoutWidth * 0.62, height * 0.36, 330))
+    // Card margins (16 + 16), the gauge top margin (12), column spacing (8), and the hint bottom margin (4).
+    readonly property real gaugeSurround: 56 + (gaugeHint.implicitHeight > 0 ? gaugeHint.implicitHeight : 0)
+    // Below this the arc ends collide with the center label.
+    readonly property real gaugeFloor: 200
+    readonly property real fittedGaugeHeight: {
+        if (!fitNavigation)
+            return naturalGaugeHeight
+        // A few spare pixels keep rounding from bringing the scrollbar back.
+        var budget = viewportHeight - AppScale.pagePadding * 2 - 8
+        var room = wideLayout
+                ? budget - gaugeSurround
+                : budget - sideColumn.implicitHeight - layout.rowSpacing - gaugeSurround
+        var fitted = Math.min(naturalGaugeHeight, room)
+        return Math.max(Math.min(gaugeFloor, naturalGaugeHeight), fitted)
+    }
+    readonly property bool navigationLayoutFits: fitNavigation
+            && layout.implicitHeight + AppScale.pagePadding * 2 <= viewportHeight + 1
 
     function clock(totalSeconds) {
         var seconds = Math.max(0, Math.floor(totalSeconds))
@@ -331,14 +357,15 @@ Page {
         contentWidth: availableWidth
         contentHeight: content.height
         clip: true
-        ScrollBar.vertical.policy: (root.settingsApi && !root.settingsApi.showNavigationMenu)
-                                   ? ScrollBar.AlwaysOn : ScrollBar.AsNeeded
+        ScrollBar.vertical.policy: root.fitNavigation
+                                   ? (root.navigationLayoutFits ? ScrollBar.AlwaysOff : ScrollBar.AsNeeded)
+                                   : ScrollBar.AlwaysOn
         ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
 
         Item {
             id: content
             width: scrollView.availableWidth
-            height: Math.max(root.height - footer.height, layout.implicitHeight + AppScale.pagePadding * 2)
+            height: Math.max(root.viewportHeight, layout.implicitHeight + AppScale.pagePadding * 2)
 
             GridLayout {
                 id: layout
@@ -429,10 +456,8 @@ Page {
                             Layout.fillWidth: true
                             Layout.fillHeight: root.wideLayout
                             Layout.topMargin: 12
-                            Layout.preferredHeight: root.wideLayout
-                                                    ? Math.max(170, Math.min(root.height - AppScale.pagePadding * 2 - 110, 440))
-                                                    : Math.max(200, Math.min(root.layoutWidth * 0.62, root.height * 0.36, 330))
-                            Layout.minimumHeight: 170
+                            Layout.preferredHeight: root.fittedGaugeHeight
+                            Layout.minimumHeight: root.fitNavigation ? root.fittedGaugeHeight : 170
                             Layout.maximumHeight: 480
                             // While recording, anything but Measuring means the user is not
                             // speaking (or not enough yet), so the needle rests at zero.
@@ -447,6 +472,7 @@ Page {
                         }
 
                         Label {
+                            id: gaugeHint
                             Layout.fillWidth: true
                             Layout.bottomMargin: 4
                             horizontalAlignment: Text.AlignHCenter

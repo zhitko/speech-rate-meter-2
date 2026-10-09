@@ -49,7 +49,7 @@ Home, from top to bottom:
 2. Four tiles: Articulation, Fillers, Pauses, Speech. They show `—` until something has been measured.
 3. A round button: microphone and `Start` when idle, stop icon and `Stop` while the session is on. While the session is on, a halo around it grows with the microphone level, so silence and speech are obvious. On desktop, a smaller Open File button sits to the right of Start while the session is off. It is not shown on Android.
 
-The layout follows the window. When the page is at least 720 px wide, or landscape and at least 560 px wide, the gauge card is on the left and the tiles and button are on the right. Otherwise everything is one column and the button is pinned to the bottom of the page, so it stays reachable on a phone while the rest scrolls. Content is capped at 1120 px wide and centered.
+The layout follows the window. When the page is at least 720 px wide, or landscape and at least 560 px wide, the gauge card is on the left and the tiles and button are on the right. Otherwise everything is one column and the button is pinned to the bottom of the page, so it stays reachable on a phone while the rest scrolls. With Show Navigation Menu on, the gauge shortens so the gauge, tiles, and button fit the page; the column scrolls only when the window is still too short. Content is capped at 1120 px wide and centered.
 
 Details is inside Advanced. It opens the intermediate statistics in section 7. While recording those statistics are the analysis window. After Stop they are the joined vowel and gap collection, except Filler score, which is the same duration-weighted mean as the Fillers tile. Open File uses the opened file. There is no Save button.
 
