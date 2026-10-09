@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 # versionName. Increment QT_ANDROID_VERSION_CODE for each Android upload.
-project(speech-rate-meter-2 VERSION 1.2 LANGUAGES CXX)
+project(speech-rate-meter-2 VERSION 1.0.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 17)
@@ -243,7 +243,7 @@ if(ANDROID)
         QT_ANDROID_TARGET_SDK_VERSION 36
         QT_ANDROID_COMPILE_SDK_VERSION 36
         QT_ANDROID_MIN_SDK_VERSION 26
-        QT_ANDROID_VERSION_CODE 18
+        QT_ANDROID_VERSION_CODE 1
         QT_ANDROID_VERSION_NAME "${PROJECT_VERSION}"
         QT_ANDROID_APP_NAME "Speech Rate Meter 2"
         QT_ANDROID_PACKAGE_NAME "by.intoncore.SpeechRateMeter2"

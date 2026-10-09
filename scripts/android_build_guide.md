@@ -2,7 +2,7 @@
 
 Package id: `by.intoncore.SpeechRateMeter2`. Native library: `libappspeech-rate-meter-2_<abi>.so`.
 
-`versionName` comes from `project(... VERSION ...)` in `CMakeLists.txt` (currently `1.2`). `versionCode` is `QT_ANDROID_VERSION_CODE` (currently `18`). Increment the version code for every Play upload of this package.
+`versionName` comes from `project(... VERSION ...)` in `CMakeLists.txt` (currently `1.0.0`). `versionCode` is `QT_ANDROID_VERSION_CODE` (currently `1`). Increment the version code for every Play upload of this package.
 
 ## Prerequisites
 

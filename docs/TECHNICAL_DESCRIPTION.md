@@ -717,7 +717,7 @@ This example is only a check of the formula wiring. Real nuclei are much more nu
 - Capture, pause cutting, and analysis run off the UI thread. Headline metrics of the analysis window update during an open segment (section 1.2), at most Updates per minute times per minute. Open File is still a single whole-file analysis.
 - One application-level `SessionApi` instance owns capture, analysis queues, the open-session accumulator, history access, and the result exposed to every page. Pages obtain that shared instance from the application window; they do not construct per-screen analysis backends. `SettingsApi` is likewise application-level. Details reads the metrics already published by `SessionApi` and does not re-read deleted scratch audio.
 - Logging: one Qt message handler appends each Qt log line to `logs.txt` in the process working directory, prefixed with 24-hour local time `dd.MM.yyyy HH:mm:ss:zzz`. `main.cpp` does not initialize a second `FileLogger` sink.
-- Android package id `by.intoncore.SpeechRateMeter2`, versionName `1.2`, versionCode `18`. The only declared permission is `RECORD_AUDIO`.
+- Android package id `by.intoncore.SpeechRateMeter2`, versionName `1.0.0`, versionCode `18`. The only declared permission is `RECORD_AUDIO`.
 - WAV container is PCM with the standard header, format chunk, and data chunk. No cue points are written for a new recording. Manual segments marked `P` (pre-nucleus), `N` (nucleus), and `T` (post-nucleus) can be read from cue/label chunks by the library; the application never displays them.
 
 ## 13. Present in the repository and unused by this application
