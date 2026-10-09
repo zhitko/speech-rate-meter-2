@@ -44,10 +44,10 @@ Speech rate is vowels per minute scaled into words per minute (`K1`, default 0.7
 
 Home is the only screen with the record button.
 
-- A **speech-rate gauge** (240° arc, Slow / Average / Fast) shows the current pace. The marker sits between Slow and Fast (70 and 210 wpm by default). The printed number is the real value. While the session is on, a microphone mark and a bar inside the gauge follow the input level, so it is obvious whether the microphone is hearing sound.
-- Four tiles beside it: Articulation, Fillers, Pauses, and Speech.
+- A **gauge** (240° arc, Slow / Average / Fast) shows the current pace. By default that is speech rate. Settings can switch it to articulation, or draw both paces as two arcs. The marker sits between Slow and Fast (70 and 210 wpm by default). The printed number is the real value. While the session is on, a microphone mark and a bar inside the gauge follow the input level, so it is obvious whether the microphone is hearing sound.
+- Tiles beside it: the other pace (Articulation by default; hidden when the gauge draws both), Fillers, Pauses, and Speech.
 - A round **Start / Stop** button. While the session is on, a halo around it grows with the microphone level.
-- A status chip names the state (Ready, Listening, Too short, Measuring, Too short to save, Microphone blocked, and Mean values after Stop) and, during a session, the open phrase timer (`mm:ss`). The gauge is labeled Speech rate. Each tile has a one-line hint.
+- A status chip names the state (Ready, Listening, Too short, Measuring, Too short to save, Microphone blocked, and Mean values after Stop) and, during a session, the open phrase timer (`mm:ss`). The gauge is labeled with the pace it shows. Each tile has a one-line hint.
 
 On a wide or landscape window the gauge sits on the left and the tiles and button on the right. On a phone the button stays pinned to the bottom of the page.
 
@@ -66,7 +66,7 @@ An **Advanced** toggle at the top of the page is not saved and turns off when yo
 | Section | What you control |
 | --- | --- |
 | **General (always visible)** | UI language (EN/RU), light/dark/system theme, accent color (Blue/Green/Purple/Orange/Red), navigation menu, font size, delete user data |
-| **Measurement (always visible)** | Analysis window, updates per minute, gauge median, pause length, Detect speech automatically, Slow and Fast ends of the gauge |
+| **Measurement (always visible)** | Analysis window, updates per minute, gauge (speech rate, articulation rate, or both), gauge median, pause length, Detect speech automatically, Slow and Fast ends of the gauge |
 | **Advanced (hidden behind the toggle)** | Voice-activity method and thresholds, calibration, intensity frame/shift/smooth, vowel-length limit, power-mean degree, coefficients K1–K4 and the filler range |
 
 **Detect speech automatically** measures background noise after Start, then waits for speech. A pause ends the phrase. When it is off, measuring starts when you press Start, a pause does not end the phrase, and the recording is saved in 15-second parts.

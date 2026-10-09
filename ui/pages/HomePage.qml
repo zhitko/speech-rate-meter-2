@@ -21,6 +21,9 @@ Page {
     readonly property bool showingMean: !!sessionApi && sessionApi.showingMean && !active
     readonly property real slowWpm: settingsApi ? settingsApi.slowWpm : 70
     readonly property real fastWpm: settingsApi ? settingsApi.fastWpm : 210
+    // 0 speech rate, 1 articulation rate, 2 both on the gauge.
+    readonly property int gaugeMode: settingsApi ? settingsApi.gaugeMode : 0
+    readonly property bool gaugeAtRest: !sessionApi || (active && phase() !== SessionApi.Measuring)
 
     // With the navigation bar visible the page is shorter. Size the column from the
     // full width so a scrollbar that we are about to remove cannot change the layout.
@@ -462,8 +465,11 @@ Page {
                             // While recording, anything but Measuring means the user is not
                             // speaking (or not enough yet), so the needle rests at zero.
                             hasValue: root.hasResult || root.active
-                            value: !sessionApi || (root.active && root.phase() !== SessionApi.Measuring)
-                                   ? 0 : sessionApi.speechRate
+                            showSecond: root.gaugeMode === 2
+                            metricLabel: root.gaugeMode === 1 ? qsTr("Articulation") : qsTr("Speech rate")
+                            value: root.gaugeAtRest ? 0
+                                   : (root.gaugeMode === 1 ? sessionApi.gaugeArticulationRate : sessionApi.speechRate)
+                            secondValue: root.gaugeAtRest ? 0 : sessionApi.gaugeArticulationRate
                             minimum: root.slowWpm
                             maximum: root.fastWpm
                             cardColor: gaugeCard.color
@@ -542,10 +548,14 @@ Page {
                             Layout.fillWidth: true
                             Layout.fillHeight: true
                             Layout.preferredWidth: 1
-                            icon: Icons.faCommentDots
-                            label: qsTr("Articulation")
-                            hint: qsTr("Pace while speaking, gaps left out")
-                            value: root.hasResult ? sessionApi.articulationRate.toFixed(0) : "—"
+                            visible: root.gaugeMode !== 2
+                            icon: root.gaugeMode === 1 ? Icons.faGaugeHigh : Icons.faCommentDots
+                            label: root.gaugeMode === 1 ? qsTr("Speech rate") : qsTr("Articulation")
+                            hint: root.gaugeMode === 1
+                                  ? qsTr("Overall pace, pauses included")
+                                  : qsTr("Pace while speaking, gaps left out")
+                            value: !root.hasResult ? "—"
+                                   : (root.gaugeMode === 1 ? sessionApi.speechRate : sessionApi.articulationRate).toFixed(0)
                             unit: qsTr("wpm")
                             accent: Theme.primary(Material.theme)
                         }

@@ -21,6 +21,7 @@ Page {
 
     readonly property real layoutWidth: Math.min(scrollView.availableWidth - AppScale.pagePadding * 2, 1120)
     readonly property bool wideLayout: layoutWidth >= 680
+    readonly property int gaugeMode: settingsApi ? settingsApi.gaugeMode : 0
 
     function number(key, decimals) {
         return sessionData[key] !== undefined ? Number(sessionData[key]).toFixed(decimals) : "—"
@@ -106,7 +107,11 @@ Page {
                         Layout.preferredWidth: root.wideLayout ? 1 : -1
                         Layout.preferredHeight: root.wideLayout ? 240 : Math.max(190, Math.min(root.layoutWidth * 0.55, 260))
                         hasValue: sessionData.speechRate !== undefined
-                        value: hasValue ? Number(sessionData.speechRate) : 0
+                        showSecond: root.gaugeMode === 2
+                        metricLabel: root.gaugeMode === 1 ? qsTr("Articulation") : qsTr("Speech rate")
+                        value: !hasValue ? 0
+                               : (root.gaugeMode === 1 ? Number(sessionData.articulationRate) : Number(sessionData.speechRate))
+                        secondValue: sessionData.articulationRate !== undefined ? Number(sessionData.articulationRate) : 0
                         minimum: settingsApi ? settingsApi.slowWpm : 70
                         maximum: settingsApi ? settingsApi.fastWpm : 210
                     }
@@ -123,11 +128,14 @@ Page {
                             Layout.fillWidth: true
                             Layout.fillHeight: true
                             Layout.preferredWidth: 1
+                            visible: root.gaugeMode !== 2
                             color: Theme.surfaceContainer(Material.theme)
-                            icon: Icons.faCommentDots
-                            label: qsTr("Articulation")
-                            hint: qsTr("Pace while speaking, gaps left out")
-                            value: root.number("articulationRate", 0)
+                            icon: root.gaugeMode === 1 ? Icons.faGaugeHigh : Icons.faCommentDots
+                            label: root.gaugeMode === 1 ? qsTr("Speech rate") : qsTr("Articulation")
+                            hint: root.gaugeMode === 1
+                                  ? qsTr("Overall pace, pauses included")
+                                  : qsTr("Pace while speaking, gaps left out")
+                            value: root.gaugeMode === 1 ? root.number("speechRate", 0) : root.number("articulationRate", 0)
                             unit: qsTr("wpm")
                             accent: Theme.primary(Material.theme)
                         }

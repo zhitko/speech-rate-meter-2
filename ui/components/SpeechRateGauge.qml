@@ -7,6 +7,11 @@ import "../utils"
 Item {
     id: root
     property real value: 0
+    property real secondValue: 0
+    // Both paces: an inner arc and a second number. The outer arc stays `value`.
+    property bool showSecond: false
+    property string metricLabel: qsTr("Speech rate")
+    property string secondMetricLabel: qsTr("Articulation")
     property real minimum: 70
     property real maximum: 210
     // Without a value the arc stays empty and the readout shows a dash.
@@ -21,10 +26,17 @@ Item {
     implicitHeight: 260
 
     Accessible.role: Accessible.Indicator
-    Accessible.name: qsTr("Speech rate")
-    Accessible.description: hasValue
-                            ? value.toFixed(0) + " " + unit + ", " + zoneLabels[targetZone]
-                            : qsTr("No measurement yet")
+    Accessible.name: showSecond ? qsTr("Speech rate and articulation") : metricLabel
+    Accessible.description: {
+        if (!hasValue)
+            return qsTr("No measurement yet")
+        var first = value.toFixed(0) + " " + unit + ", " + zoneLabels[targetZone]
+        if (!showSecond)
+            return first
+        return metricLabel + " " + first + ". "
+                + secondMetricLabel + " " + secondValue.toFixed(0) + " " + unit
+                + ", " + zoneLabels[secondTargetZone]
+    }
 
     readonly property int paintTheme: Material.theme
     readonly property var zoneLabels: [qsTr("Slow"), qsTr("Average"), qsTr("Fast")]
@@ -36,6 +48,10 @@ Item {
     readonly property real range: maximum > minimum ? maximum - minimum : 1
     property real animatedValue: hasValue ? value : minimum
     Behavior on animatedValue {
+        NumberAnimation { duration: 650; easing.type: Easing.OutCubic }
+    }
+    property real animatedSecond: hasValue ? secondValue : minimum
+    Behavior on animatedSecond {
         NumberAnimation { duration: 650; easing.type: Easing.OutCubic }
     }
 
@@ -53,10 +69,25 @@ Item {
     readonly property int targetZone: Theme.zoneForValue(value, minimum, maximum)
     readonly property color zoneColor: Theme.zoneColor(zone, paintTheme)
 
+    readonly property bool dual: showSecond
+    readonly property real secondFraction: Math.max(0, Math.min(1, (animatedSecond - minimum) / range))
+    readonly property real secondValueAngle: startAngle + secondFraction * sweepAngle
+    readonly property int secondZone: Math.min(2, Math.floor(secondFraction * 3))
+    readonly property int secondTargetZone: Theme.zoneForValue(secondValue, minimum, maximum)
+    readonly property color secondZoneColor: Theme.zoneColor(secondZone, paintTheme)
+
     readonly property real labelSpace: AppScale.fs(12) + 10
     readonly property real stroke: Math.max(10, radius * 0.15)
+    readonly property real innerStroke: Math.max(8, stroke * 0.68)
+    readonly property real dualGap: Math.max(10, stroke * 0.85)
     readonly property real radius: Math.max(20, Math.min((width - 16) / 2.15,
                                                          (height - labelSpace - 8) / 1.62))
+    readonly property real innerRadius: dual
+                                        ? Math.max(16, radius - (stroke + innerStroke) / 2 - dualGap)
+                                        : radius
+    readonly property real innerGapAngle: innerStroke / Math.max(1, innerRadius) * 180 / Math.PI + 3
+    readonly property real innerSegmentSweep: (sweepAngle - 2 * innerGapAngle) / 3
+    readonly property real dualTextWidth: Math.max(48, (innerRadius - innerStroke) * 1.65)
     readonly property real cx: width / 2
     readonly property real cy: (height - labelSpace - radius * 1.5) / 2 + radius + stroke * 0.1
 
@@ -72,6 +103,14 @@ Item {
         return Math.max(0, Math.min(segmentSweep, valueAngle - segmentStart(index)))
     }
 
+    function innerSegmentStart(index) {
+        return startAngle + index * (innerSegmentSweep + innerGapAngle)
+    }
+
+    function innerFilledSweep(index) {
+        return Math.max(0, Math.min(innerSegmentSweep, secondValueAngle - innerSegmentStart(index)))
+    }
+
     function pointAt(angleDeg, r) {
         var a = angleDeg * Math.PI / 180
         return Qt.point(cx + Math.cos(a) * r, cy + Math.sin(a) * r)
@@ -80,19 +119,21 @@ Item {
     component Arc: ShapePath {
         id: arc
         required property var gauge
+        property real ringRadius: gauge.radius
+        property real ringStroke: gauge.stroke
         property real arcStart: 0
         property real arcSweep: 0
         property color arcColor: "transparent"
         fillColor: "transparent"
         strokeColor: arcSweep > 0.25 ? arcColor : "transparent"
-        strokeWidth: gauge.stroke
+        strokeWidth: ringStroke
         capStyle: ShapePath.RoundCap
 
         PathAngleArc {
             centerX: arc.gauge.cx
             centerY: arc.gauge.cy
-            radiusX: arc.gauge.radius
-            radiusY: arc.gauge.radius
+            radiusX: arc.ringRadius
+            radiusY: arc.ringRadius
             startAngle: arc.arcStart
             sweepAngle: Math.max(0.01, arc.arcSweep)
         }
@@ -109,6 +150,55 @@ Item {
         Arc { gauge: root; arcStart: root.segmentStart(0); arcSweep: root.hasValue ? root.filledSweep(0) : 0; arcColor: Theme.zoneColor(0, root.paintTheme) }
         Arc { gauge: root; arcStart: root.segmentStart(1); arcSweep: root.hasValue ? root.filledSweep(1) : 0; arcColor: Theme.zoneColor(1, root.paintTheme) }
         Arc { gauge: root; arcStart: root.segmentStart(2); arcSweep: root.hasValue ? root.filledSweep(2) : 0; arcColor: Theme.zoneColor(2, root.paintTheme) }
+
+        Arc {
+            gauge: root
+            ringRadius: root.innerRadius
+            ringStroke: root.innerStroke
+            arcStart: root.innerSegmentStart(0)
+            arcSweep: root.dual ? root.innerSegmentSweep : 0
+            arcColor: Qt.alpha(Theme.zoneColor(0, root.paintTheme), 0.18)
+        }
+        Arc {
+            gauge: root
+            ringRadius: root.innerRadius
+            ringStroke: root.innerStroke
+            arcStart: root.innerSegmentStart(1)
+            arcSweep: root.dual ? root.innerSegmentSweep : 0
+            arcColor: Qt.alpha(Theme.zoneColor(1, root.paintTheme), 0.18)
+        }
+        Arc {
+            gauge: root
+            ringRadius: root.innerRadius
+            ringStroke: root.innerStroke
+            arcStart: root.innerSegmentStart(2)
+            arcSweep: root.dual ? root.innerSegmentSweep : 0
+            arcColor: Qt.alpha(Theme.zoneColor(2, root.paintTheme), 0.18)
+        }
+        Arc {
+            gauge: root
+            ringRadius: root.innerRadius
+            ringStroke: root.innerStroke
+            arcStart: root.innerSegmentStart(0)
+            arcSweep: root.dual && root.hasValue ? root.innerFilledSweep(0) : 0
+            arcColor: Theme.zoneColor(0, root.paintTheme)
+        }
+        Arc {
+            gauge: root
+            ringRadius: root.innerRadius
+            ringStroke: root.innerStroke
+            arcStart: root.innerSegmentStart(1)
+            arcSweep: root.dual && root.hasValue ? root.innerFilledSweep(1) : 0
+            arcColor: Theme.zoneColor(1, root.paintTheme)
+        }
+        Arc {
+            gauge: root
+            ringRadius: root.innerRadius
+            ringStroke: root.innerStroke
+            arcStart: root.innerSegmentStart(2)
+            arcSweep: root.dual && root.hasValue ? root.innerFilledSweep(2) : 0
+            arcColor: Theme.zoneColor(2, root.paintTheme)
+        }
     }
 
     Repeater {
@@ -120,6 +210,7 @@ Item {
             readonly property real angle: root.startAngle + index / 12 * root.sweepAngle
             readonly property real tickRadius: root.radius - root.stroke / 2 - 8 - height / 2
             readonly property point center: root.pointAt(angle, tickRadius)
+            visible: !root.dual
             width: 2
             height: major ? 10 : 6
             radius: 1
@@ -131,6 +222,20 @@ Item {
                    ? Theme.onSurfaceVariant(Material.theme)
                    : Theme.outlineVariant(Material.theme)
         }
+    }
+
+    Rectangle {
+        id: innerKnob
+        readonly property point center: root.pointAt(root.secondValueAngle, root.innerRadius)
+        visible: root.dual && root.hasValue
+        width: root.innerStroke * 1.45
+        height: width
+        radius: width / 2
+        x: center.x - width / 2
+        y: center.y - height / 2
+        color: root.cardColor
+        border.width: Math.max(2, root.innerStroke * 0.32)
+        border.color: root.secondZoneColor
     }
 
     Rectangle {
@@ -150,13 +255,15 @@ Item {
     Column {
         id: readout
         anchors.horizontalCenter: parent.horizontalCenter
-        y: root.cy - height / 2 + root.radius * 0.08
-        spacing: 2
+        y: root.cy - height / 2 + (root.dual ? 0 : root.radius * 0.08)
+        spacing: root.dual ? 0 : 2
 
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
             text: root.hasValue ? root.animatedValue.toFixed(0) : "– –"
-            font.pixelSize: Math.max(24, root.radius * 0.44)
+            font.pixelSize: root.dual
+                             ? Math.max(16, Math.min(30, root.innerRadius * 0.36))
+                             : Math.max(24, root.radius * 0.44)
             font.weight: root.hasValue ? Font.DemiBold : Font.Light
             font.features: { "tnum": 1 }
             color: root.hasValue ? Theme.onSurface(Material.theme) : Theme.outline(Material.theme)
@@ -164,12 +271,51 @@ Item {
 
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
+            visible: root.dual
+            width: root.dualTextWidth
+            horizontalAlignment: Text.AlignHCenter
+            elide: Text.ElideRight
+            text: root.metricLabel
+            font.pixelSize: AppScale.fs(11)
+            font.weight: Font.DemiBold
+            color: root.hasValue && root.value > 0 ? root.zoneColor : Theme.onSurfaceVariant(Material.theme)
+            Accessible.ignored: true
+        }
+
+        Text {
+            anchors.horizontalCenter: parent.horizontalCenter
+            visible: root.dual
+            topPadding: 3
+            text: root.hasValue ? root.animatedSecond.toFixed(0) : "– –"
+            font.pixelSize: Math.max(16, Math.min(30, root.innerRadius * 0.36))
+            font.weight: root.hasValue ? Font.DemiBold : Font.Light
+            font.features: { "tnum": 1 }
+            color: root.hasValue ? Theme.onSurface(Material.theme) : Theme.outline(Material.theme)
+        }
+
+        Text {
+            anchors.horizontalCenter: parent.horizontalCenter
+            visible: root.dual
+            width: root.dualTextWidth
+            horizontalAlignment: Text.AlignHCenter
+            elide: Text.ElideRight
+            text: root.secondMetricLabel
+            font.pixelSize: AppScale.fs(11)
+            font.weight: Font.DemiBold
+            color: root.hasValue && root.secondValue > 0
+                   ? root.secondZoneColor
+                   : Theme.onSurfaceVariant(Material.theme)
+            Accessible.ignored: true
+        }
+
+        Text {
+            anchors.horizontalCenter: parent.horizontalCenter
             text: root.unit
-            font.pixelSize: AppScale.fs(14)
+            font.pixelSize: AppScale.fs(root.dual ? 12 : 14)
             color: Theme.onSurfaceVariant(Material.theme)
         }
 
-        Item { width: 1; height: 6 }
+        Item { width: 1; height: root.dual ? 2 : 6 }
 
         RowLayout {
             id: micRow
@@ -196,7 +342,7 @@ Item {
             Rectangle {
                 id: micTrack
                 Layout.alignment: Qt.AlignVCenter
-                Layout.preferredWidth: Math.max(72, Math.min(128, root.radius * 0.72))
+                Layout.preferredWidth: Math.max(root.dual ? 56 : 72, Math.min(root.dual ? 96 : 128, root.radius * (root.dual ? 0.48 : 0.72)))
                 Layout.preferredHeight: 10
                 implicitWidth: Layout.preferredWidth
                 implicitHeight: 10
@@ -215,6 +361,7 @@ Item {
 
         Rectangle {
             anchors.horizontalCenter: parent.horizontalCenter
+            visible: !root.dual
             implicitWidth: zoneText.implicitWidth + 24
             implicitHeight: zoneText.implicitHeight + 8
             radius: height / 2
@@ -234,7 +381,8 @@ Item {
 
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
-            text: qsTr("Speech rate")
+            visible: !root.dual
+            text: root.metricLabel
             font.pixelSize: AppScale.fs(12)
             font.weight: Font.DemiBold
             color: Theme.onSurface(Material.theme)

@@ -29,24 +29,24 @@ There is no waveform and no playback of recorded speech. The audio is deleted af
 
 While a session is on, speech rate, articulation, fillers, and pauses describe the analysis window: the most recent Analysis window seconds of kept speech (section 1.2, default 10 s), so a change of pace shows within a few seconds. Speech is the exception: it is the total analyzed speech since Start. After Stop, speech rate, articulation, fillers, and pauses switch to the duration-weighted mean of every phrase kept since Start. A longer phrase counts more than a shorter one. Speech stays the sum of those phrases. The gauge chip is labeled `Mean values`. That is the same result as the session's History row. A phrase dropped for being too short is left out. Open File is one file, is not averaged, and is not labeled Mean values.
 
-Speech rate is the only gauge. Articulation, fillers, pauses, and speech time are four tiles next to it.
+Gauge (`General/gaugeMode`, default Speech rate) chooses what the arc draws. Speech rate draws speech rate and leaves articulation in the first tile. Articulation rate swaps those two. Both draws speech rate on the outer arc and articulation on an inner arc, with both numbers in the middle, and hides that first tile. Fillers, pauses, and speech time stay tiles.
 
 | On screen | Meaning | Unit | Display |
 | --- | --- | --- | --- |
-| Speech rate | Pace of the analysis window while recording; after Stop, the duration-weighted mean of kept phrases | words per minute | Large integer (`toFixed(0)`). While recording, the gauge shows the median of the last Gauge median readings. After Stop the gauge shows the session mean. The gauge marker clamps to `[Min RS, Max RS]`. The printed number does not. |
-| Articulation | Pace while speech is actually going | words per minute | Integer. No gauge. |
+| Speech rate | Pace of the analysis window while recording; after Stop, the duration-weighted mean of kept phrases | words per minute | Large integer (`toFixed(0)`). On the gauge unless Gauge is Articulation rate, in which case it is the first tile. While recording, a pace on the gauge shows the median of the last Gauge median readings of that pace. After Stop the gauge shows the session mean. The gauge marker clamps to `[Min RS, Max RS]`. The printed number does not. |
+| Articulation | Pace while speech is actually going | words per minute | Integer. On the gauge when Gauge is Articulation rate or Both (inner arc). Otherwise the first tile. That tile is hidden when Gauge is Both. While recording, articulation on the gauge uses its own Gauge median; articulation left in the tile is the raw snapshot. |
 | Fillers | How much of the speech is stretched sounds | percent | Integer and ` %`, from section 6.5, with a thin bar for the same percent. |
 | Pauses | Extra gaps inside the kept phrases | seconds | Two decimals and ` sec`. No gauge. |
 | Speech | Analyzed speech since Start | seconds | Integer and ` sec`. Silence that ends a phrase is not included. This is not the `mm:ss` timer. Tile hint: `Total time counted as speech`. |
 
 The other tile hints are Articulation `Pace while speaking, gaps left out`, Fillers `Drawn-out sounds, not words`, and Pauses `Longer gaps, not all silence`.
 
-The gauge is a 240° arc open at the bottom, min at the lower left and max at the lower right. It is split into three equal zones, Slow / Average / Fast, drawn green → amber → red (light theme `#1E8E5A`, `#D99A00`, `#D2382F`; dark theme `#5DD39E`, `#F4C04E`, `#FF8A80`). Each zone is a faint track that fills in full color up to the value, and a round marker sits at the value. The number, `wpm`, the name of the current zone, and the words `Speech rate` are in the middle of the arc. The value animates to each new update. The numbers under the two ends are Min RS and Max RS. Defaults: 70 and 210. If the printed rate sits outside that range, the marker rests on the near end and the number still shows the real value. While a session is on, a microphone mark and a bar sit under the unit, in the theme primary color. The bar is the square root of the same microphone level that grows the Start button halo, so quiet speech still moves it. Silence leaves the bar empty and the mark muted. The meter is hidden when the session is off, and History does not show it.
+The gauge is a 240° arc open at the bottom, min at the lower left and max at the lower right. It is split into three equal zones, Slow / Average / Fast, drawn green → amber → red (light theme `#1E8E5A`, `#D99A00`, `#D2382F`; dark theme `#5DD39E`, `#F4C04E`, `#FF8A80`). Each zone is a faint track that fills in full color up to the value, and a round marker sits at the value. The number, `wpm`, the name of the current zone, and the name of the pace (`Speech rate` or `Articulation`) are in the middle of the arc. The value animates to each new update. The numbers under the two ends are Min RS and Max RS. Defaults: 70 and 210. If the printed rate sits outside that range, the marker rests on the near end and the number still shows the real value. When Gauge is Both, a second arc sits inside the first, with its own marker and the same three zones and the same ends. The outer arc is speech rate and the inner arc is articulation. The middle shows both integers, each name tinted with that pace’s zone color, then `wpm`. While a session is on, a microphone mark and a bar sit under the unit, in the theme primary color. The bar is the square root of the same microphone level that grows the Start button halo, so quiet speech still moves it. Silence leaves the bar empty and the mark muted. The meter is hidden when the session is off, and History does not show it.
 
 Home, from top to bottom:
 
 1. The gauge card. A chip in its corner names the state (Ready, Listening, Too short, Measuring, Too short to save, Microphone blocked, and Mean values after Stop); while the session is on it has a blinking dot and the open phrase timer, as `mm:ss`, sits on the right. The gauge is always shown. Until something has been measured the arc is empty and the number reads `– –`. Under the gauge, one line explains the current state (section 1.2).
-2. Four tiles: Articulation, Fillers, Pauses, Speech. They show `—` until something has been measured.
+2. Tiles beside the gauge: the pace that is not drawn on it (Articulation, or Speech rate when the gauge shows articulation), then Fillers, Pauses, and Speech. Both hides that first tile. They show `—` until something has been measured.
 3. A round button: microphone and `Start` when idle, stop icon and `Stop` while the session is on. While the session is on, a halo around it grows with the microphone level, so silence and speech are obvious. On desktop, a smaller Open File button sits to the right of Start while the session is off. It is not shown on Android.
 
 The layout follows the window. When the page is at least 720 px wide, or landscape and at least 560 px wide, the gauge card is on the left and the tiles and button are on the right. Otherwise everything is one column and the button is pinned to the bottom of the page, so it stays reachable on a phone while the rest scrolls. With Show Navigation Menu on, the gauge shortens so the gauge, tiles, and button fit the page; the column scrolls only when the window is still too short. Content is capped at 1120 px wide and centered.
@@ -113,7 +113,7 @@ The analysis window is the audio of the kept segments of this session, joined en
 
 - Nothing is published until the window holds 1.5 s of audio. Until then the last result stays on screen. If there is none yet, Home shows the gauge with an empty arc and `– –` instead of a speech-rate number.
 - After that, a new snapshot is started at most every `60000 / Updates per minute` ms (`General/updatesPerMinute`, default 60, range 6…240). With autodetection on, snapshots start only on speech frames. If a newer buffer is ready before the previous analysis finishes, the older run is abandoned.
-- Articulation, fillers, pauses, and speech are shown as computed. They are not joined with earlier phrases and not averaged with earlier snapshots. The speech-rate gauge shows the median of the last Gauge median live readings (`General/gaugeAverageCount`, default 3, range 1…30). Fewer readings than that use the ones already collected. An odd count takes the middle value after sorting. An even count takes the arithmetic mean of the two central values. Start clears those readings. After Stop the gauge and the tiles show the duration-weighted mean of the kept phrases, not that median. Speech stays the total. The gauge chip is labeled Mean values. Details keeps the joined vowel and gap statistics.
+- Fillers, pauses, and speech are shown as computed. They are not joined with earlier phrases and not averaged with earlier snapshots. Each pace drawn on the gauge shows the median of the last Gauge median live readings of that pace (`General/gaugeAverageCount`, default 3, range 1…30). Speech rate and articulation keep separate windows. Fewer readings than that use the ones already collected. An odd count takes the middle value after sorting. An even count takes the arithmetic mean of the two central values. Start clears both windows. Articulation left in the tile is the raw snapshot. Speech rate is published only as that median, including when Gauge puts it in the tile. After Stop the gauge and the tiles show the duration-weighted mean of the kept phrases, not that median. Speech stays the total. The gauge chip is labeled Mean values. Details keeps the joined vowel and gap statistics.
 - A snapshot with no measurable speech (section 5.4) is not shown. The numbers stay and the state chip reads Listening until a window with speech arrives.
 - When a segment closes, its final analysis is stored in the session file and added to the session collection. The screen keeps the window numbers; only Speech grows. The buffer is then released.
 - After Stop, once the last segment is stored, Home shows that mean. That final switch is not recorded as a shown change.
@@ -193,7 +193,7 @@ One JSON file per session, under `data/sessions/` next to `data/records/` (execu
 }
 ```
 
-Times are local, zero-padded, use a 24-hour `HH` field, and include milliseconds. The session file has no audio path. `shown` contains the five values Home displayed; each entry is timestamped by `at`. While recording, its speech rate is the gauge median from section 1.2, rounded half away from zero. The other four values are that snapshot as computed. Every segment contains both its finalized headline result and the analysis inputs needed to recompute a combined session result. The five headline numbers are stored before display rounding except `fillerPercent`, which is already the integer label value:
+Times are local, zero-padded, use a 24-hour `HH` field, and include milliseconds. The session file has no audio path. `shown` contains the five values Home displayed; each entry is timestamped by `at`. While recording, speech rate is the gauge median from section 1.2, rounded half away from zero. Articulation is that same kind of median when the gauge is drawing it, and the raw snapshot when it is only a tile. Fillers, pauses, and speech are that snapshot as computed. Every segment contains both its finalized headline result and the analysis inputs needed to recompute a combined session result. The five headline numbers are stored before display rounding except `fillerPercent`, which is already the integer label value:
 
 | Field | Value |
 | --- | --- |
@@ -218,7 +218,7 @@ Those five values are the duration-weighted mean of the kept phrases’ headline
 
 **Session charts**
 
-Choosing a row opens that session. The header repeats the list title and the five session values, with the same tile hints as Home. Under it: `Each point is one moment the numbers on Home changed.`
+Choosing a row opens that session. The header repeats the list title and the five session values, with the same Gauge setting and the same tile hints as Home. Under it: `Each point is one moment the numbers on Home changed.`
 
 Five charts follow, speech rate first and taller than the others. Titles are the Home labels. Each point is one moment when a printed number changed: speech rate or articulation to the nearest word per minute, fillers to the nearest percent, pauses to two decimals, or speech to the nearest second. The horizontal axis is that moment as clock time, in order. The vertical axis is the value Home was showing (`wpm`, `%`, or `sec`) and is not clamped to the gauge. A session whose labels never changed is a single point. Older files that have no shown changes plot one point per phrase instead. These are metric charts, not a waveform. Back returns to the list.
 
@@ -492,7 +492,7 @@ If `R_s > R_a`, the function returns `R_s`. Articulation rate is never shown bel
 
 If `N_c` is 0 the denominator is just `T_v`. If that is also 0 the current code divides by zero.
 
-The articulation value is printed as an integer only; there is no articulation gauge. Legacy articulation min/max settings are still synchronized with Min/Max RS but do not control a visible gauge.
+The articulation value is printed as an integer. Gauge can put it on the arc (Articulation rate), on the inner arc (Both), or in the first tile (Speech rate, the default). The marker uses the same Min/Max RS range as speech rate. Legacy articulation min/max settings are still synchronized with Min/Max RS.
 
 ### 6.4 Phrase pauses
 
@@ -568,7 +568,7 @@ kurtosis = mean(z^4) - 3                    # excess kurtosis
 
 Stored in `settings.ini` beside the executable (desktop) or in application-local data (Android), INI format. The file is read only when the root key `date_v3` exists. Until the user changes something, every value below is the in-code default and the file may be absent. The first save writes `date_v3` as an empty `QDate`, which is enough to make later launches load the file. General application and recorder values are under the `[General]` group; analysis coefficients retain their named groups.
 
-Advanced is a process-global boolean. It is not written to the INI and resets to off on restart. When it is off, Settings shows General, the phrase controls (including Detect speech automatically), and the speech-rate gauge range. The switch’s own note says it turns off when you leave the app. Show Navigation Menu, in General, shows Home, History, and Settings along the bottom; the toolbar menu button stays. Coefficients, filler calibration, signal-processing parameters, and voice-activity calibration are hidden, not reset.
+Advanced is a process-global boolean. It is not written to the INI and resets to off on restart. When it is off, Settings shows General, the phrase controls (including Detect speech automatically), and the gauge: which pace it draws, its range, and its median. The switch’s own note says it turns off when you leave the app. Show Navigation Menu, in General, shows Home, History, and Settings along the bottom; the toolbar menu button stays. Coefficients, filler calibration, signal-processing parameters, and voice-activity calibration are hidden, not reset.
 
 Everyday labels use plain units. Silence Duration is edited in seconds and stored as milliseconds.
 
@@ -576,11 +576,12 @@ Everyday labels use plain units. Silence Duration is edited in seconds and store
 | --- | --- | --- | --- |
 | Analysis window (s) | `General/analysisWindowSec` | 10 s | While recording, Home shows the pace of this much recent speech. Range 3…30. |
 | Updates per minute | `General/updatesPerMinute` | 60 | How often the numbers on Home are recalculated. Range 6…240. |
-| Gauge median | `General/gaugeAverageCount` | 3 | The gauge shows the middle of this many latest speech-rate readings, so one jump moves it less. Range 1…30. 1 shows the current reading. An odd count is the middle value after sorting. An even count is the mean of the two central values. |
+| Gauge | `General/gaugeMode` | Speech rate (`0`) | Speech rate draws that pace on the gauge and leaves articulation in the card. Articulation rate (`1`) swaps them. Both (`2`) draws both paces on the gauge and leaves that card out. |
+| Gauge median | `General/gaugeAverageCount` | 3 | The gauge shows the middle of this many latest readings of each pace it draws, so one jump moves it less. Range 1…30. 1 shows the current reading. An odd count is the middle value after sorting. An even count is the mean of the two central values. Speech rate and articulation keep separate windows. |
 | Pause | `General/autoStopSilenceDuration` | 2 s | Silence this long ends the phrase and saves it. Used only when Detect speech automatically is on. |
 | Detect speech automatically | `General/autoCalibrate` | off | After Start, measures background noise, then waits for speech. A pause ends the phrase. Off starts measuring when Start is pressed, a pause does not end the phrase, and the recording is saved in 15-second parts. |
-| Slow | Min RS | 70 wpm | The slow end of the speech-rate gauge. From here to Fast, the arc is split equally into Slow, Average, and Fast. Also copies to articulation min. |
-| Fast | Max RS | 210 wpm | The fast end of the speech-rate gauge. Also copies to articulation max. |
+| Slow | Min RS | 70 wpm | The slow end of the gauge. From here to Fast, the arc is split equally into Slow, Average, and Fast. Also copies to articulation min. |
+| Fast | Max RS | 210 wpm | The fast end of the gauge. Also copies to articulation max. |
 
 General (language, theme, color, font size, navigation bar) stays visible. Delete user data stays at the bottom of General, asks for confirmation, and says that it deletes saved sessions. Recordings are not kept, so there is no audio to delete. The calibration dialog is titled `Measuring background noise`.
 
@@ -612,7 +613,7 @@ With Advanced on, the extra settings are shown as numbered cards in the order a 
 | Low filler score | `F_min` | 120 | `fillerSounds/Min` | no |
 | High filler score | `F_max` | 240 | `fillerSounds/Max` | no |
 
-The Measurement card (Analysis window, Updates per minute, Gauge median, Pause, Detect speech automatically) is always visible. It is not hidden with Advanced, and its values are not speech-rate coefficients. Silence Duration (`General/autoStopSilenceDuration` = 2000) is the pause that closes a phrase. The segment length limits are fixed (section 1.2). Older INI files may still hold `metricAverageCount`, `minRecordingTimeMs`, and `maxRecordingTimeMs`; they are ignored and removed on the next save.
+The Measurement card (Analysis window, Updates per minute, Gauge, Gauge median, Pause, Detect speech automatically, Slow, Fast) is always visible. It is not hidden with Advanced, and its values are not speech-rate coefficients. Silence Duration (`General/autoStopSilenceDuration` = 2000) is the pause that closes a phrase. The segment length limits are fixed (section 1.2). Older INI files may still hold `metricAverageCount`, `minRecordingTimeMs`, and `maxRecordingTimeMs`; they are ignored and removed on the next save.
 
 Also present in the config object but not on this screen, and not used by the headline path:
 
@@ -732,7 +733,7 @@ Do not implement these for behavioral parity:
 
 ## 14. Parity checklist
 
-1. Keep a background session. Cut a kept segment at a pause or at 15 s, drop a segment shorter than 1 s, resample to 8000 Hz mono s16le, and analyze that buffer with sections 2–11. Live snapshots analyze the last Analysis window seconds of kept plus open audio. Articulation, fillers, pauses, and speech are shown unjoined and unaveraged. The speech-rate gauge shows the median of the last Gauge median live readings (default 3). After Stop, the gauge and tiles show the duration-weighted mean of the kept phrases, speech stays the total, and the screen is labeled Mean values. Silence must not produce nuclei (section 5.4). Delete the segment audio once its metrics are in the session file.
+1. Keep a background session. Cut a kept segment at a pause or at 15 s, drop a segment shorter than 1 s, resample to 8000 Hz mono s16le, and analyze that buffer with sections 2–11. Live snapshots analyze the last Analysis window seconds of kept plus open audio. Fillers, pauses, and speech are shown unjoined and unaveraged. Each pace drawn on the gauge shows the median of the last Gauge median live readings of that pace (default 3). Articulation left in the tile stays raw. After Stop, the gauge and tiles show the duration-weighted mean of the kept phrases, speech stays the total, and the screen is labeled Mean values. Silence must not produce nuclei (section 5.4). Delete the segment audio once its metrics are in the session file.
 2. Intensity uses mean absolute amplitude, full-window divisor, hop 120, window 240, and the exact loop bounds.
 3. Normalize to [0, 1], then the moving average with even length, full-window divisor, and the `index > 0` edge rule.
 4. Nuclei are `I_norm - S > 0.009`, stored length is `run_samples - 1`, runs of one sample are dropped at the default minimum, and a nucleus still open at the last sample is dropped.
@@ -741,6 +742,6 @@ Do not implement these for behavioral parity:
 7. Means on the details screen and in the formulas are power means of degree 3, not arithmetic means.
 8. Even-count medians use integer division.
 9. `R_s`, `R_a` (with the `R_s` floor), `P`, and `F` match section 6, including the filler remap onto 120…240 → 0…100%.
-10. The single speech-rate gauge clamps its marker; printed wpm and the pause do not. Filler is clamped before percent conversion.
+10. The gauge clamps each marker to Min/Max RS; printed wpm and the pause do not. Gauge selects speech rate, articulation rate, or both arcs. Filler is clamped before percent conversion.
 11. Settings defaults and the Advanced visibility rules match section 9. Advanced itself is not persisted.
 12. Each recording session is a JSON file of its kept segments, without audio, plus each change Home showed from Start to Stop. History lists sessions with the five metrics recomputed on all kept phrases together. Opening a session shows those values and one chart per metric against the times the numbers changed.

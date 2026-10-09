@@ -371,6 +371,23 @@ Page {
                             text: qsTr("After Start, measures background noise, then waits for you to speak. A pause ends the phrase. Off starts measuring when you press Start, a pause does not end the phrase, and the recording is saved in 15-second parts.")
                         }
 
+                        FieldLabel { text: qsTr("Gauge") }
+                        ComboBox {
+                            textRole: "name"
+                            model: [
+                                { name: qsTr("Speech rate"), id: 0 },
+                                { name: qsTr("Articulation rate"), id: 1 },
+                                { name: qsTr("Both"), id: 2 }
+                            ]
+                            currentIndex: settingsApi ? Math.max(0, Math.min(2, settingsApi.gaugeMode)) : 0
+                            onActivated: if (settingsApi)
+                                settingsApi.gaugeMode = model[index].id
+                            Layout.fillWidth: true
+                        }
+                        Hint {
+                            text: qsTr("Speech rate draws that pace on the gauge and leaves articulation in the card. Articulation rate swaps them. Both draws both paces on the gauge and leaves that card out.")
+                        }
+
                         FieldLabel { text: qsTr("Slow (wpm)") }
                         SpinBox {
                             from: 0
@@ -382,7 +399,7 @@ Page {
                             Layout.fillWidth: true
                         }
                         Hint {
-                            text: qsTr("The slow end of the speech-rate gauge. From here to Fast, the arc is split equally into Slow, Average, and Fast.")
+                            text: qsTr("The slow end of the gauge. From here to Fast, the arc is split equally into Slow, Average, and Fast.")
                         }
 
                         FieldLabel { text: qsTr("Fast (wpm)") }
@@ -396,7 +413,7 @@ Page {
                             Layout.fillWidth: true
                         }
                         Hint {
-                            text: qsTr("The fast end of the speech-rate gauge.")
+                            text: qsTr("The fast end of the gauge.")
                         }
 
                         FieldLabel { text: qsTr("Gauge median") }
@@ -410,7 +427,7 @@ Page {
                             Layout.fillWidth: true
                         }
                         Hint {
-                            text: qsTr("The gauge shows the middle of this many latest speech-rate readings, so one jump moves it less. 1 shows the current reading.")
+                            text: qsTr("The gauge shows the middle of this many latest readings of each pace it draws, so one jump moves it less. 1 shows the current reading.")
                         }
                     }
 

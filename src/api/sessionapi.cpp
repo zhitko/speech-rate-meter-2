@@ -1103,8 +1103,10 @@ void SessionApi::resetResultState()
     m_hasResult = false;
     setShowingMean(false);
     m_speechRateWindow.clear();
+    m_articulationWindow.clear();
     m_speechRate = 0;
     m_articulationRate = 0;
+    m_gaugeArticulationRate = 0;
     m_phrasePauses = 0;
     m_speechDuration = 0;
     m_fillerScore = 0;
@@ -1366,19 +1368,19 @@ void SessionApi::setNoSpeech(bool noSpeech)
         emit phaseChanged();
 }
 
-double SessionApi::smoothedSpeechRate(double rate, bool live)
+double SessionApi::medianOf(std::deque<double>& window, double rate, bool live)
 {
     if (!live) {
-        m_speechRateWindow.clear();
+        window.clear();
         return rate;
     }
 
     const int count = std::clamp(Settings::loadSettings().gaugeAverageCount, 1, 30);
-    m_speechRateWindow.push_back(rate);
-    while (static_cast<int>(m_speechRateWindow.size()) > count)
-        m_speechRateWindow.pop_front();
+    window.push_back(rate);
+    while (static_cast<int>(window.size()) > count)
+        window.pop_front();
 
-    std::vector<double> samples(m_speechRateWindow.begin(), m_speechRateWindow.end());
+    std::vector<double> samples(window.begin(), window.end());
     std::sort(samples.begin(), samples.end());
     const std::size_t mid = samples.size() / 2;
     if (samples.size() % 2 == 1)
@@ -1388,9 +1390,10 @@ double SessionApi::smoothedSpeechRate(double rate, bool live)
 
 void SessionApi::showMetrics(const QVariantMap& shown, double speechSeconds)
 {
-    m_speechRate = smoothedSpeechRate(shown.value(QStringLiteral("speechRate")).toDouble(),
-        shown.value(QStringLiteral("live")).toBool());
+    const bool live = shown.value(QStringLiteral("live")).toBool();
+    m_speechRate = medianOf(m_speechRateWindow, shown.value(QStringLiteral("speechRate")).toDouble(), live);
     m_articulationRate = shown.value(QStringLiteral("articulationRate")).toDouble();
+    m_gaugeArticulationRate = medianOf(m_articulationWindow, m_articulationRate, live);
     m_phrasePauses = shown.value(QStringLiteral("phrasePauses")).toDouble();
     m_speechDuration = speechSeconds;
     m_fillerScore = shown.value(QStringLiteral("fillerScore")).toDouble();
@@ -1414,7 +1417,11 @@ void SessionApi::rememberShown(const QVariantMap& shown, double speechSeconds)
 
     const AppSettings settings = Settings::loadSettings();
     const int speechRate = roundHalfAway(m_speechRate);
-    const int articulation = roundHalfAway(shown.value(QStringLiteral("articulationRate")).toDouble());
+    // The chart stores the articulation number Home was showing: the gauge median
+    // when the gauge draws it, otherwise the raw tile value.
+    const int articulation = roundHalfAway(settings.gaugeMode == 0
+        ? shown.value(QStringLiteral("articulationRate")).toDouble()
+        : m_gaugeArticulationRate);
     const int pauses = roundHalfAway(shown.value(QStringLiteral("phrasePauses")).toDouble() * 100.0);
     const int duration = roundHalfAway(speechSeconds);
     const int fillers = roundHalfAway(speechrate::fillerPercent(

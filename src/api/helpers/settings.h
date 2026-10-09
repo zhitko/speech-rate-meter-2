@@ -22,7 +22,8 @@ struct AppSettings {
     int autoStopSilenceDuration = 2000;
     int analysisWindowSec = 10; // live metrics cover this much recent speech, 3…30
     int updatesPerMinute = 60; // live recalculations per minute, 6…240
-    int gaugeAverageCount = 3; // speech-rate gauge shows the median of this many latest readings, 1…30
+    int gaugeAverageCount = 3; // each pace on the gauge shows the median of this many latest readings, 1…30
+    int gaugeMode = 0; // 0: speech rate, 1: articulation rate, 2: both
     int vadMethod = 0; // 0: energy, 1: autocorr, 2: hybrid
     double vadThreshold = 10000.0;
     double autoCorrThreshold = 0.3;

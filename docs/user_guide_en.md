@@ -4,8 +4,8 @@ Speech Rate Meter 2 estimates how fast you are speaking. It does not recognize w
 
 ## What the numbers mean
 
-- **Speech rate** is the overall pace, in words per minute. The gauge shows it and names the zone Slow, Average, or Fast.
-- **Articulation** is the pace while you are actually speaking, with the gaps left out. It is also in words per minute, and it is never below the speech rate.
+- **Speech rate** is the overall pace, in words per minute. By default the gauge shows it and names the zone Slow, Average, or Fast.
+- **Articulation** is the pace while you are actually speaking, with the gaps left out. It is also in words per minute, and it is never below the speech rate. By default it sits in the card beside the gauge.
 - **Fillers** is how much some sounds are drawn out, such as a long “uh”. It is a percent, not a count of words.
 - **Pauses** is the length of the longer gaps, in seconds. It is not the total time you were silent.
 - **Speech** is the total time that counted as speech, in seconds.
@@ -15,7 +15,7 @@ While you are recording, speech rate, articulation, fillers, and pauses use the 
 ## Record
 
 1. Open **Home**.
-2. Press **Start** and speak naturally. The microphone stays open. A meter inside the speech-rate gauge follows the microphone: if you are speaking and the bar stays empty, the microphone is not being heard. With **Detect speech automatically** on, stay quiet while background noise is measured, then speak. With it off, measuring starts when you press **Start**.
+2. Press **Start** and speak naturally. The microphone stays open. A meter inside the gauge follows the microphone: if you are speaking and the bar stays empty, the microphone is not being heard. With **Detect speech automatically** on, stay quiet while background noise is measured, then speak. With it off, measuring starts when you press **Start**.
 3. With **Detect speech automatically** on, a pause ends the phrase; it is saved, and the next one starts when you speak again. With it off, a pause does not end the phrase, and the recording is saved in 15-second parts.
 4. Press **Stop** when the session is finished. Home then shows the averages, with the chip **Mean values**. History shows the same averages.
 
@@ -37,11 +37,12 @@ Under **Measurement**:
 
 - **Analysis window** is how many recent seconds of speech Home uses while recording. Shorter reacts faster but jumps more.
 - **Updates per minute** is how often the numbers are recalculated.
-- **Gauge median** is how many latest speech-rate readings the gauge takes the middle of. The default is 3. Set it to 1 to show the current reading.
+- **Gauge** chooses the pace on the arc. **Speech rate** leaves articulation in the card. **Articulation rate** swaps them. **Both** draws both paces on the arc and hides that card.
+- **Gauge median** is how many latest readings of each pace on the gauge it takes the middle of. The default is 3. Set it to 1 to show the current reading.
 - **Pause** is how much silence ends a phrase and saves it. This is used only when **Detect speech automatically** is on.
 - **Detect speech automatically** measures background noise after **Start**, then waits for you to speak. When it is off, measuring starts when you press **Start**, a pause does not end the phrase, and the recording is saved in 15-second parts.
 
-**Slow** and **Fast** are the ends of the speech-rate gauge. The arc between them is split equally into Slow, Average, and Fast.
+**Slow** and **Fast** are the ends of the gauge. The arc between them is split equally into Slow, Average, and Fast.
 
 **Show advanced settings** opens the controls that change how the numbers are calculated. The switch turns off when you leave the app.
 

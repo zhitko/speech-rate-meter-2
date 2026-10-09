@@ -18,8 +18,8 @@ class JobQueue;
 /**
  * Process-wide recording session. Capture, pause cutting, and analysis run
  * off the UI thread. While recording, Home reads metrics of the most recent
- * analysis window from here; the speech-rate gauge shows the median of the last
- * few of those readings. After Stop, speech rate, articulation, fillers, and
+ * analysis window from here; each pace drawn on the gauge shows the median of
+ * the last few of its own readings. After Stop, speech rate, articulation, fillers, and
  * pauses become the duration-weighted mean of every kept phrase. Speech stays
  * the total. Home labels that state Mean values.
  */
@@ -33,6 +33,7 @@ class SessionApi : public QObject {
     Q_PROPERTY(bool showingMean READ showingMean NOTIFY showingMeanChanged)
     Q_PROPERTY(double speechRate READ speechRate NOTIFY metricsChanged)
     Q_PROPERTY(double articulationRate READ articulationRate NOTIFY metricsChanged)
+    Q_PROPERTY(double gaugeArticulationRate READ gaugeArticulationRate NOTIFY metricsChanged)
     Q_PROPERTY(double phrasePauses READ phrasePauses NOTIFY metricsChanged)
     Q_PROPERTY(double speechDuration READ speechDuration NOTIFY metricsChanged)
     Q_PROPERTY(double fillerScore READ fillerScore NOTIFY metricsChanged)
@@ -67,6 +68,7 @@ public:
     bool showingMean() const { return m_showingMean; }
     double speechRate() const { return m_speechRate; }
     double articulationRate() const { return m_articulationRate; }
+    double gaugeArticulationRate() const { return m_gaugeArticulationRate; }
     double phrasePauses() const { return m_phrasePauses; }
     double speechDuration() const { return m_speechDuration; }
     double fillerScore() const { return m_fillerScore; }
@@ -123,7 +125,7 @@ private:
     void showSessionMean();
     void setShowingMean(bool showing);
     void rememberShown(const QVariantMap& shown, double speechSeconds);
-    double smoothedSpeechRate(double rate, bool live);
+    double medianOf(std::deque<double>& window, double rate, bool live);
 
     struct SessionAccumulator;
     std::unique_ptr<SessionAccumulator> m_accumulator;
@@ -145,6 +147,8 @@ private:
     double m_speechRate = 0;
     std::deque<double> m_speechRateWindow;
     double m_articulationRate = 0;
+    double m_gaugeArticulationRate = 0;
+    std::deque<double> m_articulationWindow;
     double m_phrasePauses = 0;
     double m_speechDuration = 0;
     double m_fillerScore = 0;
