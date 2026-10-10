@@ -20,6 +20,9 @@ struct AppSettings {
     bool autoCalibrate = false;
     int vadCalibrationDurationMs = 2000;
     int autoStopSilenceDuration = 2000;
+    // Whole-recording phrasal pauses: silent/unvoiced runs at least this long.
+    // Matches speechrate::kDefaultPhrasalPauseMs.
+    int phrasalPauseMs = 150;
     int analysisWindowSec = 10; // live metrics cover this much recent speech, 3…30
     int updatesPerMinute = 60; // live recalculations per minute, 6…240
     int gaugeAverageCount = 3; // each pace on the gauge shows the median of this many latest readings, 1…30

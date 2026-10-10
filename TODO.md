@@ -11,7 +11,8 @@ Feedback from Boris Lobanov, Oct 10, 2026.
 - [ ] Add a "Listen to test" button next to the "Open File" button.
 
 ## Measurements
-- [ ] Improve measurement methods; current measurements are fairly approximate. Explore alternative approaches on top of the new UI.
+- [x] Improve measurement methods; current measurements are fairly approximate. Explore alternative approaches on top of the new UI.
+      Post-recording whole-file summary (after Stop, and after Open File): vowel-nucleus count, phrasal-pause count (silent/unvoiced runs of at least `phrasalPauseMs`, default 150), and vowel-duration count, mean, median, min, max, standard deviation, plus a histogram. The live window is unchanged. The 150 ms cut and the voicing threshold still need tuning on the slow, medium, and fast samples.
 
 ## Waiting on Boris
 - [ ] Speech samples with slow, medium, and fast tempo for testing "Open File".

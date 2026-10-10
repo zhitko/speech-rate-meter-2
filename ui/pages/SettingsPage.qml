@@ -361,6 +361,21 @@ Page {
                             text: qsTr("Silence this long ends the phrase and saves it. Used only when Detect speech automatically is on.")
                         }
 
+                        FieldLabel { text: qsTr("Phrasal pause (ms)") }
+                        SpinBox {
+                            from: 50
+                            to: 2000
+                            stepSize: 10
+                            editable: true
+                            value: settingsApi ? settingsApi.phrasalPauseMs : 150
+                            onValueModified: if (settingsApi)
+                                settingsApi.phrasalPauseMs = value
+                            Layout.fillWidth: true
+                        }
+                        Hint {
+                            text: qsTr("Silent or unvoiced gaps at least this long count as phrasal pauses in the whole-recording summary.")
+                        }
+
                         FieldLabel { text: qsTr("Detect speech automatically") }
                         Switch {
                             checked: settingsApi ? settingsApi.autoCalibrate : false

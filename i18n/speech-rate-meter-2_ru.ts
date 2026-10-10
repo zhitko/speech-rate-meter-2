@@ -658,6 +658,11 @@
         <source>No measurable speech was found in the file.</source>
         <translation>В файле не найдена речь, которую можно измерить.</translation>
     </message>
+    <message>
+        <location filename="../src/api/sessionapi.cpp" line="410"/>
+        <source>Not enough speech for a pace estimate. The whole-recording summary is shown below.</source>
+        <translation>Речи недостаточно для оценки темпа. Сводка по всей записи показана ниже.</translation>
+    </message>
 </context>
 <context>
     <name>SessionPage</name>
@@ -1360,6 +1365,16 @@
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="364"/>
+        <source>Phrasal pause (ms)</source>
+        <translation>Фразовая пауза (мс)</translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SettingsPage.qml" line="376"/>
+        <source>Silent or unvoiced gaps at least this long count as phrasal pauses in the whole-recording summary.</source>
+        <translation>Тишина или отсутствие голоса не короче этого считается фразовой паузой в сводке по всей записи.</translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SettingsPage.qml" line="364"/>
         <source>Detect speech automatically</source>
         <translation>Автоопределение речи</translation>
     </message>
@@ -1522,6 +1537,84 @@
         <location filename="../ui/components/VadCalibrationDialog.qml" line="87"/>
         <source>Please stay quiet for %1 seconds so the background noise level can be measured.</source>
         <translation>Сохраняйте тишину %1 с, чтобы измерить уровень фонового шума.</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingSummaryCard</name>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="22"/>
+        <source>ms</source>
+        <translation>мс</translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="36"/>
+        <source>Analyzing the whole recording…</source>
+        <translation>Анализ всей записи…</translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="38"/>
+        <source>Whole recording. %1 vowels, %2 phrasal pauses.</source>
+        <translation>Вся запись. Гласных: %1, фразовых пауз: %2.</translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="48"/>
+        <source>Whole recording</source>
+        <translation>Вся запись</translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="68"/>
+        <source>Vowels</source>
+        <translation>Гласные</translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="86"/>
+        <source>Phrasal pauses</source>
+        <translation>Фразовые паузы</translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="104"/>
+        <source>Silent or unvoiced gaps of at least %1 ms</source>
+        <translation>Тишина или отсутствие голоса не короче %1 мс</translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="113"/>
+        <source>Vowel durations</source>
+        <translation>Длительности гласных</translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="125"/>
+        <source>Mean</source>
+        <translation>Среднее</translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="126"/>
+        <source>Median</source>
+        <translation>Медиана</translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="127"/>
+        <source>Min</source>
+        <translation>Мин.</translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="128"/>
+        <source>Max</source>
+        <translation>Макс.</translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="129"/>
+        <source>SD</source>
+        <translation>СКО</translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="176"/>
+        <source>%1 ms+</source>
+        <translation>%1 мс+</translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="186"/>
+        <source>%1 ms bins</source>
+        <translation>интервалы по %1 мс</translation>
     </message>
 </context>
 </TS>

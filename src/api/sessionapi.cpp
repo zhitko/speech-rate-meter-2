@@ -196,7 +196,71 @@ QString validateWavFile(const QString& path)
     return {};
 }
 
-enum class JobKind { Live, Final, OpenFile, EndSession, ClearAll };
+QString analysisCacheKey(const QString& path,
+    const speechrate::Config& cfg,
+    int pauseThresholdMs,
+    double fillerMin,
+    double fillerMax)
+{
+    const auto number = [](double value) {
+        return QString::number(value, 'g', 12);
+    };
+    return path + QLatin1Char('|')
+        + QString::number(cfg.frame) + QLatin1Char('|')
+        + QString::number(cfg.shift) + QLatin1Char('|')
+        + QString::number(cfg.smooth) + QLatin1Char('|')
+        + QString::number(cfg.minLengthMs) + QLatin1Char('|')
+        + QString::number(cfg.degree) + QLatin1Char('|')
+        + number(cfg.k1) + QLatin1Char('|')
+        + number(cfg.k2) + QLatin1Char('|')
+        + number(cfg.k3) + QLatin1Char('|')
+        + number(cfg.k4) + QLatin1Char('|')
+        + number(cfg.peakMargin) + QLatin1Char('|')
+        + number(cfg.speechOverNoise) + QLatin1Char('|')
+        + number(cfg.minSpeechLevel) + QLatin1Char('|')
+        + number(cfg.noiseFloorPercentile) + QLatin1Char('|')
+        + QString::number(cfg.minVowels) + QLatin1Char('|')
+        + QString::number(pauseThresholdMs) + QLatin1Char('|')
+        + number(fillerMin) + QLatin1Char('|')
+        + number(fillerMax);
+}
+
+QVariantMap summaryToMap(const speechrate::RecordingSummary& summary)
+{
+    QVariantMap map;
+    map.insert(QStringLiteral("valid"), summary.valid);
+    map.insert(QStringLiteral("vowelCount"), summary.vowelCount);
+    map.insert(QStringLiteral("phrasalPauseCount"), summary.phrasalPauseCount);
+    map.insert(QStringLiteral("pauseThresholdMs"), summary.pauseThresholdMs);
+    map.insert(QStringLiteral("count"), summary.vowelDurations.count);
+    map.insert(QStringLiteral("mean"), summary.vowelDurations.mean);
+    map.insert(QStringLiteral("median"), summary.vowelDurations.median);
+    map.insert(QStringLiteral("min"), summary.vowelDurations.min);
+    map.insert(QStringLiteral("max"), summary.vowelDurations.max);
+    map.insert(QStringLiteral("stddev"), summary.vowelDurations.stddev);
+    map.insert(QStringLiteral("histogramBinMs"),
+        qRound(summary.vowelDurations.histogramBinSec * 1000.0));
+    QVariantList histogram;
+    int firstBin = 0;
+    const int binCount = static_cast<int>(summary.vowelDurations.histogram.size());
+    while (firstBin < binCount
+        && summary.vowelDurations.histogram[static_cast<std::size_t>(firstBin)].count == 0) {
+        ++firstBin;
+    }
+    for (int index = firstBin; index < binCount; ++index) {
+        const speechrate::HistogramBin& bin = summary.vowelDurations.histogram[static_cast<std::size_t>(index)];
+        QVariantMap entry;
+        entry.insert(QStringLiteral("startMs"), qRound(bin.startSec * 1000.0));
+        entry.insert(QStringLiteral("endMs"), qRound(bin.endSec * 1000.0));
+        entry.insert(QStringLiteral("count"), bin.count);
+        entry.insert(QStringLiteral("openEnded"), bin.openEnded);
+        histogram.push_back(entry);
+    }
+    map.insert(QStringLiteral("histogram"), histogram);
+    return map;
+}
+
+enum class JobKind { Live, Final, OpenFile, Summarize, EndSession, ClearAll };
 
 struct Job {
     JobKind kind = JobKind::Live;
@@ -204,6 +268,7 @@ struct Job {
     speechrate::Config config;
     double fillerMin = 120;
     double fillerMax = 240;
+    int pauseThresholdMs = speechrate::kDefaultPhrasalPauseMs;
     int phraseEpoch = 0;
     double openSeconds = 0;
     quint64 liveGen = 0;
@@ -315,6 +380,15 @@ protected:
                     Q_ARG(quint64, job.generation));
                 continue;
             }
+            if (job.kind == JobKind::Summarize) {
+                const speechrate::RecordingSummary summary = speechrate::summarizeRecording(
+                    job.samples, job.config, job.pauseThresholdMs);
+                const QVariantMap summaryMap = summaryToMap(summary);
+                QMetaObject::invokeMethod(m_api, "applyRecordingSummary", Qt::QueuedConnection,
+                    Q_ARG(quint64, job.generation),
+                    Q_ARG(QVariantMap, summaryMap));
+                continue;
+            }
 
             QVariantMap map;
             const auto stampJob = [&](QVariantMap& target) {
@@ -325,26 +399,42 @@ protected:
                 target.insert(QStringLiteral("sessionStartedAt"), job.sessionStartedAt);
             };
             if (job.kind == JobKind::OpenFile) {
-                const QString key = QFileInfo(job.path).canonicalFilePath();
-                if (key.isEmpty()) {
+                const QString filePath = QFileInfo(job.path).canonicalFilePath();
+                if (filePath.isEmpty()) {
                     QMetaObject::invokeMethod(m_api, "applyOpenFileFinished", Qt::QueuedConnection,
                         Q_ARG(bool, false),
                         Q_ARG(QString, QCoreApplication::translate("SessionApi", "The selected file cannot be opened.")));
                     continue;
                 }
+                const QString key = analysisCacheKey(filePath, job.config, job.pauseThresholdMs, job.fillerMin, job.fillerMax);
                 const auto cached = m_cache.constFind(key);
                 if (cached != m_cache.cend()) {
                     map = cached.value();
                 } else {
                     const std::vector<float> samples = readWavSamples(job.path);
+                    const speechrate::RecordingSummary summary = speechrate::summarizeRecording(
+                        samples, job.config, job.pauseThresholdMs);
+                    const QVariantMap summaryMap = summaryToMap(summary);
                     const speechrate::Measurement measured = speechrate::measure(samples, job.config);
                     if (!measured.metrics.valid) {
+                        const bool hasCounts = summary.vowelCount > 0 || summary.phrasalPauseCount > 0;
+                        if (hasCounts) {
+                            QMetaObject::invokeMethod(m_api, "applyRecordingSummary", Qt::QueuedConnection,
+                                Q_ARG(quint64, job.generation),
+                                Q_ARG(QVariantMap, summaryMap));
+                        }
+                        const QString error = hasCounts
+                            ? QCoreApplication::translate("SessionApi",
+                                "Not enough speech for a pace estimate. The whole-recording summary is shown below.")
+                            : QCoreApplication::translate("SessionApi",
+                                "No measurable speech was found in the file.");
                         QMetaObject::invokeMethod(m_api, "applyOpenFileFinished", Qt::QueuedConnection,
                             Q_ARG(bool, false),
-                            Q_ARG(QString, QCoreApplication::translate("SessionApi", "No measurable speech was found in the file.")));
+                            Q_ARG(QString, error));
                         continue;
                     }
                     map = metricsToMap(measured.metrics, job.fillerMin, job.fillerMax, false, 0, false);
+                    map.insert(QStringLiteral("recordingSummary"), summaryMap);
                     SessionStore::insertMeasurement(map, measured.parts, job.config, job.fillerMin, job.fillerMax);
                     m_cache.insert(key, map);
                 }
@@ -532,6 +622,7 @@ public slots:
         m_useSpeechDetection = m_settings.autoCalibrate;
         m_settingsTimer.start();
         m_pcm.clear();
+        m_sessionSamples.clear();
         m_recent.clear();
         m_origin = 0;
         m_fed = 0;
@@ -606,12 +697,22 @@ public slots:
         if (m_phraseSpeaking)
             closePhrase(false, true);
         finishAudio();
+        // End the session before the whole-file summary so the mean values
+        // are not held behind that pass. The summary follows on the same thread.
         Job end;
         end.kind = JobKind::EndSession;
         end.generation = m_generation;
         end.sessionId = m_sessionId;
         end.sessionEndedAt = stamp(QDateTime::currentDateTime());
-        m_queue->pushOrdered(end);
+        m_queue->pushOrdered(std::move(end));
+        Job summaryJob;
+        summaryJob.kind = JobKind::Summarize;
+        summaryJob.samples = std::move(m_sessionSamples);
+        m_sessionSamples.clear();
+        summaryJob.config = configFrom(m_settings);
+        summaryJob.pauseThresholdMs = m_settings.phrasalPauseMs;
+        summaryJob.generation = m_generation;
+        m_queue->pushOrdered(std::move(summaryJob));
         emit runningChanged(false);
         LOG_INFO() << "Session stopped" << m_sessionId;
     }
@@ -652,6 +753,14 @@ private slots:
 
         m_pcm.insert(m_pcm.end(), samples.begin(), samples.end());
         m_fed += static_cast<qint64>(samples.size());
+        // Keep the whole take, including silence between phrases, for the
+        // one-shot summary. The rolling m_pcm buffer is still trimmed.
+        if (m_sessionSamples.capacity() < m_sessionSamples.size() + samples.size()) {
+            m_sessionSamples.reserve(m_sessionSamples.size() + samples.size()
+                + static_cast<std::size_t>(kSampleRate * 30));
+        }
+        for (qint16 sample : samples)
+            m_sessionSamples.push_back(static_cast<float>(sample));
 
         if (!m_useSpeechDetection) {
             // The whole take is one phrase. Numbers update from the first sample
@@ -950,6 +1059,8 @@ private:
     std::unique_ptr<VADAutocorrelationService> m_corr;
 
     std::vector<qint16> m_pcm;
+    // Resampled session audio at 8 kHz. Released into the summarize job on Stop.
+    std::vector<float> m_sessionSamples;
     // Audio of the segments already closed in this session, newest last.
     // Live windows continue from it across pauses.
     std::deque<float> m_recent;
@@ -1111,6 +1222,7 @@ void SessionApi::resetResultState()
     m_speechDuration = 0;
     m_fillerScore = 0;
     m_details.clear();
+    clearRecordingSummary();
     if (hadResult)
         emit hasResultChanged();
     emit metricsChanged();
@@ -1121,6 +1233,10 @@ void SessionApi::stopSession()
     if (!m_sessionActive || m_stopPending)
         return;
     m_stopPending = true;
+    if (!m_recordingSummaryPending) {
+        m_recordingSummaryPending = true;
+        emit recordingSummaryChanged();
+    }
     QMetaObject::invokeMethod(m_worker, "stopCapture", Qt::QueuedConnection);
 }
 
@@ -1138,6 +1254,7 @@ void SessionApi::openWavFile(const QUrl& url)
         return;
     }
     ++m_captureGeneration;
+    resetResultState();
     setOpenFileError({});
     m_openFileBusy = true;
     emit openFileBusyChanged();
@@ -1149,6 +1266,7 @@ void SessionApi::openWavFile(const QUrl& url)
     job.config = configFrom(settings);
     job.fillerMin = settings.fillerMin;
     job.fillerMax = settings.fillerMax;
+    job.pauseThresholdMs = settings.phrasalPauseMs;
     job.generation = m_captureGeneration;
     m_queue->pushOrdered(std::move(job));
 }
@@ -1254,6 +1372,7 @@ void SessionApi::applyMetrics(const QVariantMap& metrics)
         m_shownSessionId.clear();
         m_shownSessionStartedAt.clear();
         setShowingMean(false);
+        storeRecordingSummary(metrics.value(QStringLiteral("recordingSummary")).toMap());
         showMetrics(metrics, metrics.value(QStringLiteral("speechDuration")).toDouble());
         return;
     }
@@ -1356,6 +1475,32 @@ void SessionApi::setShowingMean(bool showing)
         return;
     m_showingMean = showing;
     emit showingMeanChanged();
+}
+
+void SessionApi::storeRecordingSummary(const QVariantMap& summary)
+{
+    m_recordingSummaryPending = false;
+    const bool valid = summary.value(QStringLiteral("valid")).toBool();
+    m_hasRecordingSummary = valid;
+    m_recordingSummary = valid ? summary : QVariantMap {};
+    emit recordingSummaryChanged();
+}
+
+void SessionApi::clearRecordingSummary()
+{
+    if (!m_hasRecordingSummary && !m_recordingSummaryPending && m_recordingSummary.isEmpty())
+        return;
+    m_hasRecordingSummary = false;
+    m_recordingSummaryPending = false;
+    m_recordingSummary.clear();
+    emit recordingSummaryChanged();
+}
+
+void SessionApi::applyRecordingSummary(quint64 generation, QVariantMap summary)
+{
+    if (!m_alive.load() || generation != m_captureGeneration)
+        return;
+    storeRecordingSummary(summary);
 }
 
 void SessionApi::setNoSpeech(bool noSpeech)

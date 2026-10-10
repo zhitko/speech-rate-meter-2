@@ -349,6 +349,19 @@ void SettingsApi::setPauseSec(int seconds)
     emit pauseSecChanged();
 }
 
+int SettingsApi::phrasalPauseMs() const
+{
+    return m_settings.phrasalPauseMs;
+}
+
+void SettingsApi::setPhrasalPauseMs(int milliseconds)
+{
+    if (!assignIfChanged(m_settings.phrasalPauseMs, std::clamp(milliseconds, 50, 2000)))
+        return;
+    save();
+    emit phrasalPauseMsChanged();
+}
+
 double SettingsApi::slowWpm() const
 {
     return m_settings.speechRateMin;
@@ -509,6 +522,7 @@ void SettingsApi::load()
     emit gaugeAverageCountChanged();
     emit gaugeModeChanged();
     emit pauseSecChanged();
+    emit phrasalPauseMsChanged();
     emit slowWpmChanged();
     emit fastWpmChanged();
     emit meanValueDegryChanged();

@@ -547,6 +547,11 @@
         <source>No measurable speech was found in the file.</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <location filename="../src/api/sessionapi.cpp" line="410"/>
+        <source>Not enough speech for a pace estimate. The whole-recording summary is shown below.</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>SessionPage</name>
@@ -1109,6 +1114,16 @@
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="364"/>
+        <source>Phrasal pause (ms)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SettingsPage.qml" line="376"/>
+        <source>Silent or unvoiced gaps at least this long count as phrasal pauses in the whole-recording summary.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SettingsPage.qml" line="364"/>
         <source>Detect speech automatically</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1234,6 +1249,84 @@
     <message>
         <location filename="../ui/components/VadCalibrationDialog.qml" line="87"/>
         <source>Please stay quiet for %1 seconds so the background noise level can be measured.</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>RecordingSummaryCard</name>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="22"/>
+        <source>ms</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="36"/>
+        <source>Analyzing the whole recording…</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="38"/>
+        <source>Whole recording. %1 vowels, %2 phrasal pauses.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="48"/>
+        <source>Whole recording</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="68"/>
+        <source>Vowels</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="86"/>
+        <source>Phrasal pauses</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="104"/>
+        <source>Silent or unvoiced gaps of at least %1 ms</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="113"/>
+        <source>Vowel durations</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="125"/>
+        <source>Mean</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="126"/>
+        <source>Median</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="127"/>
+        <source>Min</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="128"/>
+        <source>Max</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="129"/>
+        <source>SD</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="176"/>
+        <source>%1 ms+</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="186"/>
+        <source>%1 ms bins</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

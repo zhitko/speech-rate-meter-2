@@ -163,7 +163,8 @@ std::vector<double> smooth(const std::vector<double>& values, int smoothLength)
 std::vector<Run> vowelNuclei(const std::vector<double>& normalized,
     const std::vector<double>& smoothed,
     double margin,
-    std::uint32_t minFrames)
+    std::uint32_t minFrames,
+    bool flushTail)
 {
     std::vector<Run> nuclei;
     const int count = static_cast<int>(std::min(normalized.size(), smoothed.size()));
@@ -184,6 +185,8 @@ std::vector<Run> vowelNuclei(const std::vector<double>& normalized,
             open = false;
         }
     }
+    if (flushTail && open && static_cast<std::uint32_t>(length) > minFrames)
+        nuclei.push_back(Run { start, length });
     return nuclei;
 }
 
@@ -462,6 +465,230 @@ double fillerPercent(double fillerScore, double fillerMin, double fillerMax)
         return 0;
     const double clamped = std::clamp(fillerScore, fillerMin, fillerMax);
     return (clamped - fillerMin) / (fillerMax - fillerMin) * 100.0;
+}
+
+namespace {
+
+double peakNacf(const std::vector<float>& samples, int sampleStart, int length)
+{
+    if (length <= 0 || samples.empty())
+        return 0;
+    const int available = static_cast<int>(samples.size());
+    if (sampleStart < 0) {
+        length += sampleStart;
+        sampleStart = 0;
+    }
+    if (sampleStart >= available)
+        return 0;
+    if (sampleStart + length > available)
+        length = available - sampleStart;
+    if (length <= 0)
+        return 0;
+
+    const int lagMin = static_cast<int>(std::ceil(kSampleRate / kVoicingMaxHz));
+    const int lagMax = static_cast<int>(std::floor(kSampleRate / kVoicingMinHz));
+    if (lagMin < 1 || lagMax < lagMin || length <= lagMax)
+        return 0;
+
+    const float* window = samples.data() + sampleStart;
+    double energy = 0;
+    for (int index = 0; index < length; ++index) {
+        const double sample = window[index];
+        energy += sample * sample;
+    }
+    // Below this, autocorrelation of numerical dust is not voicing.
+    if (energy < 1.0)
+        return 0;
+
+    double best = 0;
+    for (int lag = lagMin; lag <= lagMax; ++lag) {
+        double correlation = 0;
+        const int overlap = length - lag;
+        for (int index = 0; index < overlap; ++index) {
+            correlation += static_cast<double>(window[index])
+                * static_cast<double>(window[index + lag]);
+        }
+        best = std::max(best, correlation / energy);
+    }
+    return best;
+}
+
+bool frameVoiced(const std::vector<float>& samples, int frameIndex, int frame, int shift)
+{
+    const int half = static_cast<int>(std::lround(frame / 2.0));
+    return peakNacf(samples, frameIndex * shift - half, frame) >= kVoicingNacf;
+}
+
+} // namespace
+
+DurationStats durationStatistics(const std::vector<double>& durationsSec)
+{
+    DurationStats stats;
+    std::vector<double> durations;
+    durations.reserve(durationsSec.size());
+    for (double duration : durationsSec) {
+        if (std::isfinite(duration))
+            durations.push_back(std::max(0.0, duration));
+    }
+    stats.count = static_cast<int>(durations.size());
+    if (stats.count < 1)
+        return stats;
+
+    stats.min = durations.front();
+    stats.max = durations.front();
+    double sum = 0;
+    for (double duration : durations) {
+        sum += duration;
+        stats.min = std::min(stats.min, duration);
+        stats.max = std::max(stats.max, duration);
+    }
+    stats.mean = sum / static_cast<double>(stats.count);
+
+    std::vector<double> sorted = durations;
+    std::sort(sorted.begin(), sorted.end());
+    const int mid = stats.count / 2;
+    if (stats.count % 2 == 1)
+        stats.median = sorted[static_cast<std::size_t>(mid)];
+    else
+        stats.median = 0.5 * (sorted[static_cast<std::size_t>(mid - 1)] + sorted[static_cast<std::size_t>(mid)]);
+
+    if (stats.count >= 2) {
+        double square = 0;
+        for (double duration : durations) {
+            const double delta = duration - stats.mean;
+            square += delta * delta;
+        }
+        stats.stddev = std::sqrt(square / static_cast<double>(stats.count - 1));
+    }
+
+    const double binWidth = kVowelHistogramBinSec;
+    stats.histogramBinSec = binWidth;
+    int needed = static_cast<int>(std::floor(stats.max / binWidth)) + 1;
+    if (needed < 1)
+        needed = 1;
+    const bool overflow = needed > kVowelHistogramMaxBins;
+    const int bins = overflow ? kVowelHistogramMaxBins : needed;
+    stats.histogram.resize(static_cast<std::size_t>(bins));
+    for (int index = 0; index < bins; ++index) {
+        HistogramBin& bin = stats.histogram[static_cast<std::size_t>(index)];
+        bin.startSec = index * binWidth;
+        bin.endSec = (index + 1) * binWidth;
+        bin.openEnded = overflow && index == bins - 1;
+    }
+    for (double duration : durations) {
+        int binIndex = static_cast<int>(std::floor(duration / binWidth));
+        if (binIndex < 0)
+            binIndex = 0;
+        if (binIndex >= bins)
+            binIndex = bins - 1;
+        ++stats.histogram[static_cast<std::size_t>(binIndex)].count;
+    }
+    return stats;
+}
+
+int countPhrasalPauses(const std::vector<std::uint8_t>& silent, int shiftSamples, int thresholdMs)
+{
+    if (shiftSamples <= 0 || silent.empty())
+        return 0;
+    const int count = static_cast<int>(silent.size());
+    int firstSpeech = -1;
+    int lastSpeech = -1;
+    for (int index = 0; index < count; ++index) {
+        if (silent[static_cast<std::size_t>(index)] == 0) {
+            if (firstSpeech < 0)
+                firstSpeech = index;
+            lastSpeech = index;
+        }
+    }
+    if (firstSpeech < 0 || lastSpeech <= firstSpeech)
+        return 0;
+
+    if (thresholdMs < 0)
+        thresholdMs = 0;
+    const double frameSec = static_cast<double>(shiftSamples) / kSampleRate;
+    const double thresholdSec = static_cast<double>(thresholdMs) / 1000.0;
+
+    int pauses = 0;
+    int run = 0;
+    const auto closeRun = [&]() {
+        if (run > 0 && static_cast<double>(run) * frameSec + 1e-9 >= thresholdSec)
+            ++pauses;
+        run = 0;
+    };
+    for (int index = firstSpeech + 1; index < lastSpeech; ++index) {
+        if (silent[static_cast<std::size_t>(index)] != 0)
+            ++run;
+        else
+            closeRun();
+    }
+    closeRun();
+    return pauses;
+}
+
+RecordingSummary summarizeRecording(const std::vector<float>& samples,
+    const Config& cfg,
+    int pauseThresholdMs)
+{
+    RecordingSummary summary;
+    summary.pauseThresholdMs = pauseThresholdMs < 0 ? 0 : pauseThresholdMs;
+    if (samples.empty() || cfg.frame <= 0 || cfg.shift <= 0)
+        return summary;
+
+    const std::vector<double> contour = intensity(samples, cfg.frame, cfg.shift);
+    summary.valid = true;
+    if (contour.empty())
+        return summary;
+
+    const int frames = static_cast<int>(contour.size());
+    const double gate = speechGateLevel(contour, cfg);
+    std::vector<std::uint8_t> silent(static_cast<std::size_t>(frames), 0);
+    std::vector<std::uint8_t> voiced(static_cast<std::size_t>(frames), 0);
+    for (int index = 0; index < frames; ++index) {
+        const double level = contour[static_cast<std::size_t>(index)];
+        if (level < cfg.minSpeechLevel) {
+            silent[static_cast<std::size_t>(index)] = 1;
+            continue;
+        }
+        if (frameVoiced(samples, index, cfg.frame, cfg.shift))
+            voiced[static_cast<std::size_t>(index)] = 1;
+        if (level < gate && voiced[static_cast<std::size_t>(index)] == 0)
+            silent[static_cast<std::size_t>(index)] = 1;
+    }
+
+    std::vector<Run> nuclei;
+    const std::vector<double> normalized = normalize(contour);
+    if (!normalized.empty()) {
+        const std::vector<double> smoothed = smooth(normalized, cfg.smooth);
+        const std::uint32_t minFrames = minLengthFrames(cfg.shift, cfg.minLengthMs);
+        nuclei = gateNuclei(
+            vowelNuclei(normalized, smoothed, cfg.peakMargin, minFrames, true), contour, cfg);
+    }
+
+    std::vector<Run> kept;
+    kept.reserve(nuclei.size());
+    for (const Run& nucleus : nuclei) {
+        int peak = nucleus.start;
+        double best = -1;
+        const int end = std::min(nucleus.start + nucleus.length, frames - 1);
+        for (int index = std::max(0, nucleus.start); index <= end; ++index) {
+            if (contour[static_cast<std::size_t>(index)] > best) {
+                best = contour[static_cast<std::size_t>(index)];
+                peak = index;
+            }
+        }
+        if (peak >= 0 && peak < frames && voiced[static_cast<std::size_t>(peak)] != 0)
+            kept.push_back(nucleus);
+    }
+
+    std::vector<double> durations;
+    durations.reserve(kept.size());
+    for (const Run& nucleus : kept)
+        durations.push_back(secondsFromFrames(nucleus.length, cfg.shift));
+
+    summary.vowelCount = static_cast<int>(kept.size());
+    summary.vowelDurations = durationStatistics(durations);
+    summary.phrasalPauseCount = countPhrasalPauses(silent, cfg.shift, summary.pauseThresholdMs);
+    return summary;
 }
 
 } // namespace speechrate

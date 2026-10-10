@@ -34,6 +34,7 @@ class SettingsApi : public QObject {
     Q_PROPERTY(int gaugeAverageCount READ gaugeAverageCount WRITE setGaugeAverageCount NOTIFY gaugeAverageCountChanged)
     Q_PROPERTY(int gaugeMode READ gaugeMode WRITE setGaugeMode NOTIFY gaugeModeChanged)
     Q_PROPERTY(int pauseSec READ pauseSec WRITE setPauseSec NOTIFY pauseSecChanged)
+    Q_PROPERTY(int phrasalPauseMs READ phrasalPauseMs WRITE setPhrasalPauseMs NOTIFY phrasalPauseMsChanged)
     Q_PROPERTY(double slowWpm READ slowWpm WRITE setSlowWpm NOTIFY slowWpmChanged)
     Q_PROPERTY(double fastWpm READ fastWpm WRITE setFastWpm NOTIFY fastWpmChanged)
     Q_PROPERTY(int meanValueDegry READ meanValueDegry WRITE setMeanValueDegry NOTIFY meanValueDegryChanged)
@@ -115,6 +116,8 @@ public:
     void setGaugeMode(int mode);
     int pauseSec() const;
     void setPauseSec(int seconds);
+    int phrasalPauseMs() const;
+    void setPhrasalPauseMs(int milliseconds);
     double slowWpm() const;
     void setSlowWpm(double wpm);
     double fastWpm() const;
@@ -170,6 +173,7 @@ signals:
     void gaugeAverageCountChanged();
     void gaugeModeChanged();
     void pauseSecChanged();
+    void phrasalPauseMsChanged();
     void slowWpmChanged();
     void fastWpmChanged();
     void meanValueDegryChanged();
