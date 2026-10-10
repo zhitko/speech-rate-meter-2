@@ -98,9 +98,12 @@ Item {
     readonly property real dualTextWidth: Math.max(48, (innerRadius - innerStroke) * 1.65)
     readonly property real cx: width / 2
     readonly property real cy: {
-        // Keep the end labels on the bottom of the item. Extra height, including
-        // the band beside the phase chip, raises the apex instead of leaving a gap.
-        return height - labelSpace - stroke * 0.5 - radius * 0.5
+        // Center the arc in whatever height it is given. A wide card is often
+        // taller than the circle, and the end labels should not sit on the floor.
+        var topInset = stroke * 0.55
+        var content = radius * 1.5 + topInset + labelSpace
+        var slack = Math.max(0, height - content)
+        return slack / 2 + topInset + radius
     }
 
     // Gap between zones wide enough that the rounded caps never touch.

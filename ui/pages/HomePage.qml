@@ -53,6 +53,16 @@ Page {
     // already includes the reclaimed band, so it is not added a second time.
     readonly property real naturalGaugeHeight: Math.min(legacyGaugeHeight * 1.5 + chipBand,
                                                          Math.max(legacyGaugeHeight + chipBand, gaugeRoom))
+    // Phone column width is known up front. Wide cards are not: the tiles can
+    // take more than their share, so that height is measured from the real width.
+    function gaugeContentHeight(gaugeWidth) {
+        var labelSpace = AppScale.fs(12) + 10
+        var byWidth = Math.max(20, (Math.max(0, gaugeWidth) - 4) / 2.15)
+        var content = byWidth * 1.66 + labelSpace + 4
+        return Math.min(fittedGaugeHeight, Math.max(gaugeFloor, content))
+    }
+    readonly property real phoneGaugeHeight: gaugeContentHeight(layoutWidth - 32
+                                                                + 2 * (AppScale.pagePadding + 10))
     // Wider windows give the gauge more of the row, up to 74%, and leave the
     // tiles about 300 px so their labels still fit.
     readonly property real gaugeWeight: {
@@ -472,51 +482,69 @@ Page {
                         id: gaugeColumn
                         anchors.fill: parent
                         anchors.margins: 16
-                        spacing: 8
+                        spacing: 0
 
-                        SpeechRateGauge {
-                            id: gauge
+                        // The slot is the gauge's vertical budget. On a wide window
+                        // that budget is often taller than the circle, so the arc and
+                        // the hint are centered in it instead of sitting on the floor.
+                        Item {
+                            id: gaugeSlot
                             Layout.fillWidth: true
                             Layout.fillHeight: root.wideLayout
                             Layout.topMargin: 28 - root.chipBand
-                            // On a phone the arc uses the free side margins and stops
-                            // just inside the screen edge. Wide layouts stay inside
-                            // the card so the arc does not meet the tiles.
-                            Layout.leftMargin: root.wideLayout ? -8 : -(AppScale.pagePadding + 10)
-                            Layout.rightMargin: root.wideLayout ? -8 : -(AppScale.pagePadding + 10)
-                            Layout.preferredHeight: root.fittedGaugeHeight
-                            Layout.minimumHeight: root.fitNavigation ? root.fittedGaugeHeight : 170
-                            Layout.maximumHeight: Math.max(170, root.fittedGaugeHeight)
-                            // While recording, anything but Measuring means the user is not
-                            // speaking (or not enough yet), so the needle rests at zero.
-                            hasValue: root.hasResult || root.active
-                            showSecond: root.gaugeMode === 2
-                            // Both draws articulation on the outer arc (value, top number)
-                            // and speech rate on the inner arc. A single arc uses the pace
-                            // the Gauge setting names.
-                            metricLabel: root.gaugeMode === 0 ? qsTr("Speech rate") : qsTr("Articulation")
-                            secondMetricLabel: qsTr("Speech rate")
-                            value: root.gaugeAtRest ? 0
-                                   : (root.gaugeMode === 0 ? sessionApi.speechRate : sessionApi.gaugeArticulationRate)
-                            secondValue: root.gaugeAtRest ? 0 : sessionApi.speechRate
-                            minimum: root.slowWpm
-                            maximum: root.fastWpm
-                            cardColor: gaugeCard.color
-                            micActive: root.active
-                            micLevel: sessionApi ? sessionApi.audioLevel : 0
-                        }
+                            readonly property real hintBlock: 8 + gaugeHint.implicitHeight + 4
+                            Layout.preferredHeight: (root.wideLayout ? root.fittedGaugeHeight
+                                                                      : root.phoneGaugeHeight)
+                                                     + hintBlock
+                            Layout.minimumHeight: Layout.preferredHeight
+                            Layout.maximumHeight: root.wideLayout ? 10000 : Layout.preferredHeight
 
-                        Label {
-                            id: gaugeHint
-                            Layout.fillWidth: true
-                            Layout.bottomMargin: 4
-                            horizontalAlignment: Text.AlignHCenter
-                            wrapMode: Text.Wrap
-                            text: root.hintText()
-                            font.pixelSize: AppScale.fs(14)
-                            color: root.phase() === SessionApi.MicDenied
-                                   ? Theme.error(Material.theme)
-                                   : Theme.onSurfaceVariant(Material.theme)
+                            SpeechRateGauge {
+                                id: gauge
+                                readonly property real sideBleed: root.wideLayout ? 8
+                                                                     : AppScale.pagePadding + 10
+                                x: -sideBleed
+                                width: parent.width + sideBleed * 2
+                                height: root.gaugeContentHeight(width)
+                                // Center the arc and the hint together. A phone slot is
+                                // already the circle's height, so this stays at the top.
+                                y: {
+                                    if (!root.wideLayout)
+                                        return 0
+                                    var block = height + parent.hintBlock
+                                    return Math.max(0, (parent.height - block) / 2)
+                                }
+                                // While recording, anything but Measuring means the user is not
+                                // speaking (or not enough yet), so the needle rests at zero.
+                                hasValue: root.hasResult || root.active
+                                showSecond: root.gaugeMode === 2
+                                // Both draws articulation on the outer arc (value, top number)
+                                // and speech rate on the inner arc. A single arc uses the pace
+                                // the Gauge setting names.
+                                metricLabel: root.gaugeMode === 0 ? qsTr("Speech rate") : qsTr("Articulation")
+                                secondMetricLabel: qsTr("Speech rate")
+                                value: root.gaugeAtRest ? 0
+                                       : (root.gaugeMode === 0 ? sessionApi.speechRate : sessionApi.gaugeArticulationRate)
+                                secondValue: root.gaugeAtRest ? 0 : sessionApi.speechRate
+                                minimum: root.slowWpm
+                                maximum: root.fastWpm
+                                cardColor: gaugeCard.color
+                                micActive: root.active
+                                micLevel: sessionApi ? sessionApi.audioLevel : 0
+                            }
+
+                            Label {
+                                id: gaugeHint
+                                width: parent.width
+                                y: gauge.y + gauge.height + 8
+                                horizontalAlignment: Text.AlignHCenter
+                                wrapMode: Text.Wrap
+                                text: root.hintText()
+                                font.pixelSize: AppScale.fs(14)
+                                color: root.phase() === SessionApi.MicDenied
+                                       ? Theme.error(Material.theme)
+                                       : Theme.onSurfaceVariant(Material.theme)
+                            }
                         }
                     }
                 }
