@@ -135,6 +135,7 @@ Settings::loadSettings()
     settings.showNavigationMenu = qsettings.value("showNavigationMenu", false).toBool();
     settings.autoStopRecording = qsettings.value("autoStopRecording", true).toBool();
     settings.autoCalibrate = qsettings.value("autoCalibrate", false).toBool();
+    settings.keepRecordingFiles = qsettings.value("keepRecordingFiles", false).toBool();
     settings.vadCalibrationDurationMs = qsettings.value("vadCalibrationDurationMs", 2000).toInt();
     settings.autoStopSilenceDuration = qsettings.value("autoStopSilenceDuration", 2000).toInt();
     settings.phrasalPauseMs = std::clamp(qsettings.value("phrasalPauseMs", 150).toInt(), 50, 2000);
@@ -208,6 +209,7 @@ void Settings::saveSettings(const AppSettings& settings)
     qsettings.remove("maxRecordingTimeMs");
     qsettings.setValue("autoStopRecording", settings.autoStopRecording);
     qsettings.setValue("autoCalibrate", settings.autoCalibrate);
+    qsettings.setValue("keepRecordingFiles", settings.keepRecordingFiles);
     qsettings.setValue("vadCalibrationDurationMs", settings.vadCalibrationDurationMs);
     qsettings.setValue("autoStopSilenceDuration", settings.autoStopSilenceDuration);
     qsettings.setValue("phrasalPauseMs", settings.phrasalPauseMs);

@@ -462,7 +462,7 @@
         <translation>Суммарное время, засчитанное как речь</translation>
     </message>
     <message>
-        <location filename="../ui/pages/HomePage.qml" line="611"/>
+        <location filename="../ui/pages/HomePage.qml" line="619"/>
         <source>Details</source>
         <translation>Подробности</translation>
     </message>
@@ -632,12 +632,93 @@
     </message>
 </context>
 <context>
+    <name>RecordingSummaryCard</name>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="26"/>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="177"/>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="189"/>
+        <source>ms</source>
+        <translation>мс</translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="36"/>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="60"/>
+        <source>Analyzing the whole recording…</source>
+        <translation>Анализ всей записи…</translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="37"/>
+        <source>Whole recording. %1 vowels, %2 phrasal pauses.</source>
+        <translation>Вся запись. Гласных: %1, фразовых пауз: %2.</translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="50"/>
+        <source>Whole recording</source>
+        <translation>Вся запись</translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="73"/>
+        <source>Vowels</source>
+        <translation>Гласные</translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="88"/>
+        <source>Phrasal pauses</source>
+        <translation>Фразовые паузы</translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="107"/>
+        <source>Silent or unvoiced gaps of at least %1 ms</source>
+        <translation>Тишина или отсутствие голоса не короче %1 мс</translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="115"/>
+        <source>Vowel durations</source>
+        <translation>Длительности гласных</translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="128"/>
+        <source>Mean</source>
+        <translation>Среднее</translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="129"/>
+        <source>Median</source>
+        <translation>Медиана</translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="130"/>
+        <source>Min</source>
+        <translation>Мин.</translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="131"/>
+        <source>Max</source>
+        <translation>Макс.</translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="132"/>
+        <source>SD</source>
+        <translation>СКО</translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="188"/>
+        <source>%1 ms+</source>
+        <translation>%1 мс+</translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="199"/>
+        <source>%1 ms bins</source>
+        <translation>интервалы по %1 мс</translation>
+    </message>
+</context>
+<context>
     <name>SessionApi</name>
     <message>
         <location filename="../src/api/sessionapi.cpp" line="148"/>
         <location filename="../src/api/sessionapi.cpp" line="152"/>
-        <location filename="../src/api/sessionapi.cpp" line="332"/>
-        <location filename="../src/api/sessionapi.cpp" line="1133"/>
+        <location filename="../src/api/sessionapi.cpp" line="406"/>
+        <location filename="../src/api/sessionapi.cpp" line="1249"/>
         <source>The selected file cannot be opened.</source>
         <translation>Не удалось открыть выбранный файл.</translation>
     </message>
@@ -654,12 +735,12 @@
         <translation>Используйте PCM WAV: 8000 Гц, один канал, знаковый 16-битный формат little-endian.</translation>
     </message>
     <message>
-        <location filename="../src/api/sessionapi.cpp" line="344"/>
+        <location filename="../src/api/sessionapi.cpp" line="429"/>
         <source>No measurable speech was found in the file.</source>
         <translation>В файле не найдена речь, которую можно измерить.</translation>
     </message>
     <message>
-        <location filename="../src/api/sessionapi.cpp" line="410"/>
+        <location filename="../src/api/sessionapi.cpp" line="427"/>
         <source>Not enough speech for a pace estimate. The whole-recording summary is shown below.</source>
         <translation>Речи недостаточно для оценки темпа. Сводка по всей записи показана ниже.</translation>
     </message>
@@ -791,8 +872,8 @@
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="128"/>
-        <source>This permanently deletes saved sessions on this device. Recordings are not kept, so there is no audio to delete.</source>
-        <translation>Безвозвратно удаляет сохранённые сеансы на этом устройстве. Записи не хранятся, поэтому удалять звук не из чего.</translation>
+        <source>This permanently deletes saved sessions on this device and any recording files still kept in data/records.</source>
+        <translation>Безвозвратно удаляет сохранённые сеансы на этом устройстве и файлы записи, которые ещё лежат в data/records.</translation>
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="129"/>
@@ -909,127 +990,127 @@
         <translation type="vanished">Как обнаруживается речь, как измеряется громкость и какие коэффициенты стоят за числами. На компьютере здесь же «Открыть файл». Переключатель выключается, когда вы выходите из приложения.</translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="506"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="537"/>
         <source>Energy uses loudness. Autocorrelation uses pitch. Hybrid requires both.</source>
         <translation>«Энергия» смотрит на громкость. «Автокорреляция» — на высоту голоса. «Гибридный» требует и то и другое.</translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="509"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="540"/>
         <source>Energy threshold</source>
         <translation>Порог энергии</translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="519"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="550"/>
         <source>Sound louder than this counts as speech. Higher ignores more of a quiet voice. Calibrate sets it from the room.</source>
         <translation>Звук громче этого считается речью. Выше — тихий голос учитывается меньше. «Калибровать» ставит порог по комнате.</translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="522"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="553"/>
         <source>Autocorrelation threshold</source>
         <translation>Порог автокорреляции</translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="532"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="563"/>
         <source>How clearly a sound must repeat to count as a voice. Higher ignores more noise.</source>
         <translation>Насколько ясно звук должен повторяться, чтобы считаться голосом. Выше — больше шума отсекается.</translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="534"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="565"/>
         <source>Threshold factor</source>
         <translation>Коэффициент порога</translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="544"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="575"/>
         <source>Used when you calibrate. The threshold becomes the room average times this number. Higher asks for a clearer voice.</source>
         <translation>Используется при калибровке. Порог равен среднему по комнате, умноженному на это число. Выше — нужен более ясный голос.</translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="546"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="577"/>
         <source>Lowest pitch (Hz)</source>
         <translation>Низший тон (Гц)</translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="556"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="587"/>
         <source>Lowest voice pitch to look for, in hertz.</source>
         <translation>Самый низкий тон голоса, который ищется, в герцах.</translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="558"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="589"/>
         <source>Highest pitch (Hz)</source>
         <translation>Высший тон (Гц)</translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="568"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="599"/>
         <source>Highest voice pitch to look for, in hertz.</source>
         <translation>Самый высокий тон голоса, который ищется, в герцах.</translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="579"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="610"/>
         <source>Measures the room and fills in the thresholds. Stay quiet until it closes.</source>
         <translation>Измеряет комнату и подставляет пороги. Сохраняйте тишину, пока окно не закроется.</translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="586"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="617"/>
         <source>Turns the phrase into a loudness curve and a smoothed copy. Frame and shift are audio samples at 8000 Hz, so 8000 is one second. The smooth window counts points on the curve.</source>
         <translation>Строит кривую громкости фразы и её сглаженную копию. Кадр и сдвиг — отсчёты звука при 8000 Гц, то есть 8000 — это одна секунда. Окно сглаживания считает точки на кривой.</translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="608"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="639"/>
         <source>How far the next window moves. Smaller gives a finer curve.</source>
         <translation>Насколько сдвигается следующее окно. Меньше — кривая подробнее.</translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="609"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="640"/>
         <source>Smooth window</source>
         <translation>Окно сглаживания</translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="618"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="649"/>
         <source>How many points are averaged. Longer follows the loudness more slowly.</source>
         <translation>Сколько точек усредняется. Длиннее — кривая следует за громкостью медленнее.</translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="642"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="673"/>
         <source>Averages the vowel and gap durations.</source>
         <translation>Усредняет длительности гласных и промежутков.</translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="645"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="676"/>
         <source>Long-sound weight</source>
         <translation>Вес длинных звуков</translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="654"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="685"/>
         <source>1 treats every sound equally. A higher number makes long sounds count more.</source>
         <translation>1 считает все звуки одинаково. Большее число усиливает длинные звуки.</translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="691"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="722"/>
         <source>Filler scale</source>
         <translation>Масштаб заполнителей</translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="697"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="728"/>
         <source>Higher raises the filler score before it is shown as a percent.</source>
         <translation>Выше — оценка заполнителей больше, прежде чем её покажут в процентах.</translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="698"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="729"/>
         <source>Low filler score</source>
         <translation>Низкая оценка заполнителей</translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="707"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="738"/>
         <source>A score at or below this is shown as 0%.</source>
         <translation>Оценка не выше этой показывается как 0 %.</translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="708"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="739"/>
         <source>High filler score</source>
         <translation>Высокая оценка заполнителей</translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="717"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="748"/>
         <source>A score at or above this is shown as 100%. Scores between the low and high values fill in 0–100%.</source>
         <translation>Оценка не ниже этой показывается как 100 %. Оценки между низкой и высокой заполняют 0–100 %.</translation>
     </message>
@@ -1071,7 +1152,7 @@
         <translation type="vanished">После «Старт» измеряется фоновый шум, затем начинается поиск речи. Если выключено, запись измеряется с первого отсчёта.</translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="391"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="406"/>
         <source>Slow (wpm)</source>
         <translation>Медленно (сл/мин)</translation>
     </message>
@@ -1080,7 +1161,7 @@
         <translation type="vanished">Левый край шкалы темпа речи.</translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="405"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="420"/>
         <source>Fast (wpm)</source>
         <translation>Быстро (сл/мин)</translation>
     </message>
@@ -1089,7 +1170,7 @@
         <translation type="vanished">Правый край шкалы темпа речи.</translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="419"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="434"/>
         <source>Gauge median</source>
         <translation>Медиана шкалы</translation>
     </message>
@@ -1098,25 +1179,35 @@
         <translation type="vanished">Шкала темпа речи показывает медиану такого числа последних значений. 1 — текущее значение.</translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="437"/>
         <source>Show advanced settings</source>
-        <translation>Показывать расширенные настройки</translation>
+        <translation type="vanished">Показывать расширенные настройки</translation>
     </message>
     <message>
         <source>Calibration, coefficients, and Open File.</source>
         <translation type="vanished">Калибровка, коэффициенты и открытие файла.</translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="472"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="450"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="481"/>
         <source>Advanced</source>
         <translation>Дополнительно</translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SettingsPage.qml" line="498"/>
+        <source>Keep recording files</source>
+        <translation>Сохранять файлы записи</translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SettingsPage.qml" line="512"/>
+        <source>Leaves each phrase as a WAV file in data/records. Off deletes that file once its numbers are saved.</source>
+        <translation>Оставляет каждую фразу файлом WAV в data/records. Выключенное удаляет этот файл, как только числа сохранены.</translation>
     </message>
     <message>
         <source>Grouped by analysis stage, in the order a phrase is processed.</source>
         <translation type="vanished">Сгруппировано по этапам анализа в порядке обработки фразы.</translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="488"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="519"/>
         <source>Speech detection</source>
         <translation>Обнаружение речи</translation>
     </message>
@@ -1125,7 +1216,7 @@
         <translation type="vanished">Находит начало и конец каждой фразы. Работает, только когда включено «Автоопределение речи».</translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="585"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="616"/>
         <source>Intensity</source>
         <translation>Интенсивность</translation>
     </message>
@@ -1134,27 +1225,27 @@
         <translation type="vanished">Строит кривую громкости фразы и её сглаженную копию. Значения в отсчётах при 8000 Гц.</translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="623"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="654"/>
         <source>Vowel detection</source>
         <translation>Поиск гласных</translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="624"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="655"/>
         <source>Vowels are where the loudness curve rises above its smoothed copy. Shorter peaks are dropped.</source>
         <translation>Гласные — участки, где кривая громкости выше сглаженной копии. Более короткие пики отбрасываются.</translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="627"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="658"/>
         <source>Shortest vowel (ms)</source>
         <translation>Кратчайшая гласная (мс)</translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="636"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="667"/>
         <source>Vowel peaks shorter than this are ignored.</source>
         <translation>Более короткие пики гласных игнорируются.</translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="641"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="672"/>
         <source>Statistics</source>
         <translation>Статистика</translation>
     </message>
@@ -1163,98 +1254,98 @@
         <translation type="vanished">Усредняет длительности гласных и промежутков. Чем выше степень, тем больше вес длинных звуков.</translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="659"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="690"/>
         <source>Metrics</source>
         <translation>Метрики</translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="660"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="691"/>
         <source>Coefficients of the formulas that turn the statistics into the values on Home.</source>
         <translation>Коэффициенты формул, которые превращают статистику в значения на главной.</translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="378"/>
-        <location filename="../ui/pages/SettingsPage.qml" line="663"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="393"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="694"/>
         <source>Speech rate</source>
         <translation>Темп речи</translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="374"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="389"/>
         <source>Gauge</source>
         <translation>Шкала</translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="379"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="394"/>
         <source>Articulation rate</source>
         <translation>Темп артикуляции</translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="380"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="395"/>
         <source>Both</source>
         <translation>Оба</translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="388"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="403"/>
         <source>Speech rate draws that pace on the gauge and leaves articulation in the card. Articulation rate swaps them. Both draws both paces on the gauge and leaves that card out.</source>
         <translation>«Темп речи» рисует этот темп на шкале и оставляет артикуляцию в карточке. «Темп артикуляции» меняет их местами. «Оба» рисует оба темпа на шкале и убирает эту карточку.</translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="402"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="417"/>
         <source>The slow end of the gauge. From here to Fast, the arc is split equally into Slow, Average, and Fast.</source>
         <translation>Медленный край шкалы. Отсюда до «Быстро» дуга делится поровну на «Медленно», «Средне» и «Быстро».</translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="416"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="431"/>
         <source>The fast end of the gauge.</source>
         <translation>Быстрый край шкалы.</translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="430"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="445"/>
         <source>The gauge shows the middle of this many latest readings of each pace it draws, so one jump moves it less. 1 shows the current reading.</source>
         <translation>Шкала показывает середину стольких последних значений каждого темпа, который она рисует, поэтому один скачок двигает её меньше. 1 — текущее значение.</translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="664"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="695"/>
         <source>Speech-rate scale</source>
         <translation>Масштаб темпа речи</translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="670"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="701"/>
         <source>Higher raises the speech-rate number.</source>
         <translation>Выше — число темпа речи больше.</translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="672"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="703"/>
         <source>Articulation</source>
         <translation>Артикуляция</translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="673"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="704"/>
         <source>Articulation scale</source>
         <translation>Масштаб артикуляции</translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="679"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="710"/>
         <source>Higher usually lowers articulation.</source>
         <translation>Выше — артикуляция обычно меньше.</translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="681"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="712"/>
         <source>Pauses</source>
         <translation>Паузы</translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="682"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="713"/>
         <source>Pause scale</source>
         <translation>Масштаб пауз</translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="688"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="719"/>
         <source>Higher raises the Pauses number.</source>
         <translation>Выше — число «Паузы» больше.</translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="690"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="721"/>
         <source>Fillers</source>
         <translation>Заполнители</translation>
     </message>
@@ -1299,17 +1390,17 @@
         <translation type="vanished">K4</translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="589"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="620"/>
         <source>Frame</source>
         <translation>Кадр</translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="598"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="629"/>
         <source>Length of each loudness window.</source>
         <translation>Длина каждого окна громкости.</translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="599"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="630"/>
         <source>Shift</source>
         <translation>Сдвиг</translation>
     </message>
@@ -1374,12 +1465,12 @@
         <translation>Тишина или отсутствие голоса не короче этого считается фразовой паузой в сводке по всей записи.</translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="364"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="379"/>
         <source>Detect speech automatically</source>
         <translation>Автоопределение речи</translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="371"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="386"/>
         <source>After Start, measures background noise, then waits for you to speak. A pause ends the phrase. Off starts measuring when you press Start, a pause does not end the phrase, and the recording is saved in 15-second parts.</source>
         <translation>После «Старт» измеряется фоновый шум, затем приложение ждёт, пока вы заговорите. Пауза завершает фразу. Если выключено, измерение начинается в момент нажатия «Старт», пауза фразу не заканчивает, а запись сохраняется частями по 15 секунд.</translation>
     </message>
@@ -1396,37 +1487,37 @@
         <translation type="vanished">Шкала показывает середину стольких последних значений темпа речи, поэтому один скачок двигает её меньше. 1 — текущее значение.</translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="451"/>
-        <source>How speech is detected, how loudness is measured, and the coefficients behind the numbers. The switch turns off when you leave the app.</source>
-        <translation>Как обнаруживается речь, как измеряется громкость и какие коэффициенты стоят за числами. Переключатель выключается, когда вы выходите из приложения.</translation>
+        <location filename="../ui/pages/SettingsPage.qml" line="460"/>
+        <source>How speech is detected, how loudness is measured, and the coefficients behind the numbers. The checkbox turns off when you leave the app.</source>
+        <translation>Как обнаруживается речь, как измеряется громкость и какие коэффициенты стоят за числами. Флажок выключается, когда вы выходите из приложения.</translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="480"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="489"/>
         <source>These change how the numbers on Home are calculated. The groups follow the order a phrase is processed.</source>
         <translation>От этих параметров зависит, как считаются числа на главной. Группы идут в том порядке, в каком обрабатывается фраза.</translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="489"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="520"/>
         <source>Finds where each phrase starts and ends. Used only when Detect speech automatically is on.</source>
         <translation>Находит начало и конец каждой фразы. Работает, только когда включено «Автоопределение речи».</translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="492"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="523"/>
         <source>Detection method</source>
         <translation>Метод обнаружения</translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="496"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="527"/>
         <source>Energy</source>
         <translation>Энергия</translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="497"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="528"/>
         <source>Autocorrelation</source>
         <translation>Автокорреляция</translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="498"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="529"/>
         <source>Hybrid</source>
         <translation>Гибридный</translation>
     </message>
@@ -1451,7 +1542,7 @@
         <translation type="vanished">Макс. F0 автокорреляции (Гц)</translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="574"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="605"/>
         <source>Calibrate</source>
         <translation>Калибровать</translation>
     </message>
@@ -1537,84 +1628,6 @@
         <location filename="../ui/components/VadCalibrationDialog.qml" line="87"/>
         <source>Please stay quiet for %1 seconds so the background noise level can be measured.</source>
         <translation>Сохраняйте тишину %1 с, чтобы измерить уровень фонового шума.</translation>
-    </message>
-</context>
-<context>
-    <name>RecordingSummaryCard</name>
-    <message>
-        <location filename="../ui/components/RecordingSummaryCard.qml" line="22"/>
-        <source>ms</source>
-        <translation>мс</translation>
-    </message>
-    <message>
-        <location filename="../ui/components/RecordingSummaryCard.qml" line="36"/>
-        <source>Analyzing the whole recording…</source>
-        <translation>Анализ всей записи…</translation>
-    </message>
-    <message>
-        <location filename="../ui/components/RecordingSummaryCard.qml" line="38"/>
-        <source>Whole recording. %1 vowels, %2 phrasal pauses.</source>
-        <translation>Вся запись. Гласных: %1, фразовых пауз: %2.</translation>
-    </message>
-    <message>
-        <location filename="../ui/components/RecordingSummaryCard.qml" line="48"/>
-        <source>Whole recording</source>
-        <translation>Вся запись</translation>
-    </message>
-    <message>
-        <location filename="../ui/components/RecordingSummaryCard.qml" line="68"/>
-        <source>Vowels</source>
-        <translation>Гласные</translation>
-    </message>
-    <message>
-        <location filename="../ui/components/RecordingSummaryCard.qml" line="86"/>
-        <source>Phrasal pauses</source>
-        <translation>Фразовые паузы</translation>
-    </message>
-    <message>
-        <location filename="../ui/components/RecordingSummaryCard.qml" line="104"/>
-        <source>Silent or unvoiced gaps of at least %1 ms</source>
-        <translation>Тишина или отсутствие голоса не короче %1 мс</translation>
-    </message>
-    <message>
-        <location filename="../ui/components/RecordingSummaryCard.qml" line="113"/>
-        <source>Vowel durations</source>
-        <translation>Длительности гласных</translation>
-    </message>
-    <message>
-        <location filename="../ui/components/RecordingSummaryCard.qml" line="125"/>
-        <source>Mean</source>
-        <translation>Среднее</translation>
-    </message>
-    <message>
-        <location filename="../ui/components/RecordingSummaryCard.qml" line="126"/>
-        <source>Median</source>
-        <translation>Медиана</translation>
-    </message>
-    <message>
-        <location filename="../ui/components/RecordingSummaryCard.qml" line="127"/>
-        <source>Min</source>
-        <translation>Мин.</translation>
-    </message>
-    <message>
-        <location filename="../ui/components/RecordingSummaryCard.qml" line="128"/>
-        <source>Max</source>
-        <translation>Макс.</translation>
-    </message>
-    <message>
-        <location filename="../ui/components/RecordingSummaryCard.qml" line="129"/>
-        <source>SD</source>
-        <translation>СКО</translation>
-    </message>
-    <message>
-        <location filename="../ui/components/RecordingSummaryCard.qml" line="176"/>
-        <source>%1 ms+</source>
-        <translation>%1 мс+</translation>
-    </message>
-    <message>
-        <location filename="../ui/components/RecordingSummaryCard.qml" line="186"/>
-        <source>%1 ms bins</source>
-        <translation>интервалы по %1 мс</translation>
     </message>
 </context>
 </TS>

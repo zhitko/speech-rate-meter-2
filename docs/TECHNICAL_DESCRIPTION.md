@@ -133,9 +133,9 @@ Capture format requested from the device:
 
 If the device rejects that format, capture uses the nearest supported format. Samples are resampled to 8000 Hz mono s16le before analysis, so the samples match the time base in section 3.
 
-The resampled segment lives in memory. It is not kept as a recording the user can play later. A temporary WAV under `data/records/` (executable directory on desktop, application-local data on Android) is allowed only as a scratch file for that one segment. The file name is local time `dd.MM.yyyy.HH.mm.ss.zzz` plus `.wav`.
+The resampled segment lives in memory. A WAV under `data/records/` (executable directory on desktop, application-local data on Android) is written while that segment is stored. The file name is local time `dd.MM.yyyy.HH.mm.ss.zzz` plus `.wav`. The app does not play it back.
 
-Delete that file as soon as the segment’s metrics are in the session file. Release the memory buffer in the same step. Do not open the next segment’s scratch file until the previous one is gone. After a segment is stored, and whenever the app is idle, `data/records/` is empty. If writing the session file fails, keep the scratch file and retry; do not delete the only copy of a result that was not stored. Open File is not a scratch file and is never deleted.
+When **Keep recording files** is off (the default), delete that WAV as soon as the segment’s metrics are in the session file. When it is on, delete only the `.pending.json` sidecar and leave the WAV in `data/records/`. Release the memory buffer in the same step. Do not open the next segment’s scratch file while an earlier scratch is still waiting to be stored (a WAV that still has its sidecar). Kept WAVs do not block the next phrase. With the setting off, `data/records/` is empty after a segment is stored and whenever the app is idle, unless a save failed and the scratch is still needed. If writing the session file fails, keep the scratch file and its sidecar and retry; do not delete the only copy of a result that was not stored. Open File is not a scratch file and is never deleted.
 
 Open File (desktop): a WAV dialog starting at `<executable>/data/tests/`. The chosen file must be PCM WAV at exactly 8000 Hz, mono, signed 16-bit little-endian. Any other sample rate, channel count, encoding, or bit depth is rejected rather than converted. A valid file is analyzed once as a whole file; it is not cut at pauses or updated live. QML exposes availability through the `openFileAvailable` property/API; it is `false` on Android and `true` on desktop.
 
@@ -143,7 +143,7 @@ Open File (desktop): a WAV dialog starting at `<executable>/data/tests/`. The ch
 
 History is a list of recording sessions. A session is the span from press-record to press-stop in section 1.2. It keeps every segment that was written, and every change of the five numbers Home actually showed from Start until Stop. A phrase dropped for being shorter than 1 s is not stored and does not change those numbers. An opened file is not a session.
 
-The session file is created by whichever happens first: the first shown change or the first kept segment. Each later shown change is appended when the on-screen labels change. Each kept segment is appended as soon as its final analysis finishes, and only then is that segment’s audio deleted. Stopping the session sets the session end time. A session that ends with no shown changes and no kept segments is not listed. Delete user data removes the session files and any scratch WAV still in `data/records/`.
+The session file is created by whichever happens first: the first shown change or the first kept segment. Each later shown change is appended when the on-screen labels change. Each kept segment is appended as soon as its final analysis finishes, and only then is that segment’s audio deleted, unless Keep recording files is on. Stopping the session sets the session end time. A session that ends with no shown changes and no kept segments is not listed. Delete user data removes the session files and every WAV still in `data/records/`.
 
 **File**
 
@@ -568,7 +568,7 @@ kurtosis = mean(z^4) - 3                    # excess kurtosis
 
 Stored in `settings.ini` beside the executable (desktop) or in application-local data (Android), INI format. The file is read only when the root key `date_v3` exists. Until the user changes something, every value below is the in-code default and the file may be absent. The first save writes `date_v3` as an empty `QDate`, which is enough to make later launches load the file. General application and recorder values are under the `[General]` group; analysis coefficients retain their named groups.
 
-Advanced is a process-global boolean. It is not written to the INI and resets to off on restart. When it is off, Settings shows General, the phrase controls (including Detect speech automatically), and the gauge: which pace it draws, its range, and its median. The switch’s own note says it turns off when you leave the app. Show Navigation Menu, in General, shows Home, History, and Settings along the bottom; the toolbar menu button stays. Coefficients, filler calibration, signal-processing parameters, and voice-activity calibration are hidden, not reset.
+Advanced is a process-global boolean, shown as a checkbox labeled Advanced at the bottom of Measurement. It is not written to the INI and resets to off on restart. When it is off, Settings shows General, the phrase controls (including Detect speech automatically), and the gauge: which pace it draws, its range, and its median. The checkbox’s own note says it turns off when you leave the app. Show Navigation Menu, in General, shows Home, History, and Settings along the bottom; the toolbar menu button stays. Coefficients, filler calibration, signal-processing parameters, voice-activity calibration, and Keep recording files are hidden, not reset.
 
 Everyday labels use plain units. Silence Duration is edited in seconds and stored as milliseconds.
 
@@ -583,11 +583,11 @@ Everyday labels use plain units. Silence Duration is edited in seconds and store
 | Slow | Min RS | 70 wpm | The slow end of the gauge. From here to Fast, the arc is split equally into Slow, Average, and Fast. Also copies to articulation min. |
 | Fast | Max RS | 210 wpm | The fast end of the gauge. Also copies to articulation max. |
 
-General (language, theme, color, font size, navigation bar) stays visible. Delete user data stays at the bottom of General, asks for confirmation, and says that it deletes saved sessions. Recordings are not kept, so there is no audio to delete. The calibration dialog is titled `Measuring background noise`.
+General (language, theme, color, font size, navigation bar) stays visible. Delete user data stays at the bottom of General, asks for confirmation, and says that it deletes saved sessions and any recording files still kept in `data/records`. The calibration dialog is titled `Measuring background noise`.
 
 Double-valued settings are edited as a spin box with 2 decimal places (internal integer = value × 100) and stored as the real coefficient.
 
-With Advanced on, the extra settings are shown as numbered cards in the order a phrase is processed. Each card names its stage and says in one line what it does:
+With Advanced on, **Keep recording files** (`General/keepRecordingFiles`, default off) is shown above the numbered cards. On leaves each phrase’s WAV in `data/records` after its numbers are stored. Off deletes that WAV once the save succeeds. The pending sidecar is removed after a successful save either way. The other extra settings are numbered cards in the order a phrase is processed. Each card names its stage and says in one line what it does:
 
 | Stage | Card | Settings |
 | --- | --- | --- |
@@ -715,7 +715,7 @@ This example is only a check of the formula wiring. Real nuclei are much more nu
 ## 12. Platform behavior worth copying
 
 - Capture, pause cutting, and analysis run off the UI thread. Headline metrics of the analysis window update during an open segment (section 1.2), at most Updates per minute times per minute. Open File is still a single whole-file analysis.
-- One application-level `SessionApi` instance owns capture, analysis queues, the open-session accumulator, history access, and the result exposed to every page. Pages obtain that shared instance from the application window; they do not construct per-screen analysis backends. `SettingsApi` is likewise application-level. Details reads the metrics already published by `SessionApi` and does not re-read deleted scratch audio.
+- One application-level `SessionApi` instance owns capture, analysis queues, the open-session accumulator, history access, and the result exposed to every page. Pages obtain that shared instance from the application window; they do not construct per-screen analysis backends. `SettingsApi` is likewise application-level. Details reads the metrics already published by `SessionApi` and does not re-read scratch audio.
 - Logging: one Qt message handler appends each Qt log line to `logs.txt` in the process working directory, prefixed with 24-hour local time `dd.MM.yyyy HH:mm:ss:zzz`. `main.cpp` does not initialize a second `FileLogger` sink.
 - Android package id `by.intoncore.SpeechRateMeter2`, versionName `1.0.0`, versionCode `18`. The only declared permission is `RECORD_AUDIO`.
 - WAV container is PCM with the standard header, format chunk, and data chunk. No cue points are written for a new recording. Manual segments marked `P` (pre-nucleus), `N` (nucleus), and `T` (post-nucleus) can be read from cue/label chunks by the library; the application never displays them.
@@ -733,7 +733,7 @@ Do not implement these for behavioral parity:
 
 ## 14. Parity checklist
 
-1. Keep a background session. Cut a kept segment at a pause or at 15 s, drop a segment shorter than 1 s, resample to 8000 Hz mono s16le, and analyze that buffer with sections 2–11. Live snapshots analyze the last Analysis window seconds of kept plus open audio. Fillers, pauses, and speech are shown unjoined and unaveraged. Each pace drawn on the gauge shows the median of the last Gauge median live readings of that pace (default 3). Articulation left in the tile stays raw. After Stop, the gauge and tiles show the duration-weighted mean of the kept phrases, speech stays the total, and the screen is labeled Mean values. Silence must not produce nuclei (section 5.4). Delete the segment audio once its metrics are in the session file.
+1. Keep a background session. Cut a kept segment at a pause or at 15 s, drop a segment shorter than 1 s, resample to 8000 Hz mono s16le, and analyze that buffer with sections 2–11. Live snapshots analyze the last Analysis window seconds of kept plus open audio. Fillers, pauses, and speech are shown unjoined and unaveraged. Each pace drawn on the gauge shows the median of the last Gauge median live readings of that pace (default 3). Articulation left in the tile stays raw. After Stop, the gauge and tiles show the duration-weighted mean of the kept phrases, speech stays the total, and the screen is labeled Mean values. Silence must not produce nuclei (section 5.4). Delete the segment audio once its metrics are in the session file, unless Keep recording files is on.
 2. Intensity uses mean absolute amplitude, full-window divisor, hop 120, window 240, and the exact loop bounds.
 3. Normalize to [0, 1], then the moving average with even length, full-window divisor, and the `index > 0` edge rule.
 4. Nuclei are `I_norm - S > 0.009`, stored length is `run_samples - 1`, runs of one sample are dropped at the default minimum, and a nucleus still open at the last sample is dropped.

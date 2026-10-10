@@ -183,12 +183,26 @@ bool SessionStore::appendWithRetry(const QString& sessionId,
     return appendSegment(sessionId, sessionStartedAt, segment);
 }
 
-void SessionStore::discardScratch(const QString& scratchPath)
+void SessionStore::releaseScratch(const QString& scratchPath)
 {
     if (scratchPath.isEmpty())
         return;
     removeFile(pendingPath(scratchPath));
-    removeFile(scratchPath);
+    if (!Settings::loadSettings().keepRecordingFiles)
+        removeFile(scratchPath);
+}
+
+bool SessionStore::hasPendingScratch()
+{
+    QDir records(recordsDir());
+    if (!records.exists())
+        return false;
+    const QFileInfoList wavs = records.entryInfoList({ QStringLiteral("*.wav") }, QDir::Files);
+    for (const QFileInfo& info : wavs) {
+        if (QFileInfo::exists(pendingPath(info.absoluteFilePath())))
+            return true;
+    }
+    return false;
 }
 
 QString SessionStore::openScratch(const QString& sessionId,
@@ -248,9 +262,9 @@ bool SessionStore::recoverPending()
             LOG_WARNING() << "Scratch still waiting to be stored:" << scratch;
             continue;
         }
-        discardScratch(scratch);
+        releaseScratch(scratch);
     }
-    return recordsAreEmpty();
+    return !hasPendingScratch();
 }
 
 bool SessionStore::commitSegment(const QString& sessionId,
@@ -262,16 +276,16 @@ bool SessionStore::commitSegment(const QString& sessionId,
     recoverPending();
 
     QString scratch;
-    if (recordsAreEmpty())
+    if (!hasPendingScratch())
         scratch = openScratch(sessionId, sessionStartedAt, segment, samples);
 
     if (segmentAlreadyStored(sessionId, segment)) {
-        discardScratch(scratch);
+        releaseScratch(scratch);
         return true;
     }
 
     if (appendWithRetry(sessionId, sessionStartedAt, segment)) {
-        discardScratch(scratch);
+        releaseScratch(scratch);
         return true;
     }
 

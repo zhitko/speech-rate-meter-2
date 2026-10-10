@@ -21,7 +21,7 @@ While you are recording, speech rate, articulation, fillers, and pauses use the 
 
 On a computer, **Open File** sits to the right of **Start**. It measures one existing WAV recording and does not save a session. The file must be 8000 Hz, mono, signed 16-bit PCM. Android does not show this button.
 
-Silence and background noise are not counted as speech. When the window holds no speech, the numbers stay and the chip reads **Listening**. A phrase shorter than one second is not saved; the chip then reads **Too short to save**. The audio is deleted once the numbers are stored. There is no playback.
+Silence and background noise are not counted as speech. When the window holds no speech, the numbers stay and the chip reads **Listening**. A phrase shorter than one second is not saved; the chip then reads **Too short to save**. The audio is deleted once the numbers are stored, unless **Keep recording files** is on. There is no playback.
 
 While a session is running, **Recording** stays in the toolbar on every page. Tap it to return to Home.
 
@@ -44,9 +44,9 @@ Under **Measurement**:
 
 **Slow** and **Fast** are the ends of the gauge. The arc between them is split equally into Slow, Average, and Fast.
 
-**Show advanced settings** opens the controls that change how the numbers are calculated. The switch turns off when you leave the app.
+**Advanced** opens the controls that change how the numbers are calculated, including **Keep recording files**. The checkbox turns off when you leave the app. **Keep recording files** itself stays as you set it. On, each phrase is left as a WAV file in `data/records`. Off, that file is deleted once its numbers are saved.
 
-**Delete user data** removes saved sessions. Recordings are not kept, so there is no audio to delete. These settings are kept.
+**Delete user data** removes saved sessions and any recording files still kept in `data/records`. These settings are kept.
 
 ## Other pages
 

@@ -9,13 +9,6 @@ Rectangle {
     property bool pending: false
     property var summary: ({})
 
-    readonly property var bins: summary && summary.histogram ? summary.histogram : []
-    readonly property int peak: {
-        var best = 1
-        for (var index = 0; index < bins.length; ++index)
-            best = Math.max(best, Number(bins[index].count) || 0)
-        return best
-    }
     readonly property int vowelCount: summary ? Number(summary.vowelCount) || 0 : 0
     readonly property int pauseCount: summary ? Number(summary.phrasalPauseCount) || 0 : 0
 
@@ -137,68 +130,6 @@ Rectangle {
                     font.features: { "tnum": 1 }
                     color: Theme.onSurface(Material.theme)
                 }
-            }
-        }
-
-        ColumnLayout {
-            Layout.fillWidth: true
-            visible: !root.pending && root.bins.length > 0
-            spacing: 4
-
-            RowLayout {
-                Layout.fillWidth: true
-                Layout.preferredHeight: 48
-                spacing: 2
-
-                Repeater {
-                    model: root.bins
-                    delegate: Item {
-                        Layout.fillWidth: true
-                        Layout.fillHeight: true
-
-                        Rectangle {
-                            anchors.bottom: parent.bottom
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            width: parent.width
-                            height: modelData.count > 0
-                                    ? Math.max(4, (modelData.count / root.peak) * parent.height)
-                                    : 0
-                            radius: 2
-                            color: Theme.primary(Material.theme)
-                        }
-                    }
-                }
-            }
-
-            RowLayout {
-                Layout.fillWidth: true
-
-                Label {
-                    text: root.bins.length > 0 ? root.bins[0].startMs + " " + qsTr("ms") : ""
-                    font.pixelSize: AppScale.fs(11)
-                    color: Theme.onSurfaceVariant(Material.theme)
-                }
-                Item { Layout.fillWidth: true }
-                Label {
-                    text: {
-                        if (root.bins.length < 1)
-                            return ""
-                        var last = root.bins[root.bins.length - 1]
-                        if (last.openEnded)
-                            return qsTr("%1 ms+").arg(last.startMs)
-                        return last.endMs + " " + qsTr("ms")
-                    }
-                    font.pixelSize: AppScale.fs(11)
-                    color: Theme.onSurfaceVariant(Material.theme)
-                }
-            }
-
-            Label {
-                Layout.fillWidth: true
-                horizontalAlignment: Text.AlignHCenter
-                text: qsTr("%1 ms bins").arg(root.summary ? root.summary.histogramBinMs : 20)
-                font.pixelSize: AppScale.fs(11)
-                color: Theme.onSurfaceVariant(Material.theme)
             }
         }
     }

@@ -29,6 +29,7 @@ class SettingsApi : public QObject {
     Q_PROPERTY(double autoCorrMaxF0 READ autoCorrMaxF0 WRITE setAutoCorrMaxF0 NOTIFY autoCorrMaxF0Changed)
     Q_PROPERTY(double autoCorrEnergyThreshold READ autoCorrEnergyThreshold WRITE setAutoCorrEnergyThreshold NOTIFY autoCorrEnergyThresholdChanged)
     Q_PROPERTY(bool advanced READ advanced WRITE setAdvanced NOTIFY advancedChanged)
+    Q_PROPERTY(bool keepRecordingFiles READ keepRecordingFiles WRITE setKeepRecordingFiles NOTIFY keepRecordingFilesChanged)
     Q_PROPERTY(int analysisWindowSec READ analysisWindowSec WRITE setAnalysisWindowSec NOTIFY analysisWindowSecChanged)
     Q_PROPERTY(int updatesPerMinute READ updatesPerMinute WRITE setUpdatesPerMinute NOTIFY updatesPerMinuteChanged)
     Q_PROPERTY(int gaugeAverageCount READ gaugeAverageCount WRITE setGaugeAverageCount NOTIFY gaugeAverageCountChanged)
@@ -106,6 +107,9 @@ public:
     bool advanced() const;
     void setAdvanced(bool advanced);
 
+    bool keepRecordingFiles() const;
+    void setKeepRecordingFiles(bool keepRecordingFiles);
+
     int analysisWindowSec() const;
     void setAnalysisWindowSec(int seconds);
     int updatesPerMinute() const;
@@ -168,6 +172,7 @@ signals:
     void autoCorrMaxF0Changed();
     void autoCorrEnergyThresholdChanged();
     void advancedChanged();
+    void keepRecordingFilesChanged();
     void analysisWindowSecChanged();
     void updatesPerMinuteChanged();
     void gaugeAverageCountChanged();

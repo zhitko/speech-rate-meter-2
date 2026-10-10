@@ -117,6 +117,59 @@ void testDurationWeightedSessionMean()
     SessionStore::clearAll();
 }
 
+void setKeepRecordingFiles(bool keep)
+{
+    AppSettings settings = Settings::getDefaultSettings();
+    settings.keepRecordingFiles = keep;
+    Settings::saveSettings(settings);
+}
+
+int fileCount(const QString& filter)
+{
+    return QDir(SessionStore::recordsDir()).entryList({ filter }, QDir::Files).size();
+}
+
+void testCommitDeletesWavByDefault()
+{
+    setKeepRecordingFiles(false);
+    SessionStore::clearAll();
+    const QString id = QStringLiteral("20261011-010000-000");
+    const QString started = QStringLiteral("2026-10-11T01:00:00.000");
+    const std::vector<float> samples { 0.f, 1000.f, -1000.f, 0.f };
+    expect(SessionStore::commitSegment(id, started, measuredSegment(), samples),
+        "commit deletes wav");
+    expect(fileCount(QStringLiteral("*.wav")) == 0, "default commit removes the wav");
+    expect(fileCount(QStringLiteral("*.pending.json")) == 0, "default commit removes the pending sidecar");
+    expect(SessionStore::recordsAreEmpty(), "records dir is empty");
+    SessionStore::clearAll();
+}
+
+void testCommitKeepsWavWhenEnabled()
+{
+    setKeepRecordingFiles(true);
+    SessionStore::clearAll();
+    const QString id = QStringLiteral("20261011-010100-000");
+    const QString started = QStringLiteral("2026-10-11T01:01:00.000");
+    const std::vector<float> samples { 0.f, 1000.f, -1000.f, 0.f };
+    QVariantMap first = measuredSegment();
+    first.insert(QStringLiteral("startedAt"), QStringLiteral("2026-10-11T01:01:01.000"));
+    first.insert(QStringLiteral("endedAt"), QStringLiteral("2026-10-11T01:01:03.000"));
+    expect(SessionStore::commitSegment(id, started, first, samples), "commit keeps wav");
+    expect(fileCount(QStringLiteral("*.wav")) == 1, "kept wav remains");
+    expect(fileCount(QStringLiteral("*.pending.json")) == 0, "pending sidecar is removed");
+
+    QVariantMap second = first;
+    second.insert(QStringLiteral("endedAt"), QStringLiteral("2026-10-11T01:01:08.000"));
+    expect(SessionStore::commitSegment(id, started, second, samples),
+        "second commit while wavs are kept");
+    expect(fileCount(QStringLiteral("*.wav")) == 2, "second wav is kept too");
+    expect(fileCount(QStringLiteral("*.pending.json")) == 0, "second pending sidecar is removed");
+
+    SessionStore::clearAll();
+    expect(fileCount(QStringLiteral("*.wav")) == 0, "delete user data removes kept wavs");
+    setKeepRecordingFiles(false);
+}
+
 void testMalformedJsonIsQuarantined()
 {
     QDir().mkpath(SessionStore::sessionsDir());
@@ -144,6 +197,8 @@ int main(int argc, char** argv)
 
     testRoundTripAndClear();
     testDurationWeightedSessionMean();
+    testCommitDeletesWavByDefault();
+    testCommitKeepsWavWhenEnabled();
     testMalformedJsonIsQuarantined();
 
     Settings::clearAppDataDirForTests();

@@ -282,6 +282,19 @@ void SettingsApi::setAdvanced(bool advanced)
     emit advancedChanged();
 }
 
+bool SettingsApi::keepRecordingFiles() const
+{
+    return m_settings.keepRecordingFiles;
+}
+
+void SettingsApi::setKeepRecordingFiles(bool keepRecordingFiles)
+{
+    if (!assignIfChanged(m_settings.keepRecordingFiles, keepRecordingFiles))
+        return;
+    save();
+    emit keepRecordingFilesChanged();
+}
+
 int SettingsApi::analysisWindowSec() const
 {
     return m_settings.analysisWindowSec;
@@ -508,6 +521,7 @@ void SettingsApi::load()
     emit showNavigationMenuChanged();
     emit autoStopRecordingChanged();
     emit autoCalibrateChanged();
+    emit keepRecordingFilesChanged();
     emit vadCalibrationDurationMsChanged();
     emit autoStopSilenceDurationChanged();
     emit vadMethodChanged();
