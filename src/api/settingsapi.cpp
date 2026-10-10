@@ -347,6 +347,84 @@ void SettingsApi::setGaugeMode(int mode)
     emit gaugeModeChanged();
 }
 
+bool SettingsApi::showSpeechRateTile() const
+{
+    return m_settings.showSpeechRateTile;
+}
+
+void SettingsApi::setShowSpeechRateTile(bool show)
+{
+    if (!assignIfChanged(m_settings.showSpeechRateTile, show))
+        return;
+    save();
+    emit showSpeechRateTileChanged();
+}
+
+bool SettingsApi::showArticulationRateTile() const
+{
+    return m_settings.showArticulationRateTile;
+}
+
+void SettingsApi::setShowArticulationRateTile(bool show)
+{
+    if (!assignIfChanged(m_settings.showArticulationRateTile, show))
+        return;
+    save();
+    emit showArticulationRateTileChanged();
+}
+
+bool SettingsApi::showFillersTile() const
+{
+    return m_settings.showFillersTile;
+}
+
+void SettingsApi::setShowFillersTile(bool show)
+{
+    if (!assignIfChanged(m_settings.showFillersTile, show))
+        return;
+    save();
+    emit showFillersTileChanged();
+}
+
+bool SettingsApi::showPausesTile() const
+{
+    return m_settings.showPausesTile;
+}
+
+void SettingsApi::setShowPausesTile(bool show)
+{
+    if (!assignIfChanged(m_settings.showPausesTile, show))
+        return;
+    save();
+    emit showPausesTileChanged();
+}
+
+bool SettingsApi::showSpeechTile() const
+{
+    return m_settings.showSpeechTile;
+}
+
+void SettingsApi::setShowSpeechTile(bool show)
+{
+    if (!assignIfChanged(m_settings.showSpeechTile, show))
+        return;
+    save();
+    emit showSpeechTileChanged();
+}
+
+bool SettingsApi::showWholeRecordingTile() const
+{
+    return m_settings.showWholeRecordingTile;
+}
+
+void SettingsApi::setShowWholeRecordingTile(bool show)
+{
+    if (!assignIfChanged(m_settings.showWholeRecordingTile, show))
+        return;
+    save();
+    emit showWholeRecordingTileChanged();
+}
+
 int SettingsApi::pauseSec() const
 {
     return m_settings.autoStopSilenceDuration / 1000;
@@ -535,6 +613,12 @@ void SettingsApi::load()
     emit updatesPerMinuteChanged();
     emit gaugeAverageCountChanged();
     emit gaugeModeChanged();
+    emit showSpeechRateTileChanged();
+    emit showArticulationRateTileChanged();
+    emit showFillersTileChanged();
+    emit showPausesTileChanged();
+    emit showSpeechTileChanged();
+    emit showWholeRecordingTileChanged();
     emit pauseSecChanged();
     emit phrasalPauseMsChanged();
     emit slowWpmChanged();

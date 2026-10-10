@@ -23,6 +23,15 @@ Page {
     readonly property real fastWpm: settingsApi ? settingsApi.fastWpm : 210
     // 0 speech rate, 1 articulation rate, 2 both on the gauge.
     readonly property int gaugeMode: settingsApi ? settingsApi.gaugeMode : 0
+    // A pace on the gauge is not repeated as a tile. Fillers stays off until chosen.
+    readonly property bool showSpeechRateTile: gaugeMode === 1
+                                                && (settingsApi ? settingsApi.showSpeechRateTile : true)
+    readonly property bool showArticulationRateTile: gaugeMode === 0
+                                                      && (settingsApi ? settingsApi.showArticulationRateTile : true)
+    readonly property bool showFillersTile: settingsApi ? settingsApi.showFillersTile : false
+    readonly property bool showPausesTile: settingsApi ? settingsApi.showPausesTile : true
+    readonly property bool showSpeechTile: settingsApi ? settingsApi.showSpeechTile : true
+    readonly property bool showWholeRecordingTile: settingsApi ? settingsApi.showWholeRecordingTile : true
     readonly property bool gaugeAtRest: !sessionApi || (active && phase() !== SessionApi.Measuring)
 
     // With the navigation bar visible the page is shorter. Size the column from the
@@ -605,14 +614,11 @@ Page {
                             Layout.fillWidth: true
                             Layout.fillHeight: true
                             Layout.preferredWidth: 1
-                            visible: root.gaugeMode !== 2
-                            icon: root.gaugeMode === 1 ? Icons.faGaugeHigh : Icons.faCommentDots
-                            label: root.gaugeMode === 1 ? qsTr("Speech rate") : qsTr("Articulation")
-                            hint: root.gaugeMode === 1
-                                  ? qsTr("Overall pace, pauses included")
-                                  : qsTr("Pace while speaking, gaps left out")
-                            value: !root.hasResult ? "—"
-                                   : (root.gaugeMode === 1 ? sessionApi.speechRate : sessionApi.articulationRate).toFixed(0)
+                            visible: root.showSpeechRateTile
+                            icon: Icons.faGaugeHigh
+                            label: qsTr("Speech rate")
+                            hint: qsTr("Overall pace, pauses included")
+                            value: !root.hasResult ? "—" : sessionApi.speechRate.toFixed(0)
                             unit: qsTr("wpm")
                             accent: Theme.primary(Material.theme)
                         }
@@ -620,6 +626,19 @@ Page {
                             Layout.fillWidth: true
                             Layout.fillHeight: true
                             Layout.preferredWidth: 1
+                            visible: root.showArticulationRateTile
+                            icon: Icons.faCommentDots
+                            label: qsTr("Articulation")
+                            hint: qsTr("Pace while speaking, gaps left out")
+                            value: !root.hasResult ? "—" : sessionApi.articulationRate.toFixed(0)
+                            unit: qsTr("wpm")
+                            accent: Theme.primary(Material.theme)
+                        }
+                        MetricTile {
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            Layout.preferredWidth: 1
+                            visible: root.showFillersTile
                             icon: Icons.faWaveSquare
                             label: qsTr("Fillers")
                             hint: qsTr("Drawn-out sounds, not words")
@@ -632,6 +651,7 @@ Page {
                             Layout.fillWidth: true
                             Layout.fillHeight: true
                             Layout.preferredWidth: 1
+                            visible: root.showPausesTile
                             icon: Icons.faPause
                             label: qsTr("Pauses")
                             hint: qsTr("Longer gaps, not all silence")
@@ -643,6 +663,7 @@ Page {
                             Layout.fillWidth: true
                             Layout.fillHeight: true
                             Layout.preferredWidth: 1
+                            visible: root.showSpeechTile
                             icon: Icons.faStopwatch
                             label: qsTr("Speech")
                             hint: qsTr("Total time counted as speech")
@@ -654,7 +675,7 @@ Page {
 
                     RecordingSummaryCard {
                         Layout.fillWidth: true
-                        visible: !root.active && !!sessionApi
+                        visible: root.showWholeRecordingTile && !root.active && !!sessionApi
                                  && (sessionApi.recordingSummaryPending || sessionApi.hasRecordingSummary)
                         pending: !!sessionApi && sessionApi.recordingSummaryPending && !sessionApi.hasRecordingSummary
                         summary: sessionApi ? sessionApi.recordingSummary : ({})

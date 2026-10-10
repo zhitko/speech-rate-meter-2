@@ -400,7 +400,50 @@ Page {
                             Layout.fillWidth: true
                         }
                         Hint {
-                            text: qsTr("Speech rate draws that pace on the gauge and leaves articulation in the card. Articulation rate swaps them. Both draws articulation on the outer arc and speech rate on the inner arc, and leaves that card out.")
+                            text: qsTr("Speech rate draws that pace on the gauge. Articulation rate draws articulation. Both draws articulation on the outer arc and speech rate on the inner arc.")
+                        }
+
+                        FieldLabel { text: qsTr("Show Speech rate tile") }
+                        Switch {
+                            enabled: !!settingsApi && settingsApi.gaugeMode === 1
+                            checked: settingsApi ? settingsApi.showSpeechRateTile : true
+                            onToggled: if (settingsApi)
+                                settingsApi.showSpeechRateTile = checked
+                        }
+                        FieldLabel { text: qsTr("Show Articulation rate tile") }
+                        Switch {
+                            enabled: !!settingsApi && settingsApi.gaugeMode === 0
+                            checked: settingsApi ? settingsApi.showArticulationRateTile : true
+                            onToggled: if (settingsApi)
+                                settingsApi.showArticulationRateTile = checked
+                        }
+                        Hint {
+                            text: qsTr("Unavailable while that pace is already on the gauge.")
+                        }
+
+                        FieldLabel { text: qsTr("Show Fillers tile") }
+                        Switch {
+                            checked: settingsApi ? settingsApi.showFillersTile : false
+                            onToggled: if (settingsApi)
+                                settingsApi.showFillersTile = checked
+                        }
+                        FieldLabel { text: qsTr("Show Pauses tile") }
+                        Switch {
+                            checked: settingsApi ? settingsApi.showPausesTile : true
+                            onToggled: if (settingsApi)
+                                settingsApi.showPausesTile = checked
+                        }
+                        FieldLabel { text: qsTr("Show Speech tile") }
+                        Switch {
+                            checked: settingsApi ? settingsApi.showSpeechTile : true
+                            onToggled: if (settingsApi)
+                                settingsApi.showSpeechTile = checked
+                        }
+                        FieldLabel { text: qsTr("Show Whole recording tile") }
+                        Switch {
+                            checked: settingsApi ? settingsApi.showWholeRecordingTile : true
+                            onToggled: if (settingsApi)
+                                settingsApi.showWholeRecordingTile = checked
                         }
 
                         FieldLabel { text: qsTr("Slow (wpm)") }

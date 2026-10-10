@@ -22,6 +22,13 @@ Page {
     readonly property real layoutWidth: Math.min(scrollView.availableWidth - AppScale.pagePadding * 2, 1120)
     readonly property bool wideLayout: layoutWidth >= 680
     readonly property int gaugeMode: settingsApi ? settingsApi.gaugeMode : 0
+    readonly property bool showSpeechRateTile: gaugeMode === 1
+                                                && (settingsApi ? settingsApi.showSpeechRateTile : true)
+    readonly property bool showArticulationRateTile: gaugeMode === 0
+                                                      && (settingsApi ? settingsApi.showArticulationRateTile : true)
+    readonly property bool showFillersTile: settingsApi ? settingsApi.showFillersTile : false
+    readonly property bool showPausesTile: settingsApi ? settingsApi.showPausesTile : true
+    readonly property bool showSpeechTile: settingsApi ? settingsApi.showSpeechTile : true
 
     function number(key, decimals) {
         return sessionData[key] !== undefined ? Number(sessionData[key]).toFixed(decimals) : "—"
@@ -139,14 +146,12 @@ Page {
                             Layout.fillWidth: true
                             Layout.fillHeight: true
                             Layout.preferredWidth: 1
-                            visible: root.gaugeMode !== 2
+                            visible: root.showSpeechRateTile
                             color: Theme.surfaceContainer(Material.theme)
-                            icon: root.gaugeMode === 1 ? Icons.faGaugeHigh : Icons.faCommentDots
-                            label: root.gaugeMode === 1 ? qsTr("Speech rate") : qsTr("Articulation")
-                            hint: root.gaugeMode === 1
-                                  ? qsTr("Overall pace, pauses included")
-                                  : qsTr("Pace while speaking, gaps left out")
-                            value: root.gaugeMode === 1 ? root.number("speechRate", 0) : root.number("articulationRate", 0)
+                            icon: Icons.faGaugeHigh
+                            label: qsTr("Speech rate")
+                            hint: qsTr("Overall pace, pauses included")
+                            value: root.number("speechRate", 0)
                             unit: qsTr("wpm")
                             accent: Theme.primary(Material.theme)
                         }
@@ -154,6 +159,20 @@ Page {
                             Layout.fillWidth: true
                             Layout.fillHeight: true
                             Layout.preferredWidth: 1
+                            visible: root.showArticulationRateTile
+                            color: Theme.surfaceContainer(Material.theme)
+                            icon: Icons.faCommentDots
+                            label: qsTr("Articulation")
+                            hint: qsTr("Pace while speaking, gaps left out")
+                            value: root.number("articulationRate", 0)
+                            unit: qsTr("wpm")
+                            accent: Theme.primary(Material.theme)
+                        }
+                        MetricTile {
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            Layout.preferredWidth: 1
+                            visible: root.showFillersTile
                             color: Theme.surfaceContainer(Material.theme)
                             icon: Icons.faWaveSquare
                             label: qsTr("Fillers")
@@ -167,6 +186,7 @@ Page {
                             Layout.fillWidth: true
                             Layout.fillHeight: true
                             Layout.preferredWidth: 1
+                            visible: root.showPausesTile
                             color: Theme.surfaceContainer(Material.theme)
                             icon: Icons.faPause
                             label: qsTr("Pauses")
@@ -179,6 +199,7 @@ Page {
                             Layout.fillWidth: true
                             Layout.fillHeight: true
                             Layout.preferredWidth: 1
+                            visible: root.showSpeechTile
                             color: Theme.surfaceContainer(Material.theme)
                             icon: Icons.faStopwatch
                             label: qsTr("Speech")

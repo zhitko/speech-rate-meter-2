@@ -34,6 +34,12 @@ class SettingsApi : public QObject {
     Q_PROPERTY(int updatesPerMinute READ updatesPerMinute WRITE setUpdatesPerMinute NOTIFY updatesPerMinuteChanged)
     Q_PROPERTY(int gaugeAverageCount READ gaugeAverageCount WRITE setGaugeAverageCount NOTIFY gaugeAverageCountChanged)
     Q_PROPERTY(int gaugeMode READ gaugeMode WRITE setGaugeMode NOTIFY gaugeModeChanged)
+    Q_PROPERTY(bool showSpeechRateTile READ showSpeechRateTile WRITE setShowSpeechRateTile NOTIFY showSpeechRateTileChanged)
+    Q_PROPERTY(bool showArticulationRateTile READ showArticulationRateTile WRITE setShowArticulationRateTile NOTIFY showArticulationRateTileChanged)
+    Q_PROPERTY(bool showFillersTile READ showFillersTile WRITE setShowFillersTile NOTIFY showFillersTileChanged)
+    Q_PROPERTY(bool showPausesTile READ showPausesTile WRITE setShowPausesTile NOTIFY showPausesTileChanged)
+    Q_PROPERTY(bool showSpeechTile READ showSpeechTile WRITE setShowSpeechTile NOTIFY showSpeechTileChanged)
+    Q_PROPERTY(bool showWholeRecordingTile READ showWholeRecordingTile WRITE setShowWholeRecordingTile NOTIFY showWholeRecordingTileChanged)
     Q_PROPERTY(int pauseSec READ pauseSec WRITE setPauseSec NOTIFY pauseSecChanged)
     Q_PROPERTY(int phrasalPauseMs READ phrasalPauseMs WRITE setPhrasalPauseMs NOTIFY phrasalPauseMsChanged)
     Q_PROPERTY(double slowWpm READ slowWpm WRITE setSlowWpm NOTIFY slowWpmChanged)
@@ -118,6 +124,18 @@ public:
     void setGaugeAverageCount(int count);
     int gaugeMode() const;
     void setGaugeMode(int mode);
+    bool showSpeechRateTile() const;
+    void setShowSpeechRateTile(bool show);
+    bool showArticulationRateTile() const;
+    void setShowArticulationRateTile(bool show);
+    bool showFillersTile() const;
+    void setShowFillersTile(bool show);
+    bool showPausesTile() const;
+    void setShowPausesTile(bool show);
+    bool showSpeechTile() const;
+    void setShowSpeechTile(bool show);
+    bool showWholeRecordingTile() const;
+    void setShowWholeRecordingTile(bool show);
     int pauseSec() const;
     void setPauseSec(int seconds);
     int phrasalPauseMs() const;
@@ -177,6 +195,12 @@ signals:
     void updatesPerMinuteChanged();
     void gaugeAverageCountChanged();
     void gaugeModeChanged();
+    void showSpeechRateTileChanged();
+    void showArticulationRateTileChanged();
+    void showFillersTileChanged();
+    void showPausesTileChanged();
+    void showSpeechTileChanged();
+    void showWholeRecordingTileChanged();
     void pauseSecChanged();
     void phrasalPauseMsChanged();
     void slowWpmChanged();

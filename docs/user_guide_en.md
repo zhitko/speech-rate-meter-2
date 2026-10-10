@@ -6,7 +6,7 @@ Speech Rate Meter 2 estimates how fast you are speaking. It does not recognize w
 
 - **Speech rate** is the overall pace, in words per minute. By default the gauge shows it and names the zone Slow, Average, or Fast.
 - **Articulation** is the pace while you are actually speaking, with the gaps left out. It is also in words per minute, and it is never below the speech rate. By default it sits in the card beside the gauge.
-- **Fillers** is how much some sounds are drawn out, such as a long “uh”. It is a percent, not a count of words.
+- **Fillers** is how much some sounds are drawn out, such as a long “uh”. It is a percent, not a count of words. The card is hidden until you turn it on in Settings.
 - **Pauses** is the length of the longer gaps, in seconds. It is not the total time you were silent.
 - **Speech** is the total time that counted as speech, in seconds.
 
@@ -37,7 +37,10 @@ Under **Measurement**:
 
 - **Analysis window** is how many recent seconds of speech Home uses while recording. Shorter reacts faster but jumps more.
 - **Updates per minute** is how often the numbers are recalculated.
-- **Gauge** chooses the pace on the arc. **Speech rate** leaves articulation in the card. **Articulation rate** swaps them. **Both** draws articulation on the outer arc and speech rate on the inner arc, and hides that card.
+- **Gauge** chooses the pace on the arc. **Speech rate** draws that pace. **Articulation rate** draws articulation. **Both** draws articulation on the outer arc and speech rate on the inner arc. A pace already on the gauge is not also a card.
+- **Show Speech rate tile** and **Show Articulation rate tile** turn those cards on. Each switch cannot be changed, and the card stays hidden, while that pace is already on the gauge.
+- **Show Fillers tile** is off until you turn it on.
+- **Show Pauses tile**, **Show Speech tile**, and **Show Whole recording tile** are on by default. Whole recording is the summary after Stop or Open File.
 - **Gauge median** is how many latest readings of each pace on the gauge it takes the middle of. The default is 3. Set it to 1 to show the current reading.
 - **Pause** is how much silence ends a phrase and saves it. This is used only when **Detect speech automatically** is on.
 - **Detect speech automatically** measures background noise after **Start**, then waits for you to speak. When it is off, measuring starts when you press **Start**, a pause does not end the phrase, and the recording is saved in 15-second parts.

@@ -143,6 +143,12 @@ Settings::loadSettings()
     settings.updatesPerMinute = std::clamp(qsettings.value("updatesPerMinute", 60).toInt(), 6, 240);
     settings.gaugeAverageCount = std::clamp(qsettings.value("gaugeAverageCount", 3).toInt(), 1, 30);
     settings.gaugeMode = std::clamp(qsettings.value("gaugeMode", 0).toInt(), 0, 2);
+    settings.showSpeechRateTile = qsettings.value("showSpeechRateTile", true).toBool();
+    settings.showArticulationRateTile = qsettings.value("showArticulationRateTile", true).toBool();
+    settings.showFillersTile = qsettings.value("showFillersTile", false).toBool();
+    settings.showPausesTile = qsettings.value("showPausesTile", true).toBool();
+    settings.showSpeechTile = qsettings.value("showSpeechTile", true).toBool();
+    settings.showWholeRecordingTile = qsettings.value("showWholeRecordingTile", true).toBool();
     settings.vadMethod = qsettings.value("vadMethod", 0).toInt();
     settings.vadThreshold = qsettings.value("vadThreshold", 10000.0).toDouble();
     settings.autoCorrThreshold = qsettings.value("autoCorrThreshold", 0.3).toDouble();
@@ -217,6 +223,12 @@ void Settings::saveSettings(const AppSettings& settings)
     qsettings.setValue("updatesPerMinute", settings.updatesPerMinute);
     qsettings.setValue("gaugeAverageCount", settings.gaugeAverageCount);
     qsettings.setValue("gaugeMode", settings.gaugeMode);
+    qsettings.setValue("showSpeechRateTile", settings.showSpeechRateTile);
+    qsettings.setValue("showArticulationRateTile", settings.showArticulationRateTile);
+    qsettings.setValue("showFillersTile", settings.showFillersTile);
+    qsettings.setValue("showPausesTile", settings.showPausesTile);
+    qsettings.setValue("showSpeechTile", settings.showSpeechTile);
+    qsettings.setValue("showWholeRecordingTile", settings.showWholeRecordingTile);
     qsettings.setValue("vadMethod", settings.vadMethod);
     qsettings.setValue("vadThreshold", settings.vadThreshold);
     qsettings.setValue("autoCorrThreshold", settings.autoCorrThreshold);
