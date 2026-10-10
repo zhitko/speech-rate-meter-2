@@ -27,7 +27,7 @@ While a session is running, **Recording** stays in the toolbar on every page. Ta
 
 ## History
 
-**History** lists each session, newest first. A row shows the date, the speech rate, how many phrases were kept, how many times the numbers changed, and the other four averages from **Start** to **Stop**. Open a row to see those same averages, labeled **Mean values**, then a chart. Each point is one moment the numbers on Home changed.
+**History** lists each session, newest first. A row shows the date, the speech rate, how many phrases were kept, how many times the numbers changed, and the other four averages from **Start** to **Stop**. Open a row to see those same averages, labeled **Mean values**, then a chart. Each point is one Home update.
 
 ## Settings
 

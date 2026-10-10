@@ -57,7 +57,7 @@ While a session is running, a **Recording** chip stays in the toolbar on every p
 
 History lists every finished session, newest first. A row shows the date and clock span, how many phrases were kept, how many times the numbers changed, and the mean pace from Start to Stop.
 
-Opening a row repeats those five session values under a **Mean values** label, then five charts. Each point is one moment the numbers on Home changed. These are metric charts, not a waveform.
+Opening a row repeats those five session values under a **Mean values** label, then five charts. Each point is one Home update. These are metric charts, not a waveform.
 
 ### 3. Settings
 

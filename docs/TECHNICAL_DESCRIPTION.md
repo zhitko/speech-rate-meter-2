@@ -63,15 +63,15 @@ These lines are the only status copy on Home. Each replaces the previous one.
 
 | State | Status line |
 | --- | --- |
-| Idle, nothing measured yet | `Press Start and speak naturally. The numbers follow your recent speech.` |
-| Idle, after a session with kept phrases | `Averages for the whole session. Speech is the total time. Press Start to measure again.` The gauge chip reads `Mean values`. |
-| Idle, with a result that is not a session average (Open File, or a session that kept no phrase) | `Result for this recording. Press Start to measure again.` |
-| Session on, waiting for speech, or the latest window has no measurable speech (section 5.4) | `Silence is not counted. Speak when you are ready.` The chip reads `Listening`. The last numbers stay. |
-| Less than 1.5 s of audio in the window | `Keep speaking. There is not enough speech to measure yet.` The last published numbers stay. |
-| Window long enough | `The numbers follow your last N seconds of speech.` with N = Analysis window. |
-| Phrase dropped at a pause | `That phrase was too short and was not saved.` The chip reads `Too short to save`. It clears when the next speech starts. |
-| Phrase stored | Back to `Silence is not counted. Speak when you are ready.` The chip reads `Listening`. The stored numbers stay until the next phrase is long enough to replace them. |
-| Microphone denied | `The microphone is blocked. Allow access in the system settings, then press Start again.` |
+| Idle, nothing measured yet | `Press Start and speak.` |
+| Idle, after a session with kept phrases | `Session averages. Press Start again.` The gauge chip reads `Mean values`. |
+| Idle, with a result that is not a session average (Open File, or a session that kept no phrase) | `This recording. Press Start again.` |
+| Session on, waiting for speech, or the latest window has no measurable speech (section 5.4) | `Speak when you are ready.` The chip reads `Listening`. The last numbers stay. |
+| Less than 1.5 s of audio in the window | `Keep speaking.` The last published numbers stay. |
+| Window long enough | `Last N seconds of speech.` Forms: “Last N second” / “Last N seconds”. N = Analysis window. |
+| Phrase dropped at a pause | `Phrase not saved.` The chip reads `Too short to save`. It clears when the next speech starts. |
+| Phrase stored | Back to `Speak when you are ready.` The chip reads `Listening`. The stored numbers stay until the next phrase is long enough to replace them. |
+| Microphone denied | `Allow the microphone, then press Start.` |
 
 **Session**
 
@@ -218,7 +218,7 @@ Those five values are the duration-weighted mean of the kept phrases’ headline
 
 **Session charts**
 
-Choosing a row opens that session. The header repeats the list title and the session values, with the same Gauge setting and the same tile switches as Home. Under it: `Each point is one moment the numbers on Home changed.`
+Choosing a row opens that session. The header repeats the list title and the session values, with the same Gauge setting and the same tile switches as Home. Under it: `Each point is one Home update.`
 
 Five charts follow, speech rate first and taller than the others. Titles are the Home labels. Each point is one moment when a printed number changed: speech rate or articulation to the nearest word per minute, fillers to the nearest percent, pauses to two decimals, or speech to the nearest second. The horizontal axis is that moment as clock time, in order. The vertical axis is the value Home was showing (`wpm`, `%`, or `sec`) and is not clamped to the gauge. A session whose labels never changed is a single point. Older files that have no shown changes plot one point per phrase instead. These are metric charts, not a waveform. Back returns to the list.
 
@@ -574,19 +574,19 @@ Everyday labels use plain units. Silence Duration is edited in seconds and store
 
 | On screen | Stored setting | Default | Hint |
 | --- | --- | --- | --- |
-| Analysis window (s) | `General/analysisWindowSec` | 10 s | While recording, Home shows the pace of this much recent speech. Range 3…30. |
-| Updates per minute | `General/updatesPerMinute` | 60 | How often the numbers on Home are recalculated. Range 6…240. |
-| Gauge | `General/gaugeMode` | Speech rate (`0`) | Speech rate draws that pace on the gauge. Articulation rate (`1`) draws articulation. Both (`2`) draws articulation on the outer arc and speech rate on the inner arc. A pace on the gauge is not also a tile. |
+| Analysis window (s) | `General/analysisWindowSec` | 10 s | Recent speech used on Home. Shorter reacts faster. Range 3…30. |
+| Updates per minute | `General/updatesPerMinute` | 60 | How often Home updates while you speak. Range 6…240. |
+| Gauge | `General/gaugeMode` | Speech rate (`0`) | One pace, or both: articulation outside, speech rate inside. Articulation rate is `1`, Both is `2`. A pace on the gauge is not also a tile. |
 | Show Speech rate tile | `General/showSpeechRateTile` | on | Shows the speech-rate card. The switch is disabled, and the card stays hidden, when Gauge is Speech rate or Both. |
 | Show Articulation rate tile | `General/showArticulationRateTile` | on | Shows the articulation card. The switch is disabled, and the card stays hidden, when Gauge is Articulation rate or Both. |
 | Show Fillers tile | `General/showFillersTile` | off | Shows the fillers card. |
 | Show Pauses tile | `General/showPausesTile` | on | Shows the pauses card. |
 | Show Speech tile | `General/showSpeechTile` | on | Shows the speech-time card. |
 | Show Whole recording tile | `General/showWholeRecordingTile` | on | Shows the whole-recording summary after Stop and after Open File. |
-| Gauge median | `General/gaugeAverageCount` | 3 | The gauge shows the middle of this many latest readings of each pace it draws, so one jump moves it less. Range 1…30. 1 shows the current reading. An odd count is the middle value after sorting. An even count is the mean of the two central values. Speech rate and articulation keep separate windows. |
-| Pause | `General/autoStopSilenceDuration` | 2 s | Silence this long ends the phrase and saves it. Used only when Detect speech automatically is on. |
-| Detect speech automatically | `General/autoCalibrate` | off | After Start, measures background noise, then waits for speech. A pause ends the phrase. Off starts measuring when Start is pressed, a pause does not end the phrase, and the recording is saved in 15-second parts. |
-| Slow | Min RS | 70 wpm | The slow end of the gauge. From here to Fast, the arc is split equally into Slow, Average, and Fast. Also copies to articulation min. |
+| Gauge median | `General/gaugeAverageCount` | 3 | Middle of this many latest readings. Range 1…30. 1 is the current value. An odd count is the middle value after sorting. An even count is the mean of the two central values. Speech rate and articulation keep separate windows. |
+| Pause | `General/autoStopSilenceDuration` | 2 s | Silence that ends and saves the phrase. Auto-detect only. |
+| Detect speech automatically | `General/autoCalibrate` | off | On: wait for speech; a pause ends the phrase. Off: start at once, in 15-second parts. |
+| Slow | Min RS | 70 wpm | Slow end of the gauge. The arc splits evenly up to Fast. Also copies to articulation min. |
 | Fast | Max RS | 210 wpm | The fast end of the gauge. Also copies to articulation max. |
 
 General (language, theme, color, font size, navigation bar) stays visible. Delete user data stays at the bottom of General, asks for confirmation, and says that it deletes saved sessions and any recording files still kept in `data/records`. The calibration dialog is titled `Measuring background noise`.

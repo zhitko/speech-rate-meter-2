@@ -97,7 +97,7 @@ Rectangle {
             Layout.fillWidth: true
             visible: !root.pending
             wrapMode: Text.Wrap
-            text: qsTr("Silent or unvoiced gaps of at least %1 ms").arg(root.summary ? root.summary.pauseThresholdMs : 150)
+            text: qsTr("Gaps of at least %1 ms").arg(root.summary ? root.summary.pauseThresholdMs : 150)
             font.pixelSize: AppScale.fs(12)
             color: Theme.onSurfaceVariant(Material.theme)
         }

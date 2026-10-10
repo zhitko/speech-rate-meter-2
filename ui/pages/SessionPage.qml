@@ -215,7 +215,7 @@ Page {
             Label {
                 Layout.fillWidth: true
                 wrapMode: Text.Wrap
-                text: qsTr("Each point is one moment the numbers on Home changed.")
+                text: qsTr("Each point is one Home update.")
                 font.pixelSize: AppScale.fs(14)
                 color: Theme.onSurfaceVariant(Material.theme)
             }

@@ -145,21 +145,21 @@ Page {
         switch (phase()) {
         case SessionApi.IdleReady:
             return showingMean
-                   ? qsTr("Averages for the whole session. Speech is the total time. Press Start to measure again.")
-                   : qsTr("Result for this recording. Press Start to measure again.")
+                   ? qsTr("Session averages. Press Start again.")
+                   : qsTr("This recording. Press Start again.")
         case SessionApi.Listening:
-            return qsTr("Silence is not counted. Speak when you are ready.")
+            return qsTr("Speak when you are ready.")
         case SessionApi.Measuring:
-            return qsTr("The numbers follow your last %n second(s) of speech.", "",
+            return qsTr("Last %n second(s) of speech.", "",
                         settingsApi ? settingsApi.analysisWindowSec : 10)
         case SessionApi.TooShort:
-            return qsTr("Keep speaking. There is not enough speech to measure yet.")
+            return qsTr("Keep speaking.")
         case SessionApi.Dropped:
-            return qsTr("That phrase was too short and was not saved.")
+            return qsTr("Phrase not saved.")
         case SessionApi.MicDenied:
-            return qsTr("The microphone is blocked. Allow access in the system settings, then press Start again.")
+            return qsTr("Allow the microphone, then press Start.")
         default:
-            return qsTr("Press Start and speak naturally. The numbers follow your recent speech.")
+            return qsTr("Press Start and speak.")
         }
     }
 

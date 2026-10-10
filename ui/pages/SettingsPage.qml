@@ -247,7 +247,7 @@ Page {
                                 settingsApi.showNavigationMenu = checked
                         }
                         Hint {
-                            text: qsTr("Shows Home, History, and Settings along the bottom. The menu button stays in the toolbar.")
+                            text: qsTr("Home, History, and Settings along the bottom.")
                         }
 
                         FieldLabel { text: qsTr("Font Size") }
@@ -330,7 +330,7 @@ Page {
                             Layout.fillWidth: true
                         }
                         Hint {
-                            text: qsTr("While recording, Home shows the pace of this much recent speech. Shorter reacts faster but jumps more.")
+                            text: qsTr("Recent speech used on Home. Shorter reacts faster.")
                         }
 
                         FieldLabel { text: qsTr("Updates per minute") }
@@ -344,7 +344,7 @@ Page {
                             Layout.fillWidth: true
                         }
                         Hint {
-                            text: qsTr("How often the numbers on Home are recalculated while you speak.")
+                            text: qsTr("How often Home updates while you speak.")
                         }
 
                         FieldLabel { text: qsTr("Pause (s)") }
@@ -358,7 +358,7 @@ Page {
                             Layout.fillWidth: true
                         }
                         Hint {
-                            text: qsTr("Silence this long ends the phrase and saves it. Used only when Detect speech automatically is on.")
+                            text: qsTr("Silence that ends and saves the phrase. Auto-detect only.")
                         }
 
                         FieldLabel { text: qsTr("Phrasal pause (ms)") }
@@ -373,7 +373,7 @@ Page {
                             Layout.fillWidth: true
                         }
                         Hint {
-                            text: qsTr("Silent or unvoiced gaps at least this long count as phrasal pauses in the whole-recording summary.")
+                            text: qsTr("Gaps this long count as pauses in the whole recording.")
                         }
 
                         FieldLabel { text: qsTr("Detect speech automatically") }
@@ -383,7 +383,7 @@ Page {
                                 settingsApi.autoCalibrate = checked
                         }
                         Hint {
-                            text: qsTr("After Start, measures background noise, then waits for you to speak. A pause ends the phrase. Off starts measuring when you press Start, a pause does not end the phrase, and the recording is saved in 15-second parts.")
+                            text: qsTr("On: wait for speech; a pause ends the phrase. Off: start at once, in 15-second parts.")
                         }
 
                         FieldLabel { text: qsTr("Gauge") }
@@ -400,7 +400,7 @@ Page {
                             Layout.fillWidth: true
                         }
                         Hint {
-                            text: qsTr("Speech rate draws that pace on the gauge. Articulation rate draws articulation. Both draws articulation on the outer arc and speech rate on the inner arc.")
+                            text: qsTr("One pace, or both: articulation outside, speech rate inside.")
                         }
 
                         FieldLabel { text: qsTr("Show Speech rate tile") }
@@ -418,7 +418,7 @@ Page {
                                 settingsApi.showArticulationRateTile = checked
                         }
                         Hint {
-                            text: qsTr("Unavailable while that pace is already on the gauge.")
+                            text: qsTr("Unavailable while on the gauge.")
                         }
 
                         FieldLabel { text: qsTr("Show Fillers tile") }
@@ -457,7 +457,7 @@ Page {
                             Layout.fillWidth: true
                         }
                         Hint {
-                            text: qsTr("The slow end of the gauge. From here to Fast, the arc is split equally into Slow, Average, and Fast.")
+                            text: qsTr("Slow end of the gauge. The arc splits evenly up to Fast.")
                         }
 
                         FieldLabel { text: qsTr("Fast (wpm)") }
@@ -485,7 +485,7 @@ Page {
                             Layout.fillWidth: true
                         }
                         Hint {
-                            text: qsTr("The gauge shows the middle of this many latest readings of each pace it draws, so one jump moves it less. 1 shows the current reading.")
+                            text: qsTr("Middle of this many latest readings. 1 is the current value.")
                         }
                     }
 
@@ -500,7 +500,7 @@ Page {
                     Label {
                         Layout.fillWidth: true
                         wrapMode: Text.Wrap
-                        text: qsTr("How speech is detected, how loudness is measured, and the coefficients behind the numbers. The checkbox turns off when you leave the app.")
+                        text: qsTr("Detection, loudness, and formula coefficients. Turns off when you leave.")
                         color: Theme.onSurfaceVariant(Material.theme)
                         font.pixelSize: AppScale.fs(12)
                     }
@@ -529,7 +529,7 @@ Page {
                     Label {
                         Layout.fillWidth: true
                         wrapMode: Text.Wrap
-                        text: qsTr("These change how the numbers on Home are calculated. The groups follow the order a phrase is processed.")
+                        text: qsTr("These change the Home numbers, in processing order.")
                         color: Theme.onSurfaceVariant(Material.theme)
                         font.pixelSize: AppScale.fs(13)
                     }
@@ -552,7 +552,7 @@ Page {
                 Label {
                     Layout.fillWidth: true
                     wrapMode: Text.Wrap
-                    text: qsTr("Leaves each phrase as a WAV file in data/records. Off deletes those files when you leave the app.")
+                    text: qsTr("Keep each phrase as WAV in data/records. Off deletes them on exit.")
                     color: Theme.onSurfaceVariant(Material.theme)
                     font.pixelSize: AppScale.fs(12)
                 }
@@ -560,7 +560,7 @@ Page {
                 StageCard {
                     stage: 1
                     title: qsTr("Speech detection")
-                    description: qsTr("Finds where each phrase starts and ends. Used only when Detect speech automatically is on.")
+                    description: qsTr("Phrase start and end. Auto-detect only.")
                     columns: root.singleColumnForm ? 1 : 2
 
                     FieldLabel { text: qsTr("Detection method") }
@@ -577,7 +577,7 @@ Page {
                         Layout.fillWidth: true
                     }
                     Hint {
-                        text: qsTr("Energy uses loudness. Autocorrelation uses pitch. Hybrid requires both.")
+                        text: qsTr("Energy: loudness. Autocorrelation: pitch. Hybrid: both.")
                     }
 
                     FieldLabel { visible: root.usesEnergyVad; text: qsTr("Energy threshold") }
@@ -590,7 +590,7 @@ Page {
                     }
                     Hint {
                         visible: root.usesEnergyVad
-                        text: qsTr("Sound louder than this counts as speech. Higher ignores more of a quiet voice. Calibrate sets it from the room.")
+                        text: qsTr("Louder than this counts as speech. Calibrate sets it from the room.")
                     }
 
                     FieldLabel { visible: root.usesAutocorrVad; text: qsTr("Autocorrelation threshold") }
@@ -603,7 +603,7 @@ Page {
                     }
                     Hint {
                         visible: root.usesAutocorrVad
-                        text: qsTr("How clearly a sound must repeat to count as a voice. Higher ignores more noise.")
+                        text: qsTr("How clearly a sound must repeat to count as voice.")
                     }
                     FieldLabel { visible: root.usesAutocorrVad; text: qsTr("Threshold factor") }
                     TextField {
@@ -615,7 +615,7 @@ Page {
                     }
                     Hint {
                         visible: root.usesAutocorrVad
-                        text: qsTr("Used when you calibrate. The threshold becomes the room average times this number. Higher asks for a clearer voice.")
+                        text: qsTr("Calibrate sets the threshold to the room average times this.")
                     }
                     FieldLabel { visible: root.usesAutocorrVad; text: qsTr("Lowest pitch (Hz)") }
                     TextField {
@@ -627,7 +627,7 @@ Page {
                     }
                     Hint {
                         visible: root.usesAutocorrVad
-                        text: qsTr("Lowest voice pitch to look for, in hertz.")
+                        text: qsTr("Lowest pitch to look for.")
                     }
                     FieldLabel { visible: root.usesAutocorrVad; text: qsTr("Highest pitch (Hz)") }
                     TextField {
@@ -639,7 +639,7 @@ Page {
                     }
                     Hint {
                         visible: root.usesAutocorrVad
-                        text: qsTr("Highest voice pitch to look for, in hertz.")
+                        text: qsTr("Highest pitch to look for.")
                     }
 
                     Button {
@@ -650,14 +650,14 @@ Page {
                         onClicked: vadCalibrationDialog.open()
                     }
                     Hint {
-                        text: qsTr("Measures the room and fills in the thresholds. Stay quiet until it closes.")
+                        text: qsTr("Measures the room. Stay quiet until it closes.")
                     }
                 }
 
                 StageCard {
                     stage: 2
                     title: qsTr("Intensity")
-                    description: qsTr("Turns the phrase into a loudness curve and a smoothed copy. Frame and shift are audio samples at 8000 Hz, so 8000 is one second. The smooth window counts points on the curve.")
+                    description: qsTr("Loudness curve and a smoothed copy. Samples are at 8000 Hz.")
                     columns: root.singleColumnForm ? 1 : 2
 
                     FieldLabel { text: qsTr("Frame") }
@@ -679,7 +679,7 @@ Page {
                             settingsApi.intensityShift = value
                         Layout.fillWidth: true
                     }
-                    Hint { text: qsTr("How far the next window moves. Smaller gives a finer curve.") }
+                    Hint { text: qsTr("Step to the next window. Smaller is finer.") }
                     FieldLabel { text: qsTr("Smooth window") }
                     SpinBox {
                         from: 0
@@ -689,13 +689,13 @@ Page {
                             settingsApi.intensitySmooth = value
                         Layout.fillWidth: true
                     }
-                    Hint { text: qsTr("How many points are averaged. Longer follows the loudness more slowly.") }
+                    Hint { text: qsTr("Points averaged. Longer reacts more slowly.") }
                 }
 
                 StageCard {
                     stage: 3
                     title: qsTr("Vowel detection")
-                    description: qsTr("Vowels are where the loudness curve rises above its smoothed copy. Shorter peaks are dropped.")
+                    description: qsTr("Peaks above the smoothed loudness. Shorter ones are dropped.")
                     columns: root.singleColumnForm ? 1 : 2
 
                     FieldLabel { text: qsTr("Shortest vowel (ms)") }
@@ -725,13 +725,13 @@ Page {
                             settingsApi.meanValueDegry = value
                         Layout.fillWidth: true
                     }
-                    Hint { text: qsTr("1 treats every sound equally. A higher number makes long sounds count more.") }
+                    Hint { text: qsTr("Higher makes long sounds count more. 1 treats them equally.") }
                 }
 
                 StageCard {
                     stage: 5
                     title: qsTr("Metrics")
-                    description: qsTr("Coefficients of the formulas that turn the statistics into the values on Home.")
+                    description: qsTr("Formula coefficients for the Home numbers.")
                     columns: root.singleColumnForm ? 1 : 2
 
                     SubHeader { text: qsTr("Speech rate"); Layout.columnSpan: root.singleColumnForm ? 1 : 2 }
@@ -768,7 +768,7 @@ Page {
                         onRealValueEdited: function(v) { if (settingsApi) settingsApi.k4 = v }
                         Layout.fillWidth: true
                     }
-                    Hint { text: qsTr("Higher raises the filler score before it is shown as a percent.") }
+                    Hint { text: qsTr("Higher raises the filler score.") }
                     FieldLabel { text: qsTr("Low filler score") }
                     SpinBox {
                         from: 0
@@ -788,7 +788,7 @@ Page {
                             settingsApi.fillerMax = value
                         Layout.fillWidth: true
                     }
-                    Hint { text: qsTr("A score at or above this is shown as 100%. Scores between the low and high values fill in 0–100%.") }
+                    Hint { text: qsTr("At or above this is 100%. In between fills 0–100%.") }
                 }
             }
         }

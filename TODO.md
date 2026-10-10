@@ -7,7 +7,7 @@ Feedback from Boris Lobanov, Oct 10, 2026.
 - [x] Put the Articulation rate arc on top of the Speech rate arc (it is always longer).
 - [x] Remove the Fillers metric (it consistently works poorly). Hidden unless Show Fillers tile is on.
 - [x] Put Pauses in the Fillers tile's former place, and Speech rate in the Pauses tile's former place.
-- [ ] Remove all long explanatory texts (the line under the gauge, the metric-tile hints, and the settings hints).
+- [x] Remove all long explanatory texts (the line under the gauge, the metric-tile hints, and the settings hints).
 - [x] Add a "Listen to test" button next to the "Open File" button.
 
 ## Measurements
