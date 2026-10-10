@@ -12,6 +12,10 @@ Feedback from Boris Lobanov, Oct 10, 2026.
 
 ## Measurements
 - [ ] Improve measurement methods; current measurements are fairly approximate. Explore alternative approaches on top of the new UI.
+  - [ ] Research a programmatic approach that, for a long enough speech recording (WAV, ~30 s or more), determines:
+    - [ ] the total number of vowel sounds
+    - [ ] the total number of phrasal pauses (at least 150 ms long)
+    - [ ] statistics of vowel durations (nice to have)
 
 ## Waiting on Boris
 - [ ] Speech samples with slow, medium, and fast tempo for testing "Open File".
