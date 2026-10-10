@@ -40,13 +40,19 @@ Page {
     readonly property real legacyGaugeHeight: wideLayout
                                               ? Math.max(170, Math.min(height - AppScale.pagePadding * 2 - 110, 440))
                                               : Math.max(200, Math.min(layoutWidth * 0.62, height * 0.36, 330))
-    // Card margins (16 + 16), the gauge top margin (28), column spacing (8), and the hint bottom margin (4).
-    readonly property real gaugeSurround: 72 + (gaugeHint.implicitHeight > 0 ? gaugeHint.implicitHeight : 0)
+    // The phase chip is a corner overlay. This is how far the gauge rises into
+    // that band so the arc can use the space instead of sitting below it.
+    readonly property real chipBand: 40
+    // Card margins (16 + 16), column spacing (8), hint bottom margin (4), and the
+    // gauge top margin (28 minus the chip band the arc now fills).
+    readonly property real gaugeSurround: 72 - chipBand + (gaugeHint.implicitHeight > 0 ? gaugeHint.implicitHeight : 0)
     // Below this the arc ends collide with the center label.
     readonly property real gaugeFloor: 200
     readonly property real gaugeRoom: viewportHeight - AppScale.pagePadding * 2 - 4 - gaugeSurround
-    readonly property real naturalGaugeHeight: Math.min(legacyGaugeHeight * 1.5,
-                                                         Math.max(legacyGaugeHeight, gaugeRoom))
+    // The legacy caps were measured with the arc below the chip. gaugeRoom
+    // already includes the reclaimed band, so it is not added a second time.
+    readonly property real naturalGaugeHeight: Math.min(legacyGaugeHeight * 1.5 + chipBand,
+                                                         Math.max(legacyGaugeHeight + chipBand, gaugeRoom))
     // Wider windows give the gauge more of the row, up to 74%, and leave the
     // tiles about 300 px so their labels still fit.
     readonly property real gaugeWeight: {
@@ -472,7 +478,7 @@ Page {
                             id: gauge
                             Layout.fillWidth: true
                             Layout.fillHeight: root.wideLayout
-                            Layout.topMargin: 28
+                            Layout.topMargin: 28 - root.chipBand
                             // On a phone the arc uses the free side margins and stops
                             // just inside the screen edge. Wide layouts stay inside
                             // the card so the arc does not meet the tiles.

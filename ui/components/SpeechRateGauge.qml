@@ -84,7 +84,7 @@ Item {
     // round caps inside the item; the height pad keeps the end labels inside.
     readonly property real radius: {
         var byWidth = (width - 4) / 2.15
-        var byHeight = (height - labelSpace - 8) / 1.72
+        var byHeight = (height - labelSpace - 4) / 1.66
         return Math.max(20, Math.min(byWidth, byHeight))
     }
     readonly property real stroke: Math.max(10, radius * 0.15)
@@ -98,10 +98,9 @@ Item {
     readonly property real dualTextWidth: Math.max(48, (innerRadius - innerStroke) * 1.65)
     readonly property real cx: width / 2
     readonly property real cy: {
-        var topInset = stroke * 0.55
-        var content = radius * 1.5 + topInset + labelSpace
-        var slack = Math.max(0, height - content)
-        return slack / 2 + topInset + radius
+        // Keep the end labels on the bottom of the item. Extra height, including
+        // the band beside the phase chip, raises the apex instead of leaving a gap.
+        return height - labelSpace - stroke * 0.5 - radius * 0.5
     }
 
     // Gap between zones wide enough that the rounded caps never touch.
