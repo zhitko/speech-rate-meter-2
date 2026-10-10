@@ -652,6 +652,14 @@ Page {
                         }
                     }
 
+                    RecordingSummaryCard {
+                        Layout.fillWidth: true
+                        visible: !root.active && !!sessionApi
+                                 && (sessionApi.recordingSummaryPending || sessionApi.hasRecordingSummary)
+                        pending: !!sessionApi && sessionApi.recordingSummaryPending && !sessionApi.hasRecordingSummary
+                        summary: sessionApi ? sessionApi.recordingSummary : ({})
+                    }
+
                     Loader {
                         Layout.alignment: Qt.AlignHCenter
                         active: root.wideLayout

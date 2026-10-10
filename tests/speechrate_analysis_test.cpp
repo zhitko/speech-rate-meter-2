@@ -186,6 +186,149 @@ void testSyllableRateSurvivesGate()
     }
 }
 
+void testDurationStatistics()
+{
+    const speechrate::DurationStats empty = speechrate::durationStatistics({});
+    expect(empty.count == 0, "empty duration count");
+    expectNear(empty.mean, 0, "empty mean");
+    expectNear(empty.stddev, 0, "empty stddev");
+    expect(empty.histogram.empty(), "empty histogram");
+
+    const speechrate::DurationStats one = speechrate::durationStatistics({ 0.08 });
+    expect(one.count == 1, "single count");
+    expectNear(one.mean, 0.08, "single mean");
+    expectNear(one.median, 0.08, "single median");
+    expectNear(one.min, 0.08, "single min");
+    expectNear(one.max, 0.08, "single max");
+    expectNear(one.stddev, 0, "single stddev is zero");
+
+    const speechrate::DurationStats stats = speechrate::durationStatistics({ 0.10, 0.30, 0.20, 0.40 });
+    expect(stats.count == 4, "duration count");
+    expectNear(stats.mean, 0.25, "arithmetic mean");
+    expectNear(stats.median, 0.25, "even median averages the two central values");
+    expectNear(stats.min, 0.10, "min duration");
+    expectNear(stats.max, 0.40, "max duration");
+    expectNear(stats.stddev, std::sqrt(0.05 / 3.0), "sample standard deviation");
+
+    const speechrate::DurationStats odd = speechrate::durationStatistics({ 0.10, 0.40, 0.20 });
+    expectNear(odd.median, 0.20, "odd median is the middle value");
+    expectNear(odd.mean, 0.70 / 3.0, "odd mean");
+
+    const speechrate::DurationStats bins = speechrate::durationStatistics({ 0.0, 0.019, 0.020, 0.039 });
+    expect(bins.histogram.size() == 2, "two 20 ms bins cover the longest vowel");
+    expect(bins.histogram[0].count == 2, "first bin holds 0 and 19 ms");
+    expect(bins.histogram[1].count == 2, "second bin holds 20 and 39 ms");
+    expect(!bins.histogram[1].openEnded, "short vowels do not overflow the histogram");
+    expectNear(bins.histogramBinSec, speechrate::kVowelHistogramBinSec, "histogram bin width");
+
+    std::vector<double> overflow(1, speechrate::kVowelHistogramBinSec * (speechrate::kVowelHistogramMaxBins + 2));
+    const speechrate::DurationStats longVowel = speechrate::durationStatistics(overflow);
+    expect(static_cast<int>(longVowel.histogram.size()) == speechrate::kVowelHistogramMaxBins,
+        "histogram stops at the bin cap");
+    expect(longVowel.histogram.back().openEnded, "the last bin is open-ended");
+    expect(longVowel.histogram.back().count == 1, "the long vowel lands in the last bin");
+}
+
+void testPhrasalPauseCounting()
+{
+    expect(speechrate::kDefaultPhrasalPauseMs == 150, "default phrasal pause is 150 ms");
+
+    auto run = [](int frames, std::uint8_t silent) {
+        return std::vector<std::uint8_t>(static_cast<std::size_t>(frames), silent);
+    };
+    auto join = [](std::vector<std::uint8_t> base, const std::vector<std::uint8_t>& extra) {
+        base.insert(base.end(), extra.begin(), extra.end());
+        return base;
+    };
+
+    // 120-sample hop at 8 kHz is 15 ms. 9 frames = 135 ms, 10 frames = 150 ms.
+    std::vector<std::uint8_t> mask = run(5, 1);
+    mask = join(mask, run(3, 0));
+    mask = join(mask, run(9, 1));
+    mask = join(mask, run(3, 0));
+    mask = join(mask, run(10, 1));
+    mask = join(mask, run(3, 0));
+    mask = join(mask, run(20, 1));
+    expect(speechrate::countPhrasalPauses(mask, 120, 150) == 1,
+        "only the interior 150 ms run counts; 135 ms and the edges do not");
+
+    mask = join(run(4, 0), run(10, 1));
+    mask = join(mask, run(2, 0));
+    mask = join(mask, run(12, 1));
+    mask = join(mask, run(2, 0));
+    expect(speechrate::countPhrasalPauses(mask, 120, 150) == 2, "two interior pauses");
+    expect(speechrate::countPhrasalPauses(mask, 120, 151) == 1, "151 ms drops the 150 ms run");
+    expect(speechrate::countPhrasalPauses(mask, 120, 10000) == 0, "a huge threshold counts nothing");
+
+    expect(speechrate::countPhrasalPauses(run(40, 1), 120, 150) == 0, "silence with no speech is not a pause");
+    expect(speechrate::countPhrasalPauses({}, 120, 150) == 0, "empty mask");
+    expect(speechrate::countPhrasalPauses(run(4, 0), 0, 150) == 0, "a zero hop is rejected");
+}
+
+void addTone(std::vector<float>& samples, int start, int length, double frequency, double amplitude)
+{
+    const int count = static_cast<int>(samples.size());
+    for (int index = 0; index < length && start + index < count; ++index) {
+        const double envelope = 0.5 - 0.5 * std::cos(2 * M_PI * index / length);
+        samples[static_cast<std::size_t>(start + index)] += static_cast<float>(
+            amplitude * envelope * std::sin(2 * M_PI * frequency * index / 8000.0));
+    }
+}
+
+void testWholeRecordingSummary()
+{
+    constexpr int kRate = 8000;
+    std::vector<float> samples(static_cast<std::size_t>(kRate * 2), 0);
+    const int vowel = 960;
+    int cursor = static_cast<int>(0.25 * kRate);
+    addTone(samples, cursor, vowel, 150, 6000);
+    cursor += vowel + static_cast<int>(0.40 * kRate);
+    addTone(samples, cursor, vowel, 150, 6000);
+    cursor += vowel + static_cast<int>(0.05 * kRate);
+    addTone(samples, cursor, vowel, 180, 6000);
+
+    const speechrate::RecordingSummary summary = speechrate::summarizeRecording(samples, {});
+    expect(summary.valid, "framed recording is valid");
+    expect(summary.vowelCount == 3, "three voiced bursts are three nuclei");
+    expect(summary.phrasalPauseCount == 1, "only the 400 ms gap is a phrasal pause");
+    expect(summary.pauseThresholdMs == speechrate::kDefaultPhrasalPauseMs, "default threshold is reported");
+    expect(summary.vowelDurations.count == summary.vowelCount, "duration count matches nuclei");
+    expect(summary.vowelDurations.min <= summary.vowelDurations.median
+            && summary.vowelDurations.median <= summary.vowelDurations.max,
+        "duration order");
+    expect(summary.vowelDurations.min <= summary.vowelDurations.mean
+            && summary.vowelDurations.mean <= summary.vowelDurations.max,
+        "mean stays inside the range");
+    expect(summary.vowelDurations.min > 0.02 && summary.vowelDurations.max < 0.30,
+        "detected vowels are a few tens of milliseconds");
+    expect(summary.vowelDurations.stddev >= 0, "stddev is non-negative");
+    int histogramTotal = 0;
+    for (const speechrate::HistogramBin& bin : summary.vowelDurations.histogram)
+        histogramTotal += bin.count;
+    expect(histogramTotal == summary.vowelCount, "histogram counts every vowel");
+
+    const speechrate::RecordingSummary strict = speechrate::summarizeRecording(samples, {}, 2000);
+    expect(strict.vowelCount == 3, "raising the pause threshold keeps the vowels");
+    expect(strict.phrasalPauseCount == 0, "400 ms is below a 2 s pause threshold");
+
+    std::vector<float> bridged(static_cast<std::size_t>(kRate), 0);
+    addTone(bridged, 800, vowel, 150, 6000);
+    const int noiseAt = 800 + vowel + 400;
+    std::mt19937 rng(7);
+    std::normal_distribution<double> dist(0, 4000);
+    for (int index = 0; index < 1600 && noiseAt + index < static_cast<int>(bridged.size()); ++index)
+        bridged[static_cast<std::size_t>(noiseAt + index)] = static_cast<float>(dist(rng));
+    addTone(bridged, noiseAt + 1600 + 400, vowel, 150, 6000);
+    const speechrate::RecordingSummary loudGap = speechrate::summarizeRecording(bridged, {});
+    expect(loudGap.vowelCount == 2, "loud unvoiced noise is not a vowel nucleus");
+    expect(loudGap.phrasalPauseCount == 0, "a loud unvoiced gap is not a phrasal pause");
+
+    expect(!speechrate::summarizeRecording({}, {}).valid, "empty summary is not valid");
+    const speechrate::RecordingSummary quiet = speechrate::summarizeRecording(std::vector<float>(kRate, 0), {});
+    expect(quiet.valid, "silence can still be framed");
+    expect(quiet.vowelCount == 0 && quiet.phrasalPauseCount == 0, "silence has no vowels and no interior pause");
+}
+
 } // namespace
 
 int main()
@@ -201,6 +344,9 @@ int main()
     testSpeechDurationUsesSampleCount();
     testSilenceIsNotSpeech();
     testSyllableRateSurvivesGate();
+    testDurationStatistics();
+    testPhrasalPauseCounting();
+    testWholeRecordingSummary();
 
     if (g_failures != 0) {
         std::cerr << g_failures << " failure(s)\n";

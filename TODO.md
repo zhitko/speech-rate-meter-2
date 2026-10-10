@@ -11,11 +11,12 @@ Feedback from Boris Lobanov, Oct 10, 2026.
 - [ ] Add a "Listen to test" button next to the "Open File" button.
 
 ## Measurements
-- [ ] Improve measurement methods; current measurements are fairly approximate. Explore alternative approaches on top of the new UI.
-  - [ ] Research a programmatic approach that, for a long enough speech recording (WAV, ~30 s or more), determines:
-    - [ ] the total number of vowel sounds
-    - [ ] the total number of phrasal pauses (at least 150 ms long)
-    - [ ] statistics of vowel durations (nice to have)
+- [x] Improve measurement methods; current measurements are fairly approximate. Explore alternative approaches on top of the new UI.
+  - [x] Research a programmatic approach that, for a long enough speech recording (WAV, ~30 s or more), determines:
+    - [x] the total number of vowel sounds
+    - [x] the total number of phrasal pauses (at least 150 ms long)
+    - [x] statistics of vowel durations (nice to have)
+      Whole-file summary after Stop and after Open File: vowel-nucleus count, phrasal-pause count (silent/unvoiced runs of at least `phrasalPauseMs`, default 150), and vowel-duration count, mean, median, min, max, and standard deviation. The live window is unchanged. The 150 ms cut and the voicing threshold still need tuning on the slow, medium, and fast samples.
 
 ## Waiting on Boris
 - [ ] Speech samples with slow, medium, and fast tempo for testing "Open File".

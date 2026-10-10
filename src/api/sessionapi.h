@@ -21,7 +21,10 @@ class JobQueue;
  * analysis window from here; each pace drawn on the gauge shows the median of
  * the last few of its own readings. After Stop, speech rate, articulation, fillers, and
  * pauses become the duration-weighted mean of every kept phrase. Speech stays
- * the total. Home labels that state Mean values.
+ * the total. Home labels that state Mean values. After Stop, and after Open
+ * File, a separate whole-recording summary counts vowel nuclei, phrasal
+ * pauses, and vowel-duration statistics. That pass does not change the live
+ * numbers.
  */
 class SessionApi : public QObject {
     Q_OBJECT
@@ -38,6 +41,9 @@ class SessionApi : public QObject {
     Q_PROPERTY(double speechDuration READ speechDuration NOTIFY metricsChanged)
     Q_PROPERTY(double fillerScore READ fillerScore NOTIFY metricsChanged)
     Q_PROPERTY(QVariantMap details READ details NOTIFY metricsChanged)
+    Q_PROPERTY(bool hasRecordingSummary READ hasRecordingSummary NOTIFY recordingSummaryChanged)
+    Q_PROPERTY(bool recordingSummaryPending READ recordingSummaryPending NOTIFY recordingSummaryChanged)
+    Q_PROPERTY(QVariantMap recordingSummary READ recordingSummary NOTIFY recordingSummaryChanged)
     Q_PROPERTY(bool openFileAvailable READ openFileAvailable CONSTANT)
     Q_PROPERTY(bool openFileBusy READ openFileBusy NOTIFY openFileBusyChanged)
     Q_PROPERTY(QString openFileError READ openFileError NOTIFY openFileErrorChanged)
@@ -73,6 +79,9 @@ public:
     double speechDuration() const { return m_speechDuration; }
     double fillerScore() const { return m_fillerScore; }
     QVariantMap details() const { return m_details; }
+    bool hasRecordingSummary() const { return m_hasRecordingSummary; }
+    bool recordingSummaryPending() const { return m_recordingSummaryPending; }
+    QVariantMap recordingSummary() const { return m_recordingSummary; }
     bool openFileAvailable() const;
     bool openFileBusy() const { return m_openFileBusy; }
     QString openFileError() const { return m_openFileError; }
@@ -96,6 +105,7 @@ signals:
     void hasResultChanged();
     void showingMeanChanged();
     void metricsChanged();
+    void recordingSummaryChanged();
     void sessionsChanged();
     void openFileBusyChanged();
     void openFileErrorChanged();
@@ -113,6 +123,7 @@ private slots:
     void applyOpenFileFinished(bool success, const QString& error);
     void applyUserDataCleared();
     void applySessionEnded(quint64 generation);
+    void applyRecordingSummary(quint64 generation, QVariantMap summary);
     void notifySessions();
 
 private:
@@ -124,6 +135,8 @@ private:
     void showMetrics(const QVariantMap& shown, double speechSeconds);
     void showSessionMean();
     void setShowingMean(bool showing);
+    void storeRecordingSummary(const QVariantMap& summary);
+    void clearRecordingSummary();
     void rememberShown(const QVariantMap& shown, double speechSeconds);
     double medianOf(std::deque<double>& window, double rate, bool live);
 
@@ -154,6 +167,9 @@ private:
     double m_fillerScore = 0;
     QString m_openFileError;
     QVariantMap m_details;
+    bool m_hasRecordingSummary = false;
+    bool m_recordingSummaryPending = false;
+    QVariantMap m_recordingSummary;
     QString m_shownSessionId;
     QString m_shownSessionStartedAt;
     QString m_lastShownKey;

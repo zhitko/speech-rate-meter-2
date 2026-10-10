@@ -282,6 +282,19 @@ void SettingsApi::setAdvanced(bool advanced)
     emit advancedChanged();
 }
 
+bool SettingsApi::keepRecordingFiles() const
+{
+    return m_settings.keepRecordingFiles;
+}
+
+void SettingsApi::setKeepRecordingFiles(bool keepRecordingFiles)
+{
+    if (!assignIfChanged(m_settings.keepRecordingFiles, keepRecordingFiles))
+        return;
+    save();
+    emit keepRecordingFilesChanged();
+}
+
 int SettingsApi::analysisWindowSec() const
 {
     return m_settings.analysisWindowSec;
@@ -347,6 +360,19 @@ void SettingsApi::setPauseSec(int seconds)
         return;
     save();
     emit pauseSecChanged();
+}
+
+int SettingsApi::phrasalPauseMs() const
+{
+    return m_settings.phrasalPauseMs;
+}
+
+void SettingsApi::setPhrasalPauseMs(int milliseconds)
+{
+    if (!assignIfChanged(m_settings.phrasalPauseMs, std::clamp(milliseconds, 50, 2000)))
+        return;
+    save();
+    emit phrasalPauseMsChanged();
 }
 
 double SettingsApi::slowWpm() const
@@ -495,6 +521,7 @@ void SettingsApi::load()
     emit showNavigationMenuChanged();
     emit autoStopRecordingChanged();
     emit autoCalibrateChanged();
+    emit keepRecordingFilesChanged();
     emit vadCalibrationDurationMsChanged();
     emit autoStopSilenceDurationChanged();
     emit vadMethodChanged();
@@ -509,6 +536,7 @@ void SettingsApi::load()
     emit gaugeAverageCountChanged();
     emit gaugeModeChanged();
     emit pauseSecChanged();
+    emit phrasalPauseMsChanged();
     emit slowWpmChanged();
     emit fastWpmChanged();
     emit meanValueDegryChanged();

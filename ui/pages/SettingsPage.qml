@@ -125,7 +125,7 @@ Page {
     ConfirmDialog {
         id: confirmationDialog
         titleText: qsTr("Delete user data")
-        messageText: qsTr("This permanently deletes saved sessions on this device. Recordings are not kept, so there is no audio to delete.")
+        messageText: qsTr("This permanently deletes saved sessions on this device and any recording files still kept in data/records.")
         confirmText: qsTr("Delete")
         cancelText: qsTr("Cancel")
         isDestructive: true
@@ -361,6 +361,21 @@ Page {
                             text: qsTr("Silence this long ends the phrase and saves it. Used only when Detect speech automatically is on.")
                         }
 
+                        FieldLabel { text: qsTr("Phrasal pause (ms)") }
+                        SpinBox {
+                            from: 50
+                            to: 2000
+                            stepSize: 10
+                            editable: true
+                            value: settingsApi ? settingsApi.phrasalPauseMs : 150
+                            onValueModified: if (settingsApi)
+                                settingsApi.phrasalPauseMs = value
+                            Layout.fillWidth: true
+                        }
+                        Hint {
+                            text: qsTr("Silent or unvoiced gaps at least this long count as phrasal pauses in the whole-recording summary.")
+                        }
+
                         FieldLabel { text: qsTr("Detect speech automatically") }
                         Switch {
                             checked: settingsApi ? settingsApi.autoCalibrate : false
@@ -431,24 +446,18 @@ Page {
                         }
                     }
 
-                    RowLayout {
+                    CheckBox {
+                        text: qsTr("Advanced")
+                        checked: settingsApi ? settingsApi.advanced : false
+                        onToggled: if (settingsApi)
+                            settingsApi.advanced = checked
                         Layout.fillWidth: true
-                        Label {
-                            text: qsTr("Show advanced settings")
-                            color: Theme.onSurface(Material.theme)
-                            Layout.fillWidth: true
-                        }
-                        Switch {
-                            checked: settingsApi ? settingsApi.advanced : false
-                            onToggled: if (settingsApi)
-                                settingsApi.advanced = checked
-                        }
                     }
 
                     Label {
                         Layout.fillWidth: true
                         wrapMode: Text.Wrap
-                        text: qsTr("How speech is detected, how loudness is measured, and the coefficients behind the numbers. The switch turns off when you leave the app.")
+                        text: qsTr("How speech is detected, how loudness is measured, and the coefficients behind the numbers. The checkbox turns off when you leave the app.")
                         color: Theme.onSurfaceVariant(Material.theme)
                         font.pixelSize: AppScale.fs(12)
                     }
@@ -481,6 +490,28 @@ Page {
                         color: Theme.onSurfaceVariant(Material.theme)
                         font.pixelSize: AppScale.fs(13)
                     }
+                }
+
+                RowLayout {
+                    Layout.fillWidth: true
+                    Label {
+                        text: qsTr("Keep recording files")
+                        color: Theme.onSurface(Material.theme)
+                        Layout.fillWidth: true
+                        wrapMode: Text.Wrap
+                    }
+                    Switch {
+                        checked: settingsApi ? settingsApi.keepRecordingFiles : false
+                        onToggled: if (settingsApi)
+                            settingsApi.keepRecordingFiles = checked
+                    }
+                }
+                Label {
+                    Layout.fillWidth: true
+                    wrapMode: Text.Wrap
+                    text: qsTr("Leaves each phrase as a WAV file in data/records. Off deletes that file once its numbers are saved.")
+                    color: Theme.onSurfaceVariant(Material.theme)
+                    font.pixelSize: AppScale.fs(12)
                 }
 
                 StageCard {

@@ -10,8 +10,8 @@
 
 /**
  * One JSON file per recording session under data/sessions/.
- * Scratch WAV files live under data/records/ and are removed after the
- * segment's metrics are stored.
+ * Scratch WAV files live under data/records/. After the segment's metrics
+ * are stored, the WAV is removed unless Keep recording files is on.
  */
 class SessionStore {
 public:
@@ -25,14 +25,14 @@ public:
     /**
      * Stores one segment. Earlier scratch files are retried first.
      * This segment's WAV is deleted only after its metrics are in the session
-     * file. A failed write keeps that WAV.
+     * file, unless Keep recording files is on. A failed write keeps that WAV.
      */
     static bool commitSegment(const QString& sessionId,
         const QString& sessionStartedAt,
         const QVariantMap& segment,
         const std::vector<float>& samples);
 
-    /** Retries leftover scratches. True when data/records/ has no files left. */
+    /** Retries leftover scratches. True when none are still waiting to be stored. */
     static bool recoverPending();
 
     static bool setEndedAt(const QString& sessionId, const QString& endedAt);
@@ -86,7 +86,8 @@ private:
         const QString& sessionStartedAt,
         const QVariantMap& segment,
         const std::vector<float>& samples);
-    static void discardScratch(const QString& scratchPath);
+    static void releaseScratch(const QString& scratchPath);
+    static bool hasPendingScratch();
 };
 
 #endif
