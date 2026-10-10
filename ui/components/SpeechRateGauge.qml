@@ -8,7 +8,9 @@ Item {
     id: root
     property real value: 0
     property real secondValue: 0
-    // Both paces: an inner arc and a second number. The outer arc stays `value`.
+    // Both paces: an inner arc and a second number. The outer arc is `value`
+    // and the top number. Callers pass articulation as `value` when both are
+    // shown, because that pace is always at least as long as speech rate.
     property bool showSecond: false
     property string metricLabel: qsTr("Speech rate")
     property string secondMetricLabel: qsTr("Articulation")
@@ -77,11 +79,17 @@ Item {
     readonly property color secondZoneColor: Theme.zoneColor(secondZone, paintTheme)
 
     readonly property real labelSpace: AppScale.fs(12) + 10
+    // Fit the 240° arc to the item. The stroke passes through 3 o'clock and
+    // 9 o'clock, so the painted width is about 2.15 radii. The pad keeps the
+    // round caps inside the item; the height pad keeps the end labels inside.
+    readonly property real radius: {
+        var byWidth = (width - 4) / 2.15
+        var byHeight = (height - labelSpace - 8) / 1.72
+        return Math.max(20, Math.min(byWidth, byHeight))
+    }
     readonly property real stroke: Math.max(10, radius * 0.15)
     readonly property real innerStroke: Math.max(8, stroke * 0.68)
     readonly property real dualGap: Math.max(10, stroke * 0.85)
-    readonly property real radius: Math.max(20, Math.min((width - 16) / 2.15,
-                                                         (height - labelSpace - 8) / 1.62))
     readonly property real innerRadius: dual
                                         ? Math.max(16, radius - (stroke + innerStroke) / 2 - dualGap)
                                         : radius
@@ -89,7 +97,12 @@ Item {
     readonly property real innerSegmentSweep: (sweepAngle - 2 * innerGapAngle) / 3
     readonly property real dualTextWidth: Math.max(48, (innerRadius - innerStroke) * 1.65)
     readonly property real cx: width / 2
-    readonly property real cy: (height - labelSpace - radius * 1.5) / 2 + radius + stroke * 0.1
+    readonly property real cy: {
+        var topInset = stroke * 0.55
+        var content = radius * 1.5 + topInset + labelSpace
+        var slack = Math.max(0, height - content)
+        return slack / 2 + topInset + radius
+    }
 
     // Gap between zones wide enough that the rounded caps never touch.
     readonly property real gapAngle: stroke / radius * 180 / Math.PI + 3

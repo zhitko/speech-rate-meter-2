@@ -105,13 +105,24 @@ Page {
                     SpeechRateGauge {
                         Layout.fillWidth: true
                         Layout.preferredWidth: root.wideLayout ? 1 : -1
-                        Layout.preferredHeight: root.wideLayout ? 240 : Math.max(190, Math.min(root.layoutWidth * 0.55, 260))
+                        Layout.preferredHeight: {
+                            var legacy = root.wideLayout
+                                         ? 240
+                                         : Math.max(190, Math.min(root.layoutWidth * 0.55, 260))
+                            var room = root.wideLayout
+                                       ? Math.min(root.height * 0.55, root.layoutWidth * 0.42)
+                                       : root.layoutWidth * 0.9
+                            return Math.min(legacy * 1.5, Math.max(legacy, room))
+                        }
                         hasValue: sessionData.speechRate !== undefined
                         showSecond: root.gaugeMode === 2
-                        metricLabel: root.gaugeMode === 1 ? qsTr("Articulation") : qsTr("Speech rate")
+                        // Both: articulation on the outer arc, speech rate on the inner arc.
+                        metricLabel: root.gaugeMode === 0 ? qsTr("Speech rate") : qsTr("Articulation")
+                        secondMetricLabel: qsTr("Speech rate")
                         value: !hasValue ? 0
-                               : (root.gaugeMode === 1 ? Number(sessionData.articulationRate) : Number(sessionData.speechRate))
-                        secondValue: sessionData.articulationRate !== undefined ? Number(sessionData.articulationRate) : 0
+                               : (root.gaugeMode === 0 ? Number(sessionData.speechRate)
+                                                       : Number(sessionData.articulationRate))
+                        secondValue: sessionData.speechRate !== undefined ? Number(sessionData.speechRate) : 0
                         minimum: settingsApi ? settingsApi.slowWpm : 70
                         maximum: settingsApi ? settingsApi.fastWpm : 210
                     }

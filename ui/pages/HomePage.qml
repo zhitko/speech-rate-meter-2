@@ -34,13 +34,27 @@ Page {
     readonly property bool wideLayout: layoutInnerWidth >= 720
                                        || (layoutInnerWidth >= 560 && layoutInnerWidth > height * 1.15)
     readonly property real viewportHeight: Math.max(0, height - footer.height)
-    readonly property real naturalGaugeHeight: wideLayout
-                                               ? Math.max(170, Math.min(height - AppScale.pagePadding * 2 - 110, 440))
-                                               : Math.max(200, Math.min(layoutWidth * 0.62, height * 0.36, 330))
-    // Card margins (16 + 16), the gauge top margin (12), column spacing (8), and the hint bottom margin (4).
-    readonly property real gaugeSurround: 56 + (gaugeHint.implicitHeight > 0 ? gaugeHint.implicitHeight : 0)
+    // Baseline from before the arcs grew. The gauge aims for 1.5× this and
+    // stops at the space above the pinned button, so a short phone does not
+    // push the arc ends off the screen.
+    readonly property real legacyGaugeHeight: wideLayout
+                                              ? Math.max(170, Math.min(height - AppScale.pagePadding * 2 - 110, 440))
+                                              : Math.max(200, Math.min(layoutWidth * 0.62, height * 0.36, 330))
+    // Card margins (16 + 16), the gauge top margin (28), column spacing (8), and the hint bottom margin (4).
+    readonly property real gaugeSurround: 72 + (gaugeHint.implicitHeight > 0 ? gaugeHint.implicitHeight : 0)
     // Below this the arc ends collide with the center label.
     readonly property real gaugeFloor: 200
+    readonly property real gaugeRoom: viewportHeight - AppScale.pagePadding * 2 - 4 - gaugeSurround
+    readonly property real naturalGaugeHeight: Math.min(legacyGaugeHeight * 1.5,
+                                                         Math.max(legacyGaugeHeight, gaugeRoom))
+    // Wider windows give the gauge more of the row, up to 74%, and leave the
+    // tiles about 300 px so their labels still fit.
+    readonly property real gaugeWeight: {
+        if (!wideLayout)
+            return 1
+        var share = (layoutWidth - 300) / Math.max(1, layoutWidth)
+        return Math.min(0.74, Math.max(6 / 11, share))
+    }
     readonly property real fittedGaugeHeight: {
         if (!fitNavigation)
             return naturalGaugeHeight
@@ -382,7 +396,7 @@ Page {
                 Rectangle {
                     id: gaugeCard
                     Layout.fillWidth: true
-                    Layout.preferredWidth: root.wideLayout ? 6 : 1
+                    Layout.preferredWidth: root.wideLayout ? root.gaugeWeight : 1
                     Layout.fillHeight: root.wideLayout
                     Layout.alignment: Qt.AlignTop
                     implicitHeight: gaugeColumn.implicitHeight + 32
@@ -458,18 +472,27 @@ Page {
                             id: gauge
                             Layout.fillWidth: true
                             Layout.fillHeight: root.wideLayout
-                            Layout.topMargin: 12
+                            Layout.topMargin: 28
+                            // On a phone the arc uses the free side margins and stops
+                            // just inside the screen edge. Wide layouts stay inside
+                            // the card so the arc does not meet the tiles.
+                            Layout.leftMargin: root.wideLayout ? -8 : -(AppScale.pagePadding + 10)
+                            Layout.rightMargin: root.wideLayout ? -8 : -(AppScale.pagePadding + 10)
                             Layout.preferredHeight: root.fittedGaugeHeight
                             Layout.minimumHeight: root.fitNavigation ? root.fittedGaugeHeight : 170
-                            Layout.maximumHeight: 480
+                            Layout.maximumHeight: Math.max(170, root.fittedGaugeHeight)
                             // While recording, anything but Measuring means the user is not
                             // speaking (or not enough yet), so the needle rests at zero.
                             hasValue: root.hasResult || root.active
                             showSecond: root.gaugeMode === 2
-                            metricLabel: root.gaugeMode === 1 ? qsTr("Articulation") : qsTr("Speech rate")
+                            // Both draws articulation on the outer arc (value, top number)
+                            // and speech rate on the inner arc. A single arc uses the pace
+                            // the Gauge setting names.
+                            metricLabel: root.gaugeMode === 0 ? qsTr("Speech rate") : qsTr("Articulation")
+                            secondMetricLabel: qsTr("Speech rate")
                             value: root.gaugeAtRest ? 0
-                                   : (root.gaugeMode === 1 ? sessionApi.gaugeArticulationRate : sessionApi.speechRate)
-                            secondValue: root.gaugeAtRest ? 0 : sessionApi.gaugeArticulationRate
+                                   : (root.gaugeMode === 0 ? sessionApi.speechRate : sessionApi.gaugeArticulationRate)
+                            secondValue: root.gaugeAtRest ? 0 : sessionApi.speechRate
                             minimum: root.slowWpm
                             maximum: root.fastWpm
                             cardColor: gaugeCard.color
@@ -495,7 +518,7 @@ Page {
                 ColumnLayout {
                     id: sideColumn
                     Layout.fillWidth: true
-                    Layout.preferredWidth: root.wideLayout ? 5 : 1
+                    Layout.preferredWidth: root.wideLayout ? (1 - root.gaugeWeight) : 1
                     Layout.alignment: Qt.AlignVCenter
                     Layout.fillHeight: false
                     spacing: AppScale.pageSpacing

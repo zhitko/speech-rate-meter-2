@@ -37,7 +37,7 @@ Under **Measurement**:
 
 - **Analysis window** is how many recent seconds of speech Home uses while recording. Shorter reacts faster but jumps more.
 - **Updates per minute** is how often the numbers are recalculated.
-- **Gauge** chooses the pace on the arc. **Speech rate** leaves articulation in the card. **Articulation rate** swaps them. **Both** draws both paces on the arc and hides that card.
+- **Gauge** chooses the pace on the arc. **Speech rate** leaves articulation in the card. **Articulation rate** swaps them. **Both** draws articulation on the outer arc and speech rate on the inner arc, and hides that card.
 - **Gauge median** is how many latest readings of each pace on the gauge it takes the middle of. The default is 3. Set it to 1 to show the current reading.
 - **Pause** is how much silence ends a phrase and saves it. This is used only when **Detect speech automatically** is on.
 - **Detect speech automatically** measures background noise after **Start**, then waits for you to speak. When it is off, measuring starts when you press **Start**, a pause does not end the phrase, and the recording is saved in 15-second parts.
