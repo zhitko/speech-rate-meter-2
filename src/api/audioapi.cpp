@@ -14,6 +14,7 @@
 #include <memory>
 
 #include <QAudioOutput>
+#include <QCoreApplication>
 #include <QEventLoop>
 #include <QMediaPlayer>
 #include <QTimer>

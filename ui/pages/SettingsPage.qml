@@ -400,7 +400,7 @@ Page {
                             Layout.fillWidth: true
                         }
                         Hint {
-                            text: qsTr("Speech rate draws that pace on the gauge and leaves articulation in the card. Articulation rate swaps them. Both draws both paces on the gauge and leaves that card out.")
+                            text: qsTr("Speech rate draws that pace on the gauge and leaves articulation in the card. Articulation rate swaps them. Both draws articulation on the outer arc and speech rate on the inner arc, and leaves that card out.")
                         }
 
                         FieldLabel { text: qsTr("Slow (wpm)") }

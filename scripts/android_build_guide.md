@@ -266,3 +266,11 @@ On Android, `CMakeLists.txt` copies `settings.ini` into `android/assets/` so `an
 - Version placeholders filled from CMake (`QT_ANDROID_VERSION_CODE` and `PROJECT_VERSION`)
 - `<meta-data android:name="android.app.lib_name" android:value="appspeech-rate-meter-2"/>`
 - Launcher icons: `@mipmap/ic_launcher` and `@mipmap/ic_launcher_round`
+
+---
+
+## Store listing
+
+Play Console text, the 512 icon, the feature graphic, and screenshot slots live in `packaging/google-play/`. Paste order and data-safety answers are in `packaging/google-play/README.md` and `store-listing.md`.
+
+Privacy policy URL: https://intontrainer.by/speechratemeter2policy.html (same text as `docs/privacy_policy_en.md`). Upload `speechratemeter2policy.html` from the intontrainer.by site before submitting the listing.

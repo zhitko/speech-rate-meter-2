@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1024" height="500" viewBox="0 0 1024 500">
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f7f8ff"/>
+      <stop offset="0.55" stop-color="#eef3fc"/>
+      <stop offset="1" stop-color="#e4ebf8"/>
+    </linearGradient>
+    <linearGradient id="brand" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#5A86D6"/>
+      <stop offset="1" stop-color="#233F70"/>
+    </linearGradient>
+    <linearGradient id="headline" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#3E6FBE"/>
+      <stop offset="1" stop-color="#243E6E"/>
+    </linearGradient>
+    <clipPath id="iconClip">
+      <rect x="64" y="46" width="72" height="72" rx="16"/>
+    </clipPath>
+  </defs>
+
+  <rect width="1024" height="500" fill="url(#background)"/>
+  <circle cx="960" cy="28" r="150" fill="#ffffff" opacity="0.38"/>
+  <circle cx="40" cy="470" r="160" fill="#d7e6fb" opacity="0.45"/>
+
+  <image xlink:href="icon-512.png" x="64" y="46" width="72" height="72" clip-path="url(#iconClip)"/>
+  <text x="152" y="78" fill="#334c70" font-family="Inter, Liberation Sans, sans-serif" font-size="15" font-weight="700" letter-spacing="1.6">SPEECH RATE METER 2</text>
+  <path d="M152 98 H392" fill="none" stroke="url(#brand)" stroke-width="3" stroke-linecap="round" opacity="0.55"/>
+
+  <text x="64" y="188" fill="#1c2838" font-family="Inter, Liberation Sans, sans-serif" font-size="48" font-weight="700" letter-spacing="-1.1">See how fast</text>
+  <text x="64" y="242" fill="url(#headline)" font-family="Inter, Liberation Sans, sans-serif" font-size="48" font-weight="700" letter-spacing="-1.1">you speak</text>
+  <text x="66" y="284" fill="#5c6b82" font-family="Inter, Liberation Sans, sans-serif" font-size="18" font-weight="450">Pace, fillers, and pauses. On your device.</text>
+
+  <path d="M96 352 H404" fill="none" stroke="url(#brand)" stroke-width="3" opacity="0.22"/>
+
+  <g transform="translate(64 320)">
+    <circle cx="32" cy="32" r="32" fill="#ffffff"/>
+    <circle cx="32" cy="32" r="29" fill="#e7f0ff"/>
+    <rect x="24" y="16" width="16" height="26" rx="8" fill="#315b9c"/>
+    <path d="M18 30 V34 C18 48 46 48 46 34 V30 M32 46 V54 M24 54 H40" fill="none" stroke="#315b9c" stroke-width="3.5" stroke-linecap="round"/>
+    <text x="32" y="90" text-anchor="middle" fill="#41536e" font-family="Inter, Liberation Sans, sans-serif" font-size="13" font-weight="700" letter-spacing="1.4">SPEAK</text>
+  </g>
+
+  <g transform="translate(218 320)">
+    <circle cx="32" cy="32" r="32" fill="#ffffff"/>
+    <circle cx="32" cy="32" r="29" fill="#e7f6ee"/>
+    <path d="M 18.14 44.00 A 16.00 16.00 0 1 1 45.86 44.00" fill="none" stroke="#d5e0ea" stroke-width="5" stroke-linecap="round"/>
+    <path d="M 18.14 44.00 A 16.00 16.00 0 0 1 32.00 20.00" fill="none" stroke="#1E8E5A" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="32.0" cy="20.0" r="3.2" fill="#1E8E5A" stroke="#ffffff" stroke-width="1.5"/>
+    <text x="32" y="90" text-anchor="middle" fill="#41536e" font-family="Inter, Liberation Sans, sans-serif" font-size="13" font-weight="700" letter-spacing="1.2">MEASURE</text>
+  </g>
+
+  <g transform="translate(372 320)">
+    <circle cx="32" cy="32" r="32" fill="#ffffff"/>
+    <circle cx="32" cy="32" r="29" fill="#fff6e4"/>
+    <path d="M16 40 C20 40 22 28 26 30 C30 32 30 22 34 18 C38 14 40 24 46 20" fill="none" stroke="#C48400" stroke-width="3.5" stroke-linecap="round"/>
+    <circle cx="16" cy="40" r="2.2" fill="#1E8E5A"/>
+    <circle cx="34" cy="18" r="2.2" fill="#D99A00"/>
+    <circle cx="46" cy="20" r="2.2" fill="#D2382F"/>
+    <text x="32" y="90" text-anchor="middle" fill="#41536e" font-family="Inter, Liberation Sans, sans-serif" font-size="13" font-weight="700" letter-spacing="1.2">REVIEW</text>
+  </g>
+
+  <ellipse cx="786" cy="262" rx="196" ry="176" fill="#d5dfef" opacity="0.55"/>
+  <ellipse cx="786" cy="254" rx="196" ry="176" fill="#ffffff"/>
+  <ellipse cx="786" cy="254" rx="168" ry="150" fill="#f4f7fd"/>
+
+  <path d="M 683.81 307.00 A 118.00 118.00 0 1 1 888.19 307.00" fill="none" stroke="#e1e7f0" stroke-width="18" stroke-linecap="round"/>
+  <path d="M 683.81 307.00 A 118.00 118.00 0 0 1 710.15 157.61" fill="none" stroke="#1E8E5A" stroke-width="18" stroke-linecap="butt" opacity="0.22"/>
+  <path d="M 710.15 157.61 A 118.00 118.00 0 0 1 861.85 157.61" fill="none" stroke="#D99A00" stroke-width="18" stroke-linecap="butt" opacity="0.28"/>
+  <path d="M 861.85 157.61 A 118.00 118.00 0 0 1 888.19 307.00" fill="none" stroke="#D2382F" stroke-width="18" stroke-linecap="butt" opacity="0.18"/>
+  <path d="M 683.81 307.00 A 118.00 118.00 0 0 1 710.15 157.61" fill="none" stroke="#1E8E5A" stroke-width="18" stroke-linecap="round"/>
+  <path d="M 710.15 157.61 A 118.00 118.00 0 0 1 793.06 130.21" fill="none" stroke="#D99A00" stroke-width="18" stroke-linecap="round"/>
+  <circle cx="793.06" cy="130.21" r="9" fill="#ffffff" stroke="#D99A00" stroke-width="4"/>
+
+  <text x="659.6" y="321.0" text-anchor="middle" fill="#8a97ab" font-family="Inter, Liberation Sans, sans-serif" font-size="13" font-weight="650">70</text>
+  <text x="912.4" y="321.0" text-anchor="middle" fill="#8a97ab" font-family="Inter, Liberation Sans, sans-serif" font-size="13" font-weight="650">210</text>
+
+  <text x="786" y="230" text-anchor="middle" fill="#6d7d94" font-family="Inter, Liberation Sans, sans-serif" font-size="12" font-weight="700" letter-spacing="1.3">SPEECH RATE</text>
+  <text x="786" y="284" text-anchor="middle" fill="#1c2838" font-family="Inter, Liberation Sans, sans-serif" font-size="58" font-weight="700">142</text>
+  <text x="786" y="310" text-anchor="middle" fill="#5c6b82" font-family="Inter, Liberation Sans, sans-serif" font-size="16" font-weight="600">wpm</text>
+  <rect x="734" y="322" width="104" height="26" rx="13" fill="#fff3d6"/>
+  <text x="786" y="340" text-anchor="middle" fill="#8A6200" font-family="Inter, Liberation Sans, sans-serif" font-size="12" font-weight="700" letter-spacing="1.1">AVERAGE</text>
+
+  <g transform="translate(612 430)" font-family="Inter, Liberation Sans, sans-serif" font-size="13" font-weight="650">
+    <circle cx="8" cy="-4" r="5" fill="#415F91"/>
+    <text x="20" y="0" fill="#41536e">Articulation 168</text>
+    <circle cx="168" cy="-4" r="5" fill="#705575"/>
+    <text x="180" y="0" fill="#41536e">Fillers 12%</text>
+    <circle cx="292" cy="-4" r="5" fill="#565F71"/>
+    <text x="304" y="0" fill="#41536e">Pauses 0.24 s</text>
+  </g>
+</svg>

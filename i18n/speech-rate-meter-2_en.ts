@@ -879,7 +879,7 @@
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="403"/>
-        <source>Speech rate draws that pace on the gauge and leaves articulation in the card. Articulation rate swaps them. Both draws both paces on the gauge and leaves that card out.</source>
+        <source>Speech rate draws that pace on the gauge and leaves articulation in the card. Articulation rate swaps them. Both draws articulation on the outer arc and speech rate on the inner arc, and leaves that card out.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>

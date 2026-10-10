@@ -1286,8 +1286,8 @@
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="403"/>
-        <source>Speech rate draws that pace on the gauge and leaves articulation in the card. Articulation rate swaps them. Both draws both paces on the gauge and leaves that card out.</source>
-        <translation>«Темп речи» рисует этот темп на шкале и оставляет артикуляцию в карточке. «Темп артикуляции» меняет их местами. «Оба» рисует оба темпа на шкале и убирает эту карточку.</translation>
+        <source>Speech rate draws that pace on the gauge and leaves articulation in the card. Articulation rate swaps them. Both draws articulation on the outer arc and speech rate on the inner arc, and leaves that card out.</source>
+        <translation>«Темп речи» рисует этот темп на шкале и оставляет артикуляцию в карточке. «Темп артикуляции» меняет их местами. «Оба» рисует артикуляцию на внешней дуге и темп речи на внутренней, и убирает эту карточку.</translation>
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="417"/>
