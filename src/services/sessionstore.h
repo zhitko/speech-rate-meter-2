@@ -10,8 +10,9 @@
 
 /**
  * One JSON file per recording session under data/sessions/.
- * Scratch WAV files live under data/records/. After the segment's metrics
- * are stored, the WAV is removed unless Keep recording files is on.
+ * Scratch WAV files live under data/records/. They stay after the segment's
+ * metrics are stored so the recording can be played. When Keep recording
+ * files is off, those WAV files are deleted when the application closes.
  */
 class SessionStore {
 public:
@@ -24,13 +25,22 @@ public:
 
     /**
      * Stores one segment. Earlier scratch files are retried first.
-     * This segment's WAV is deleted only after its metrics are in the session
-     * file, unless Keep recording files is on. A failed write keeps that WAV.
+     * The pending sidecar is removed after a successful save. The WAV stays
+     * so it can be played. A failed write keeps that WAV and its sidecar.
+     * When wavPath is not null, it receives the WAV path if that file is still
+     * on disk.
      */
     static bool commitSegment(const QString& sessionId,
         const QString& sessionStartedAt,
         const QVariantMap& segment,
-        const std::vector<float>& samples);
+        const std::vector<float>& samples,
+        QString* wavPath = nullptr);
+
+    /**
+     * Deletes phrase WAV files when Keep recording files is off.
+     * Pending sidecars stay so a save that did not finish can still be stored.
+     */
+    static void discardUnkeptRecordings();
 
     /** Retries leftover scratches. True when none are still waiting to be stored. */
     static bool recoverPending();

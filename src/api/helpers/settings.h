@@ -18,7 +18,8 @@ struct AppSettings {
 
     bool autoStopRecording = true;
     bool autoCalibrate = false;
-    // When true, each phrase WAV stays in data/records after its metrics are stored.
+    // When true, each phrase WAV stays in data/records after the app closes.
+    // When false, the WAV stays until the app closes so it can be played.
     bool keepRecordingFiles = false;
     int vadCalibrationDurationMs = 2000;
     int autoStopSilenceDuration = 2000;

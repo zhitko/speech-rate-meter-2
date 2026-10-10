@@ -1,6 +1,6 @@
 # Speech Rate Meter 2
 
-**Speech Rate Meter 2** is a cross-platform desktop and Android application that measures how fast you are speaking. A session stays open while you talk. Each pause-bounded phrase is measured from vowel-like intensity peaks, and the microphone audio is deleted as soon as the numbers are stored.
+**Speech Rate Meter 2** is a cross-platform desktop and Android application that measures how fast you are speaking. A session stays open while you talk. Each pause-bounded phrase is measured from vowel-like intensity peaks. The microphone audio stays until you leave the app, unless **Keep recording files** is on.
 
 It does not recognize words and does not use a speech-recognition model. Pace, articulation, fillers, pauses, and speech time are estimated on the device from the intensity contour of the recording.
 
@@ -20,7 +20,7 @@ Package id: `by.intoncore.SpeechRateMeter2`. Version name `1.0.0`, version code 
 2. With **Detect speech automatically** on, a pause ends the current phrase, the phrase is measured, and the next one starts when you speak again. With it off, measuring starts when you press Start, a pause does not end the phrase, and the take is split into 15-second parts.
 3. While you speak, speech rate, articulation, fillers, and pauses follow the **analysis window** — the most recent kept speech (10 seconds by default) — so a change of pace shows within a few seconds. **Speech** is the total time measured since Start.
 4. Press **Stop**. Home and History then show the mean speech rate, articulation, fillers, and pauses of every phrase kept from Start to Stop. Speech is the total time. The screen is labeled **Mean values**. A phrase shorter than one second is dropped.
-5. The scratch WAV is deleted once that phrase’s numbers are in the session file, unless **Keep recording files** is on. There is no waveform and no playback.
+5. The scratch WAV stays after that phrase’s numbers are stored, so **Listen** can play it after **Stop**. Unless **Keep recording files** is on, those files are deleted when you leave the app. There is no waveform.
 
 All processing is local. The Android package requests only microphone access (`RECORD_AUDIO`).
 
@@ -71,7 +71,7 @@ An **Advanced** checkbox at the bottom of Measurement is not saved and turns off
 
 **Detect speech automatically** measures background noise after Start, then waits for speech. A pause ends the phrase. When it is off, measuring starts when you press Start, a pause does not end the phrase, and the recording is saved in 15-second parts.
 
-**Keep recording files** (Advanced, off by default) leaves each phrase as a WAV in `data/records` after its numbers are stored. Off deletes that file once the save succeeds.
+**Keep recording files** (Advanced, off by default) leaves each phrase as a WAV in `data/records` after you leave the app. Off deletes those files when you leave the app. Until then, **Listen** on Home can play them.
 
 **Delete user data** removes saved sessions and any recording files still kept in `data/records`. Settings are kept.
 
@@ -82,7 +82,7 @@ Settings take effect on the next phrase. The in-app [User Guide](docs/user_guide
 ### 4. Other pages
 
 - **User Guide** — how to record, read History, and change settings. English and Russian.
-- **Privacy Policy** — what stays on the device. Microphone audio is deleted after each phrase unless **Keep recording files** is on, and nothing is sent off the device.
+- **Privacy Policy** — what stays on the device. Microphone audio is deleted when you leave the app unless **Keep recording files** is on, and nothing is sent off the device.
 - **Open-source licences** — Qt, ALGLIB, SPTK, Font Awesome, and the other bundled components.
 
 ---
@@ -96,7 +96,7 @@ Settings take effect on the next phrase. The in-app [User Guide](docs/user_guide
 | **Pause cutting** | With autodetection on, a silence of Silence Duration (default 2 s) closes a phrase. Speech longer than 15 s is cut and continued in the next phrase. Phrases under 1 s are dropped. |
 | **Voice activity detection** | Energy, autocorrelation, or hybrid (both). Optional calibration measures background noise before the session listens for speech. |
 | **Session file** | One JSON file per session under `data/sessions/`: every on-screen change and every kept phrase, including the vowel and gap lengths needed to recompute the joined result. No audio path. |
-| **Recording files** | A WAV under `data/records/` is written while a phrase is stored. It is deleted after a successful save unless **Keep recording files** is on. |
+| **Recording files** | A WAV under `data/records/` is written while a phrase is stored and can be played with **Listen** after Stop. It is deleted when the app closes unless **Keep recording files** is on. |
 | **Speech gate** | A buffer whose nuclei do not rise above the noise floor is not published and not stored, so silence does not read as fast speech. |
 | **Open File** | Desktop-only whole-file analysis of an 8000 Hz mono s16le WAV. It is not cut into phrases and is not written to History. |
 | **i18n** | English and Russian UI via Qt Linguist. |

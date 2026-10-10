@@ -469,10 +469,17 @@ protected:
                     segment.insert(QStringLiteral("speechDuration"), measured.metrics.speechDuration);
                     segment.insert(QStringLiteral("fillerPercent"), map.value(QStringLiteral("fillerPercent")).toInt());
                     SessionStore::insertMeasurement(segment, measured.parts, job.config, job.fillerMin, job.fillerMax);
+                    QString wavPath;
                     stored = SessionStore::commitSegment(job.sessionId,
                         job.sessionStartedAt,
                         segment,
-                        job.samples);
+                        job.samples,
+                        &wavPath);
+                    if (!wavPath.isEmpty()) {
+                        QMetaObject::invokeMethod(m_api, "noteListenFile", Qt::QueuedConnection,
+                            Q_ARG(quint64, job.generation),
+                            Q_ARG(QString, wavPath));
+                    }
                     if (stored)
                         LOG_INFO() << "Stored phrase" << job.segmentStartedAt << "rate" << measured.metrics.speechRate;
                 } else {
@@ -1135,6 +1142,7 @@ SessionApi::SessionApi(QObject* parent)
     connect(m_worker, &CaptureWorker::runningChanged, this, &SessionApi::applyRunning, Qt::QueuedConnection);
     connect(m_worker, &CaptureWorker::deviceFailed, this, &SessionApi::applyDeviceFailed, Qt::QueuedConnection);
     SessionStore::recoverPending();
+    SessionStore::discardUnkeptRecordings();
     m_captureThread->start();
     m_analysisThread->start();
 }
@@ -1151,6 +1159,7 @@ SessionApi::~SessionApi()
     delete m_analysisThread;
     delete m_queue;
     m_worker = nullptr;
+    SessionStore::discardUnkeptRecordings();
 }
 
 bool SessionApi::openFileAvailable() const
@@ -1187,9 +1196,29 @@ void SessionApi::startSession()
     beginCapture();
 }
 
+void SessionApi::clearListenFiles()
+{
+    if (m_listenFiles.isEmpty())
+        return;
+    m_listenFiles.clear();
+    emit listenFilesChanged();
+}
+
+void SessionApi::noteListenFile(quint64 generation, const QString& path)
+{
+    if (!m_alive.load() || generation != m_listenGeneration || path.isEmpty())
+        return;
+    if (m_listenFiles.contains(path) || !QFileInfo::exists(path))
+        return;
+    m_listenFiles.append(path);
+    emit listenFilesChanged();
+}
+
 void SessionApi::beginCapture()
 {
     ++m_captureGeneration;
+    m_listenGeneration = m_captureGeneration;
+    clearListenFiles();
     *m_accumulator = {};
     resetResultState();
     m_shownSessionId.clear();
@@ -1651,6 +1680,8 @@ void SessionApi::applyUserDataCleared()
         return;
     m_clearEnqueued = false;
     ++m_captureGeneration;
+    m_listenGeneration = m_captureGeneration;
+    clearListenFiles();
     *m_accumulator = {};
     resetResultState();
     m_shownSessionId.clear();

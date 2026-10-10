@@ -187,9 +187,9 @@ void SessionStore::releaseScratch(const QString& scratchPath)
 {
     if (scratchPath.isEmpty())
         return;
+    // The WAV stays until the application closes, unless Keep recording files
+    // is on. Only the sidecar is finished with the metrics.
     removeFile(pendingPath(scratchPath));
-    if (!Settings::loadSettings().keepRecordingFiles)
-        removeFile(scratchPath);
 }
 
 bool SessionStore::hasPendingScratch()
@@ -270,7 +270,8 @@ bool SessionStore::recoverPending()
 bool SessionStore::commitSegment(const QString& sessionId,
     const QString& sessionStartedAt,
     const QVariantMap& segment,
-    const std::vector<float>& samples)
+    const std::vector<float>& samples,
+    QString* wavPath)
 {
     const QMutexLocker locker(&fileMutex());
     recoverPending();
@@ -279,20 +280,48 @@ bool SessionStore::commitSegment(const QString& sessionId,
     if (!hasPendingScratch())
         scratch = openScratch(sessionId, sessionStartedAt, segment, samples);
 
+    const auto remember = [&]() {
+        if (wavPath && !scratch.isEmpty() && QFileInfo::exists(scratch))
+            *wavPath = scratch;
+    };
+
     if (segmentAlreadyStored(sessionId, segment)) {
         releaseScratch(scratch);
+        remember();
         return true;
     }
 
     if (appendWithRetry(sessionId, sessionStartedAt, segment)) {
         releaseScratch(scratch);
+        remember();
         return true;
     }
 
     if (scratch.isEmpty())
         scratch = openScratch(sessionId, sessionStartedAt, segment, samples);
+    remember();
     LOG_WARNING() << "Session file was not written; scratch kept at" << scratch;
     return false;
+}
+
+void SessionStore::discardUnkeptRecordings()
+{
+    if (Settings::loadSettings().keepRecordingFiles)
+        return;
+    const QMutexLocker locker(&fileMutex());
+    QDir records(recordsDir());
+    if (!records.exists())
+        return;
+    const QFileInfoList wavs = records.entryInfoList({ QStringLiteral("*.wav") }, QDir::Files);
+    int removed = 0;
+    for (const QFileInfo& info : wavs) {
+        if (QFileInfo::exists(pendingPath(info.absoluteFilePath())))
+            continue;
+        removeFile(info.absoluteFilePath());
+        ++removed;
+    }
+    if (removed > 0)
+        LOG_INFO() << "Removed" << removed << "recording file(s)";
 }
 
 bool SessionStore::appendSegment(const QString& sessionId,

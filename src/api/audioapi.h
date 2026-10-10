@@ -14,6 +14,7 @@
 
 #include <QMediaPlayer>
 #include <QPermission>
+#include <QStringList>
 #include <vector>
 
 class WavFileService;
@@ -143,6 +144,16 @@ public slots:
      */
     Q_INVOKABLE void play(const QString& filePath);
     /**
+     * Plays the files in order. A later call with the same current file
+     * extends the list without restarting. An empty list stops playback.
+     */
+    Q_INVOKABLE void playFiles(const QStringList& filePaths);
+    /**
+     * Appends files to a playback that is already running. Does nothing when
+     * playback has not started or the current file is no longer in the list.
+     */
+    Q_INVOKABLE void extendPlaylist(const QStringList& filePaths);
+    /**
      * Plays a beep tone generated in memory (no temporary file).
      * The beep is a sine wave at the given frequency for the given duration.
      *
@@ -239,6 +250,7 @@ private:
      *                and 1.0.
      */
     void setAudioLevel(qreal level = 0.0);
+    void startFile(const QString& filePath);
 
     // Base buffer elements
     QAudioDevice m_audioDevice;
@@ -252,6 +264,9 @@ private:
     QMediaPlayer* m_player = nullptr;
     QAudioOutput* m_audioOutput = nullptr;
     bool m_isPlaying = false;
+    QStringList m_playlist;
+    int m_playlistIndex = 0;
+    bool m_playlistActive = false;
     BeepPlayer m_beepPlayer;
 
     bool m_autoStopEnabled = false;

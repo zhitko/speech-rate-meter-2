@@ -65,13 +65,13 @@ Speech Rate Meter 2
 ### Short description
 
 ```
-Measure speaking pace on your device. Audio is deleted once numbers are saved
+Measure speaking pace on your device. Audio is deleted when the app closes
 ```
 
 ### Full description
 
 ```
-Speech Rate Meter 2 measures how fast you are speaking. It does not recognize words. Pace, articulation, fillers, and pauses are estimated on the device from the intensity of your voice. The microphone audio is deleted as soon as the numbers are stored.
+Speech Rate Meter 2 measures how fast you are speaking. It does not recognize words. Pace, articulation, fillers, and pauses are estimated on the device from the intensity of your voice. After Stop, Listen plays the recording. The microphone audio is deleted when you leave the app.
 
 How to measure
 1. Open Home and press Start.
@@ -95,7 +95,7 @@ Detect speech automatically, in Settings, measures background noise after Start 
 The interface is available in English and Russian. Light and dark themes are supported.
 
 Privacy and storage
-The microphone is used only to estimate tempo on this device. A scratch recording may exist while a phrase is saved, then it is deleted. Session files keep numbers only, in private app storage. The app does not require Internet permission and does not upload your voice, scores, or settings. Delete user data in Settings removes saved sessions.
+The microphone is used only to estimate tempo on this device. A recording stays so you can listen after Stop, then it is deleted when you leave the app. Session files keep numbers only, in private app storage. The app does not require Internet permission and does not upload your voice, scores, or settings. Delete user data in Settings removes saved sessions.
 
 For a steady reading, speak in a quiet room and toward the microphone.
 

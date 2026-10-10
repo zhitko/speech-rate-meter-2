@@ -252,7 +252,7 @@ Expect every `arm64-v8a` / `x86_64` `.so` to report `ALIGNED (2**14)`, `zipalign
 
 ## Runtime assets
 
-On Android, `CMakeLists.txt` copies `settings.ini` into `android/assets/` so `androiddeployqt` packs it into the APK (extracted under `AppDataLocation` on device). `android/assets/` is gitignored. Session files are written to app-private storage. Phrase WAV files are deleted after each phrase is stored unless **Keep recording files** is on.
+On Android, `CMakeLists.txt` copies `settings.ini` into `android/assets/` so `androiddeployqt` packs it into the APK (extracted under `AppDataLocation` on device). `android/assets/` is gitignored. Session files are written to app-private storage. Phrase WAV files stay so Listen can play them, and are deleted when the app closes unless **Keep recording files** is on.
 
 ---
 

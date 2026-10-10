@@ -552,7 +552,7 @@ Page {
                 Label {
                     Layout.fillWidth: true
                     wrapMode: Text.Wrap
-                    text: qsTr("Leaves each phrase as a WAV file in data/records. Off deletes that file once its numbers are saved.")
+                    text: qsTr("Leaves each phrase as a WAV file in data/records. Off deletes those files when you leave the app.")
                     color: Theme.onSurfaceVariant(Material.theme)
                     font.pixelSize: AppScale.fs(12)
                 }

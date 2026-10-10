@@ -199,6 +199,21 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <location filename="../ui/pages/HomePage.qml" line="267"/>
+        <source>Stop playback</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/HomePage.qml" line="268"/>
+        <source>Listen to the recording</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/HomePage.qml" line="311"/>
+        <source>Listen</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <location filename="../ui/pages/HomePage.qml" line="179"/>
         <source>WAV files (*.wav)</source>
         <translation type="unfinished"></translation>
@@ -896,7 +911,7 @@
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="555"/>
-        <source>Leaves each phrase as a WAV file in data/records. Off deletes that file once its numbers are saved.</source>
+        <source>Leaves each phrase as a WAV file in data/records. Off deletes those files when you leave the app.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>

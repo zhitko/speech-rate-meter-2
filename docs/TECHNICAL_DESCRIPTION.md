@@ -23,7 +23,7 @@ One job is on screen at a time. A drawer (and the bottom bar, when that setting 
 
 Home is the only screen with the record button. While a session is running, non-Settings screens show a `Recording` chip in the toolbar; the chip returns to Home. Entering Settings is different: it stops the active recording first, applying the normal min-length keep/drop rule to the open segment.
 
-There is no waveform and no playback of recorded speech. The audio is deleted after the metrics are stored (section 1.3).
+There is no waveform. After Stop, Listen plays the phrase files saved for that session. With Keep recording files off, those files are deleted when the application closes (section 1.3).
 
 ### 1.1 Headline results
 
@@ -47,7 +47,7 @@ Home, from top to bottom:
 
 1. The gauge card. A chip in its corner names the state (Ready, Listening, Too short, Measuring, Too short to save, Microphone blocked, and Mean values after Stop); while the session is on it has a blinking dot and the open phrase timer, as `mm:ss`, sits on the right. The gauge is always shown. Until something has been measured the arc is empty and the number reads `– –`. Under the gauge, one line explains the current state (section 1.2).
 2. Tiles beside the gauge, in this order, each left out when its switch is off: Speech rate (only when Gauge is Articulation rate), Articulation (only when Gauge is Speech rate), Fillers, Pauses, and Speech. They show `—` until something has been measured. After Stop or Open File, the Whole recording card follows when Show Whole recording tile is on. The same switches hide the matching tiles on a History session. The five charts there stay.
-3. A round button: microphone and `Start` when idle, stop icon and `Stop` while the session is on. While the session is on, a halo around it grows with the microphone level, so silence and speech are obvious. On desktop, a smaller Open File button sits to the right of Start while the session is off. It is not shown on Android.
+3. A round button: microphone and `Start` when idle, stop icon and `Stop` while the session is on. While the session is on, a halo around it grows with the microphone level, so silence and speech are obvious. After Stop, a smaller Listen button sits to the left of Start when that session saved at least one phrase file. It plays those files in order, and a second press stops playback. It is hidden while recording, and it stays hidden when nothing long enough to save was recorded. On desktop, a smaller Open File button sits to the right of Start while the session is off. It is not shown on Android.
 
 The layout follows the window. When the page is at least 720 px wide, or landscape and at least 560 px wide, the gauge card is on the left and the tiles and button are on the right. Otherwise everything is one column and the button is pinned to the bottom of the page, so it stays reachable on a phone while the rest scrolls. With Show Navigation Menu on, the gauge shortens so the gauge, tiles, and button fit the page; the column scrolls only when the window is still too short. The arcs are about one and a half times the previous size when the page has the room, and they stay within the width and the space above the pinned button on a shorter screen. Content is capped at 1120 px wide and centered.
 
@@ -133,9 +133,9 @@ Capture format requested from the device:
 
 If the device rejects that format, capture uses the nearest supported format. Samples are resampled to 8000 Hz mono s16le before analysis, so the samples match the time base in section 3.
 
-The resampled segment lives in memory. A WAV under `data/records/` (executable directory on desktop, application-local data on Android) is written while that segment is stored. The file name is local time `dd.MM.yyyy.HH.mm.ss.zzz` plus `.wav`. The app does not play it back.
+The resampled segment lives in memory. A WAV under `data/records/` (executable directory on desktop, application-local data on Android) is written while that segment is stored. The file name is local time `dd.MM.yyyy.HH.mm.ss.zzz` plus `.wav`. After Stop, Listen plays the phrase files from that session, in the order they were saved.
 
-When **Keep recording files** is off (the default), delete that WAV as soon as the segment’s metrics are in the session file. When it is on, delete only the `.pending.json` sidecar and leave the WAV in `data/records/`. Release the memory buffer in the same step. Do not open the next segment’s scratch file while an earlier scratch is still waiting to be stored (a WAV that still has its sidecar). Kept WAVs do not block the next phrase. With the setting off, `data/records/` is empty after a segment is stored and whenever the app is idle, unless a save failed and the scratch is still needed. If writing the session file fails, keep the scratch file and its sidecar and retry; do not delete the only copy of a result that was not stored. Open File is not a scratch file and is never deleted.
+Delete the `.pending.json` sidecar once the segment’s metrics are in the session file, and leave the WAV. When **Keep recording files** is off (the default), delete those WAV files when the application closes. The same cleanup runs on the next launch if the previous exit did not finish it. When the setting is on, leave the WAV files in `data/records/`. Release the memory buffer when the sidecar is removed. Do not open the next segment’s scratch file while an earlier scratch is still waiting to be stored (a WAV that still has its sidecar). Kept WAVs do not block the next phrase. If writing the session file fails, keep the scratch file and its sidecar and retry; do not delete the only copy of a result that was not stored. Open File is not a scratch file and is never deleted.
 
 Open File (desktop): a WAV dialog starting at `<executable>/data/tests/`. The chosen file must be PCM WAV at exactly 8000 Hz, mono, signed 16-bit little-endian. Any other sample rate, channel count, encoding, or bit depth is rejected rather than converted. A valid file is analyzed once as a whole file; it is not cut at pauses or updated live. QML exposes availability through the `openFileAvailable` property/API; it is `false` on Android and `true` on desktop.
 
@@ -143,7 +143,7 @@ Open File (desktop): a WAV dialog starting at `<executable>/data/tests/`. The ch
 
 History is a list of recording sessions. A session is the span from press-record to press-stop in section 1.2. It keeps every segment that was written, and every change of the five numbers Home actually showed from Start until Stop. A phrase dropped for being shorter than 1 s is not stored and does not change those numbers. An opened file is not a session.
 
-The session file is created by whichever happens first: the first shown change or the first kept segment. Each later shown change is appended when the on-screen labels change. Each kept segment is appended as soon as its final analysis finishes, and only then is that segment’s audio deleted, unless Keep recording files is on. Stopping the session sets the session end time. A session that ends with no shown changes and no kept segments is not listed. Delete user data removes the session files and every WAV still in `data/records/`.
+The session file is created by whichever happens first: the first shown change or the first kept segment. Each later shown change is appended when the on-screen labels change. Each kept segment is appended as soon as its final analysis finishes. Its WAV stays so Listen can play it, and is deleted when the application closes unless Keep recording files is on. Stopping the session sets the session end time. A session that ends with no shown changes and no kept segments is not listed. Delete user data removes the session files and every WAV still in `data/records/`.
 
 **File**
 
@@ -593,7 +593,7 @@ General (language, theme, color, font size, navigation bar) stays visible. Delet
 
 Double-valued settings are edited as a spin box with 2 decimal places (internal integer = value × 100) and stored as the real coefficient.
 
-With Advanced on, **Keep recording files** (`General/keepRecordingFiles`, default off) is shown above the numbered cards. On leaves each phrase’s WAV in `data/records` after its numbers are stored. Off deletes that WAV once the save succeeds. The pending sidecar is removed after a successful save either way. The other extra settings are numbered cards in the order a phrase is processed. Each card names its stage and says in one line what it does:
+With Advanced on, **Keep recording files** (`General/keepRecordingFiles`, default off) is shown above the numbered cards. On leaves each phrase’s WAV in `data/records` after the application closes. Off deletes those WAV files when the application closes. The pending sidecar is removed after a successful save either way. The other extra settings are numbered cards in the order a phrase is processed. Each card names its stage and says in one line what it does:
 
 | Stage | Card | Settings |
 | --- | --- | --- |
@@ -739,7 +739,7 @@ Do not implement these for behavioral parity:
 
 ## 14. Parity checklist
 
-1. Keep a background session. Cut a kept segment at a pause or at 15 s, drop a segment shorter than 1 s, resample to 8000 Hz mono s16le, and analyze that buffer with sections 2–11. Live snapshots analyze the last Analysis window seconds of kept plus open audio. Fillers, pauses, and speech are shown unjoined and unaveraged. Each pace drawn on the gauge shows the median of the last Gauge median live readings of that pace (default 3). Articulation left in the tile stays raw. After Stop, the gauge and tiles show the duration-weighted mean of the kept phrases, speech stays the total, and the screen is labeled Mean values. Silence must not produce nuclei (section 5.4). Delete the segment audio once its metrics are in the session file, unless Keep recording files is on.
+1. Keep a background session. Cut a kept segment at a pause or at 15 s, drop a segment shorter than 1 s, resample to 8000 Hz mono s16le, and analyze that buffer with sections 2–11. Live snapshots analyze the last Analysis window seconds of kept plus open audio. Fillers, pauses, and speech are shown unjoined and unaveraged. Each pace drawn on the gauge shows the median of the last Gauge median live readings of that pace (default 3). Articulation left in the tile stays raw. After Stop, the gauge and tiles show the duration-weighted mean of the kept phrases, speech stays the total, and the screen is labeled Mean values. Silence must not produce nuclei (section 5.4). Keep the segment audio after its metrics are stored. After Stop, Listen plays that session’s saved phrase files in order. Delete those files when the application closes, unless Keep recording files is on.
 2. Intensity uses mean absolute amplitude, full-window divisor, hop 120, window 240, and the exact loop bounds.
 3. Normalize to [0, 1], then the moving average with even length, full-window divisor, and the `index > 0` edge rule.
 4. Nuclei are `I_norm - S > 0.009`, stored length is `run_samples - 1`, runs of one sample are dropped at the default minimum, and a nucleus still open at the last sample is dropped.

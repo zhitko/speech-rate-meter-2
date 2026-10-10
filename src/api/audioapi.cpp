@@ -44,6 +44,25 @@ AudioApi::AudioApi(QObject* parent)
                 emit isPlayingChanged();
             }
         });
+    connect(m_player, &QMediaPlayer::mediaStatusChanged, this,
+        [this](QMediaPlayer::MediaStatus status) {
+            if (status != QMediaPlayer::EndOfMedia || !m_playlistActive)
+                return;
+            if (m_playlistIndex + 1 >= m_playlist.size()) {
+                m_playlistActive = false;
+                return;
+            }
+            ++m_playlistIndex;
+            const QString next = m_playlist.at(m_playlistIndex);
+            QTimer::singleShot(0, this, [this, next]() {
+                if (m_playlistActive)
+                    startFile(next);
+            });
+        });
+    connect(m_player, &QMediaPlayer::errorOccurred, this,
+        [this](QMediaPlayer::Error, const QString&) {
+            m_playlistActive = false;
+        });
 
     // Forward BeepPlayer finished signal
     connect(&m_beepPlayer, &BeepPlayer::finished, this, &AudioApi::beepFinished);
@@ -135,22 +154,74 @@ void AudioApi::setVadMethod(int method)
     emit vadMethodChanged();
 }
 
-void AudioApi::play(const QString& filePath)
+void AudioApi::startFile(const QString& filePath)
 {
-    LOG_DEBUG() << "Start: play - filePath=" << filePath;
     if (!m_player) {
         LOG_CRITICAL() << "QMediaPlayer is not initialized";
         return;
     }
-    QString fullPath = QDir(Settings::getAppDataDir()).filePath(filePath);
+    const QString fullPath = QDir(Settings::getAppDataDir()).filePath(filePath);
     m_player->setSource(QUrl::fromLocalFile(fullPath));
     m_player->play();
+}
+
+void AudioApi::play(const QString& filePath)
+{
+    LOG_DEBUG() << "Start: play - filePath=" << filePath;
+    m_playlistActive = false;
+    m_playlist.clear();
+    m_playlistIndex = 0;
+    startFile(filePath);
     LOG_DEBUG() << "Finish: play";
+}
+
+void AudioApi::playFiles(const QStringList& filePaths)
+{
+    LOG_DEBUG() << "Start: playFiles - count=" << filePaths.size();
+    if (!m_player) {
+        LOG_CRITICAL() << "QMediaPlayer is not initialized";
+        return;
+    }
+    const bool continueCurrent = m_playlistActive
+        && m_playlistIndex >= 0
+        && m_playlistIndex < filePaths.size()
+        && m_playlistIndex < m_playlist.size()
+        && filePaths.at(m_playlistIndex) == m_playlist.at(m_playlistIndex);
+    m_playlist = filePaths;
+    if (filePaths.isEmpty()) {
+        stopPlayback();
+        LOG_DEBUG() << "Finish: playFiles - empty";
+        return;
+    }
+    m_playlistActive = true;
+    if (!continueCurrent) {
+        m_playlistIndex = 0;
+        startFile(m_playlist.at(0));
+    }
+    LOG_DEBUG() << "Finish: playFiles";
+}
+
+void AudioApi::extendPlaylist(const QStringList& filePaths)
+{
+    if (!m_playlistActive)
+        return;
+    const bool sameCurrent = m_playlistIndex >= 0
+        && m_playlistIndex < filePaths.size()
+        && m_playlistIndex < m_playlist.size()
+        && filePaths.at(m_playlistIndex) == m_playlist.at(m_playlistIndex);
+    if (!sameCurrent) {
+        m_playlistActive = false;
+        return;
+    }
+    m_playlist = filePaths;
 }
 
 void AudioApi::stopPlayback()
 {
     LOG_DEBUG() << "Start: stopPlayback";
+    m_playlistActive = false;
+    m_playlist.clear();
+    m_playlistIndex = 0;
     if (m_player) {
         m_player->stop();
     }

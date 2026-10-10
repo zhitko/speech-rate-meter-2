@@ -3,6 +3,7 @@
 
 #include <QList>
 #include <QObject>
+#include <QStringList>
 #include <QUrl>
 #include <QVariantList>
 #include <QVariantMap>
@@ -50,6 +51,7 @@ class SessionApi : public QObject {
     Q_PROPERTY(bool clearingUserData READ clearingUserData NOTIFY clearingUserDataChanged)
     Q_PROPERTY(bool busy READ busy NOTIFY busyChanged)
     Q_PROPERTY(QString errorMessage READ openFileError NOTIFY openFileErrorChanged)
+    Q_PROPERTY(QStringList listenFiles READ listenFiles NOTIFY listenFilesChanged)
 
 public:
     enum Phase {
@@ -87,6 +89,7 @@ public:
     QString openFileError() const { return m_openFileError; }
     bool clearingUserData() const { return m_clearPending; }
     bool busy() const { return m_openFileBusy || m_clearPending; }
+    QStringList listenFiles() const { return m_listenFiles; }
 
     Q_INVOKABLE void startSession();
     Q_INVOKABLE void stopSession();
@@ -113,6 +116,7 @@ signals:
     void clearingUserDataChanged();
     void userDataCleared();
     void busyChanged();
+    void listenFilesChanged();
 
 private slots:
     void applyPhase(int phase, int seconds, int epoch);
@@ -125,6 +129,7 @@ private slots:
     void applySessionEnded(quint64 generation);
     void applyRecordingSummary(quint64 generation, QVariantMap summary);
     void notifySessions();
+    void noteListenFile(quint64 generation, const QString& path);
 
 private:
     void beginCapture();
@@ -138,6 +143,7 @@ private:
     void storeRecordingSummary(const QVariantMap& summary);
     void clearRecordingSummary();
     void rememberShown(const QVariantMap& shown, double speechSeconds);
+    void clearListenFiles();
     double medianOf(std::deque<double>& window, double rate, bool live);
 
     struct SessionAccumulator;
@@ -170,6 +176,8 @@ private:
     bool m_hasRecordingSummary = false;
     bool m_recordingSummaryPending = false;
     QVariantMap m_recordingSummary;
+    QStringList m_listenFiles;
+    quint64 m_listenGeneration = 0;
     QString m_shownSessionId;
     QString m_shownSessionStartedAt;
     QString m_lastShownKey;

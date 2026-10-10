@@ -4,6 +4,7 @@ import QtQuick.Layouts
 import QtQuick.Dialogs
 import QtQuick.Controls.Material 6.8
 import by.intoncore.session 1.0
+import by.intoncore.audio 1.0
 import "../components"
 import "../utils"
 
@@ -173,6 +174,20 @@ Page {
         return (clamped - minValue) / (maxValue - minValue)
     }
 
+    AudioApi {
+        id: listenAudio
+    }
+
+    Connections {
+        target: sessionApi
+        function onListenFilesChanged() {
+            if (!sessionApi || sessionApi.listenFiles.length === 0)
+                listenAudio.stopPlayback()
+            else
+                listenAudio.extendPlaylist(sessionApi.listenFiles)
+        }
+    }
+
     FileDialog {
         id: wavDialog
         title: qsTr("Open File")
@@ -202,6 +217,7 @@ Page {
             sessionApi.stopSession()
             return
         }
+        listenAudio.stopPlayback()
         if (settingsApi && settingsApi.autoCalibrate)
             startCalibrationDialog.open()
         else
@@ -218,14 +234,105 @@ Page {
     Component {
         id: recordComponent
 
-        RowLayout {
+        Item {
             id: recordRow
-            spacing: AppScale.isCompact ? 12 : 20
+            readonly property real gap: AppScale.isCompact ? 12 : 20
+            readonly property bool showListen: !!sessionApi && !root.active && sessionApi.listenFiles.length > 0
             readonly property bool showOpenFile: !!sessionApi && sessionApi.openFileAvailable && !root.active
+            readonly property real listenSpan: showListen ? listenColumn.width + gap : 0
+            readonly property real openSpan: showOpenFile ? openFileColumn.width + gap : 0
+            readonly property real sideSpan: Math.max(listenSpan, openSpan)
+            implicitWidth: centerColumn.implicitWidth + sideSpan * 2
+            implicitHeight: Math.max(centerColumn.implicitHeight,
+                                     showListen ? listenColumn.implicitHeight : 0,
+                                     showOpenFile ? openFileColumn.implicitHeight : 0)
 
             ColumnLayout {
+                id: listenColumn
+                readonly property real labelCap: Math.max(recordControl.buttonSize * 1.6, 108)
+                readonly property real columnWidth: Math.max(recordControl.buttonSize * 0.72,
+                                                              Math.min(listenLabel.implicitWidth, labelCap))
+                visible: recordRow.showListen
                 spacing: 4
-                Layout.alignment: Qt.AlignTop
+                width: columnWidth
+                height: implicitHeight
+                anchors.right: centerColumn.left
+                anchors.rightMargin: recordRow.gap
+                anchors.top: centerColumn.top
+
+                Item {
+                    readonly property real buttonSize: recordControl.buttonSize * 0.72
+                    Layout.alignment: Qt.AlignHCenter
+                    implicitWidth: buttonSize
+                    implicitHeight: recordControl.implicitHeight
+
+                    AbstractButton {
+                        id: listenButton
+                        anchors.centerIn: parent
+                        width: parent.buttonSize
+                        height: width
+                        hoverEnabled: true
+                        focusPolicy: Qt.StrongFocus
+                        Accessible.role: Accessible.Button
+                        Accessible.name: listenAudio.isPlaying
+                                         ? qsTr("Stop playback")
+                                         : qsTr("Listen to the recording")
+                        onClicked: {
+                            if (listenAudio.isPlaying)
+                                listenAudio.stopPlayback()
+                            else if (sessionApi)
+                                listenAudio.playFiles(sessionApi.listenFiles)
+                        }
+                        scale: pressed ? 0.94 : 1
+                        Behavior on scale { NumberAnimation { duration: 120 } }
+
+                        background: Rectangle {
+                            radius: width / 2
+                            color: listenAudio.isPlaying
+                                   ? (listenButton.hovered
+                                      ? Qt.lighter(Theme.errorContainer(Material.theme), 1.06)
+                                      : Theme.errorContainer(Material.theme))
+                                   : (listenButton.hovered
+                                      ? Qt.lighter(Theme.secondaryContainer(Material.theme), 1.06)
+                                      : Theme.secondaryContainer(Material.theme))
+                            border.width: listenButton.visualFocus ? 3 : 0
+                            border.color: Theme.onSurface(Material.theme)
+                            Behavior on color { ColorAnimation { duration: 200 } }
+                        }
+
+                        contentItem: Text {
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                            font.family: Icons.familySolid
+                            font.weight: Font.Black
+                            text: listenAudio.isPlaying ? Icons.faStop : Icons.faPlay
+                            font.pixelSize: listenButton.width / 2.6
+                            color: listenAudio.isPlaying
+                                   ? Theme.onErrorContainer(Material.theme)
+                                   : Theme.onSecondaryContainer(Material.theme)
+                        }
+                    }
+                }
+
+                Label {
+                    id: listenLabel
+                    Layout.fillWidth: true
+                    horizontalAlignment: Text.AlignHCenter
+                    wrapMode: Text.WordWrap
+                    text: listenAudio.isPlaying ? qsTr("Stop") : qsTr("Listen")
+                    font.pixelSize: AppScale.fs(root.wideLayout ? 16 : 14)
+                    font.weight: Font.DemiBold
+                    color: Theme.onSurface(Material.theme)
+                }
+            }
+
+            ColumnLayout {
+                id: centerColumn
+                spacing: 4
+                width: implicitWidth
+                height: implicitHeight
+                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.top: parent.top
 
                 Item {
                     id: recordControl
@@ -323,12 +430,15 @@ Page {
             ColumnLayout {
                 id: openFileColumn
                 readonly property real labelCap: Math.max(recordControl.buttonSize * 1.6, 108)
+                readonly property real columnWidth: Math.max(recordControl.buttonSize * 0.72,
+                                                              Math.min(openFileLabel.implicitWidth, labelCap))
                 visible: recordRow.showOpenFile
                 spacing: 4
-                Layout.alignment: Qt.AlignTop
-                Layout.preferredWidth: Math.max(recordControl.buttonSize * 0.72,
-                                                Math.min(openFileLabel.implicitWidth, labelCap))
-                Layout.maximumWidth: Math.max(recordControl.buttonSize * 0.72, labelCap)
+                width: columnWidth
+                height: implicitHeight
+                anchors.left: centerColumn.right
+                anchors.leftMargin: recordRow.gap
+                anchors.top: centerColumn.top
 
                 Item {
                     readonly property real buttonSize: recordControl.buttonSize * 0.72
@@ -682,7 +792,7 @@ Page {
                     }
 
                     Loader {
-                        Layout.alignment: Qt.AlignHCenter
+                        Layout.fillWidth: true
                         active: root.wideLayout
                         visible: active
                         sourceComponent: recordComponent
@@ -726,7 +836,8 @@ Page {
 
         Loader {
             id: footerLoader
-            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.left: parent.left
+            anchors.right: parent.right
             anchors.bottom: parent.bottom
             anchors.bottomMargin: 8
             active: !root.wideLayout

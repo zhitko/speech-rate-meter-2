@@ -10,7 +10,7 @@ Speech Rate Meter 2 ("we") uses the microphone only to estimate speaking tempo o
 
 - **Microphone.** The app asks for microphone access when a session starts. You can revoke that permission in the system settings.
 - **Sessions.** Each kept phrase is stored as numbers (pace, articulation, fillers, pauses, and length) in a private `data/sessions` file. The file has no audio.
-- **Recording files.** A phrase is written as a WAV file in `data/records` while those numbers are saved. With **Keep recording files** off (the default), that file is deleted as soon as the save succeeds, and the folder is empty after a session unless a save failed and the file is still needed. With the setting on, the WAV stays on the device.
+- **Recording files.** A phrase is written as a WAV file in `data/records` while those numbers are saved. With **Keep recording files** off (the default), that file is deleted when you leave the app. With the setting on, the WAV stays on the device. You can play the recording from Home after Stop, until the app closes or the file is deleted.
 - **Settings.** Language, theme, and measurement options are stored locally in `settings.ini` beside the executable on desktop or in the app-private data directory on Android.
 
 The Android package `by.intoncore.SpeechRateMeter2` requests only `RECORD_AUDIO`. The app does not request camera, network, or storage access. Nothing on this list is sent to a server.

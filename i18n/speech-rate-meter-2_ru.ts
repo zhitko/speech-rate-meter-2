@@ -260,6 +260,21 @@
         <translation>Открыть файл</translation>
     </message>
     <message>
+        <location filename="../ui/pages/HomePage.qml" line="267"/>
+        <source>Stop playback</source>
+        <translation>Остановить воспроизведение</translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/HomePage.qml" line="268"/>
+        <source>Listen to the recording</source>
+        <translation>Прослушать запись</translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/HomePage.qml" line="311"/>
+        <source>Listen</source>
+        <translation>Слушать</translation>
+    </message>
+    <message>
         <location filename="../ui/pages/HomePage.qml" line="179"/>
         <source>WAV files (*.wav)</source>
         <translation>Файлы WAV (*.wav)</translation>
@@ -1239,8 +1254,8 @@
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="555"/>
-        <source>Leaves each phrase as a WAV file in data/records. Off deletes that file once its numbers are saved.</source>
-        <translation>Оставляет каждую фразу файлом WAV в data/records. Выключенное удаляет этот файл, как только числа сохранены.</translation>
+        <source>Leaves each phrase as a WAV file in data/records. Off deletes those files when you leave the app.</source>
+        <translation>Оставляет каждую фразу файлом WAV в data/records. Выключенное удаляет эти файлы при выходе из приложения.</translation>
     </message>
     <message>
         <source>Grouped by analysis stage, in the order a phrase is processed.</source>

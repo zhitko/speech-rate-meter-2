@@ -8,7 +8,7 @@ Feedback from Boris Lobanov, Oct 10, 2026.
 - [x] Remove the Fillers metric (it consistently works poorly). Hidden unless Show Fillers tile is on.
 - [x] Put Pauses in the Fillers tile's former place, and Speech rate in the Pauses tile's former place.
 - [ ] Remove all long explanatory texts (the line under the gauge, the metric-tile hints, and the settings hints).
-- [ ] Add a "Listen to test" button next to the "Open File" button.
+- [x] Add a "Listen to test" button next to the "Open File" button.
 
 ## Measurements
 - [x] Improve measurement methods; current measurements are fairly approximate. Explore alternative approaches on top of the new UI.

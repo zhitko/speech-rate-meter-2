@@ -4,6 +4,7 @@
 #include <QCoreApplication>
 #include <QDir>
 #include <QFile>
+#include <QFileInfo>
 #include <QTemporaryDir>
 
 #include <cmath>
@@ -129,18 +130,23 @@ int fileCount(const QString& filter)
     return QDir(SessionStore::recordsDir()).entryList({ filter }, QDir::Files).size();
 }
 
-void testCommitDeletesWavByDefault()
+void testCommitKeepsWavUntilClose()
 {
     setKeepRecordingFiles(false);
     SessionStore::clearAll();
     const QString id = QStringLiteral("20261011-010000-000");
     const QString started = QStringLiteral("2026-10-11T01:00:00.000");
     const std::vector<float> samples { 0.f, 1000.f, -1000.f, 0.f };
-    expect(SessionStore::commitSegment(id, started, measuredSegment(), samples),
-        "commit deletes wav");
-    expect(fileCount(QStringLiteral("*.wav")) == 0, "default commit removes the wav");
-    expect(fileCount(QStringLiteral("*.pending.json")) == 0, "default commit removes the pending sidecar");
-    expect(SessionStore::recordsAreEmpty(), "records dir is empty");
+    QString wavPath;
+    expect(SessionStore::commitSegment(id, started, measuredSegment(), samples, &wavPath),
+        "commit keeps wav for playback");
+    expect(!wavPath.isEmpty(), "commit reports the wav path");
+    expect(QFileInfo::exists(wavPath), "reported wav exists");
+    expect(fileCount(QStringLiteral("*.wav")) == 1, "wav remains after analysis");
+    expect(fileCount(QStringLiteral("*.pending.json")) == 0, "pending sidecar is removed");
+    SessionStore::discardUnkeptRecordings();
+    expect(fileCount(QStringLiteral("*.wav")) == 0, "close removes the wav when keep is off");
+    expect(SessionStore::recordsAreEmpty(), "records dir is empty after close");
     SessionStore::clearAll();
 }
 
@@ -164,10 +170,39 @@ void testCommitKeepsWavWhenEnabled()
         "second commit while wavs are kept");
     expect(fileCount(QStringLiteral("*.wav")) == 2, "second wav is kept too");
     expect(fileCount(QStringLiteral("*.pending.json")) == 0, "second pending sidecar is removed");
+    SessionStore::discardUnkeptRecordings();
+    expect(fileCount(QStringLiteral("*.wav")) == 2, "close leaves wavs while keep is on");
+
+    setKeepRecordingFiles(false);
+    SessionStore::discardUnkeptRecordings();
+    expect(fileCount(QStringLiteral("*.wav")) == 0, "close removes wavs when keep is turned off");
 
     SessionStore::clearAll();
     expect(fileCount(QStringLiteral("*.wav")) == 0, "delete user data removes kept wavs");
     setKeepRecordingFiles(false);
+}
+
+void testDiscardSkipsUnsavedWav()
+{
+    setKeepRecordingFiles(false);
+    SessionStore::clearAll();
+    QDir().mkpath(SessionStore::recordsDir());
+    const QString wav = SessionStore::recordsDir() + QStringLiteral("/pending-keep.wav");
+    QFile audio(wav);
+    expect(audio.open(QIODevice::WriteOnly), "create unsaved wav");
+    audio.write("RIFF");
+    audio.close();
+    QFile side(wav + QStringLiteral(".pending.json"));
+    expect(side.open(QIODevice::WriteOnly), "create pending sidecar");
+    side.write("{}");
+    side.close();
+
+    SessionStore::discardUnkeptRecordings();
+    expect(QFileInfo::exists(wav), "unsaved wav is kept");
+    expect(QFile::remove(wav + QStringLiteral(".pending.json")), "remove sidecar");
+    SessionStore::discardUnkeptRecordings();
+    expect(!QFileInfo::exists(wav), "saved wav is removed on close");
+    SessionStore::clearAll();
 }
 
 void testMalformedJsonIsQuarantined()
@@ -197,8 +232,9 @@ int main(int argc, char** argv)
 
     testRoundTripAndClear();
     testDurationWeightedSessionMean();
-    testCommitDeletesWavByDefault();
+    testCommitKeepsWavUntilClose();
     testCommitKeepsWavWhenEnabled();
+    testDiscardSkipsUnsavedWav();
     testMalformedJsonIsQuarantined();
 
     Settings::clearAppDataDirForTests();
