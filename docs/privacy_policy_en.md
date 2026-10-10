@@ -2,6 +2,8 @@
 
 **Last updated October 6, 2026**
 
+This is the same notice as the public policy at [https://intontrainer.by/speechratemeter2policy.html](https://intontrainer.by/speechratemeter2policy.html).
+
 Speech Rate Meter 2 ("we") uses the microphone only to estimate speaking tempo on this device. It does not recognize words and does not send audio anywhere.
 
 ## What is stored
