@@ -5,12 +5,12 @@ Speech Rate Meter 2 estimates how fast you are speaking. It does not recognize w
 ## What the numbers mean
 
 - **Speech rate** is the overall pace, in words per minute. By default the gauge shows it and names the zone Slow, Average, or Fast.
-- **Articulation** is the pace while you are actually speaking, with the gaps left out. It is also in words per minute, and it is never below the speech rate. By default it sits in the card beside the gauge.
+- **Articulation** is the pace while you are actually speaking, with the gaps left out. It is also in words per minute. With **Articulation method** set to Direct, those gaps are silent unvoiced stretches measured in the signal, and articulation uses the same scale as speech rate. Legacy keeps the older estimate. By default it sits in the card beside the gauge.
 - **Fillers** is how much some sounds are drawn out, such as a long “uh”. It is a percent, not a count of words. The card is hidden until you turn it on in Settings.
-- **Pauses** is the length of the longer gaps, in seconds. It is not the total time you were silent.
+- **Pauses** is the length of the longer gaps, in seconds. Direct mode shows their average length. Legacy shows the older score. It is not the total time you were silent.
 - **Speech** is the total time that counted as speech, in seconds.
 
-While you are recording, speech rate, articulation, fillers, and pauses use the **Analysis window**: the most recent kept speech (10 seconds by default). **Speech** keeps the total since **Start**. After **Stop**, the first four become averages for the whole session, and **Speech** stays the total. The gauge chip then reads **Mean values**.
+While you are recording, speech rate, articulation, fillers, and pauses use the **Analysis window**: the most recent kept speech (10 seconds by default). Direct articulation and the pause length use that same window. They are not a running total from **Start**. **Speech** keeps the total since **Start**. After **Stop**, the first four become averages for the whole session, and **Speech** stays the total. The gauge chip then reads **Mean values**. The **Whole recording** card is separate: it measures the entire take, including silence between phrases, and shows how the pause lengths are spread out, plus both articulation estimates.
 
 ## Record
 
@@ -43,6 +43,8 @@ Under **Measurement**:
 - **Show Pauses tile**, **Show Speech tile**, and **Show Whole recording tile** are on by default. Whole recording is the summary after Stop or Open File.
 - **Gauge median** is how many latest readings of each pace on the gauge it takes the middle of. The default is 3. Set it to 1 to show the current reading.
 - **Pause** is how much silence ends a phrase and saves it. This is used only when **Detect speech automatically** is on.
+- **Phrasal pause** is the shortest silent, unvoiced gap that counts as a pause. The default is 150 ms.
+- **Articulation method** chooses Direct or Legacy. Direct measures pauses in the signal. Legacy keeps the older estimate. The Whole recording card shows both.
 - **Detect speech automatically** measures background noise after **Start**, then waits for you to speak. When it is off, measuring starts when you press **Start**, a pause does not end the phrase, and the recording is saved in 15-second parts.
 
 **Slow** and **Fast** are the ends of the gauge. The arc between them is split equally into Slow, Average, and Fast.

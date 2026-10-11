@@ -707,6 +707,81 @@
         <source>%1 ms bins</source>
         <translation type="vanished">интервалы по %1 мс</translation>
     </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="39"/>
+        <source>s</source>
+        <translation>с</translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="46"/>
+        <source>wpm</source>
+        <translation>сл/мин</translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="166"/>
+        <source>Pause durations</source>
+        <translation>Длительности пауз</translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="179"/>
+        <source>Total</source>
+        <translation>Сумма</translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="180"/>
+        <source>Ratio</source>
+        <translation>Доля</translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="183"/>
+        <source>25th</source>
+        <translation>25%</translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="184"/>
+        <source>75th</source>
+        <translation>75%</translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="228"/>
+        <source>Each bar is %1 ms. The last bar includes longer pauses.</source>
+        <translation>Каждый столбец — %1 мс. Последний включает более длинные паузы.</translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="230"/>
+        <source>Each bar is %1 ms.</source>
+        <translation>Каждый столбец — %1 мс.</translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="239"/>
+        <source>Compare</source>
+        <translation>Сравнение</translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="253"/>
+        <source>Speech rate</source>
+        <translation>Темп речи</translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="266"/>
+        <source>Articulation, direct</source>
+        <translation>Артикуляция, прямая</translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="279"/>
+        <source>Articulation, legacy</source>
+        <translation>Артикуляция, прежняя</translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="292"/>
+        <source>Mean pause, direct</source>
+        <translation>Средняя пауза, прямая</translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="305"/>
+        <source>Pause score, legacy</source>
+        <translation>Оценка пауз, прежняя</translation>
+    </message>
 </context>
 <context>
     <name>SessionApi</name>
@@ -1436,8 +1511,28 @@
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="376"/>
-        <source>Gaps this long count as pauses in the whole recording.</source>
-        <translation>Промежутки такой длины считаются паузами всей записи.</translation>
+        <source>Silent, unvoiced gaps at least this long count as pauses.</source>
+        <translation>Тихие незвонкие промежутки не короче этого считаются паузами.</translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SettingsPage.qml" line="379"/>
+        <source>Articulation method</source>
+        <translation>Метод артикуляции</translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SettingsPage.qml" line="383"/>
+        <source>Direct</source>
+        <translation>Прямой</translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SettingsPage.qml" line="384"/>
+        <source>Legacy</source>
+        <translation>Прежний</translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SettingsPage.qml" line="392"/>
+        <source>Direct measures pauses in the signal. Legacy keeps the older estimate.</source>
+        <translation>Прямой измеряет паузы по сигналу. Прежний оставляет старую оценку.</translation>
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="386"/>

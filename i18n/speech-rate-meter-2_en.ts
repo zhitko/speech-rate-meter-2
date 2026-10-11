@@ -315,6 +315,81 @@
         <source>SD</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="39"/>
+        <source>s</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="46"/>
+        <source>wpm</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="166"/>
+        <source>Pause durations</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="179"/>
+        <source>Total</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="180"/>
+        <source>Ratio</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="183"/>
+        <source>25th</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="184"/>
+        <source>75th</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="228"/>
+        <source>Each bar is %1 ms. The last bar includes longer pauses.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="230"/>
+        <source>Each bar is %1 ms.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="239"/>
+        <source>Compare</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="253"/>
+        <source>Speech rate</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="266"/>
+        <source>Articulation, direct</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="279"/>
+        <source>Articulation, legacy</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="292"/>
+        <source>Mean pause, direct</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="305"/>
+        <source>Pause score, legacy</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>SessionPage</name>
@@ -558,7 +633,27 @@
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="376"/>
-        <source>Gaps this long count as pauses in the whole recording.</source>
+        <source>Silent, unvoiced gaps at least this long count as pauses.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SettingsPage.qml" line="379"/>
+        <source>Articulation method</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SettingsPage.qml" line="383"/>
+        <source>Direct</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SettingsPage.qml" line="384"/>
+        <source>Legacy</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SettingsPage.qml" line="392"/>
+        <source>Direct measures pauses in the signal. Legacy keeps the older estimate.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>

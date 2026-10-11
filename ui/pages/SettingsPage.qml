@@ -373,7 +373,23 @@ Page {
                             Layout.fillWidth: true
                         }
                         Hint {
-                            text: qsTr("Gaps this long count as pauses in the whole recording.")
+                            text: qsTr("Silent, unvoiced gaps at least this long count as pauses.")
+                        }
+
+                        FieldLabel { text: qsTr("Articulation method") }
+                        ComboBox {
+                            textRole: "name"
+                            model: [
+                                { name: qsTr("Direct"), id: 0 },
+                                { name: qsTr("Legacy"), id: 1 }
+                            ]
+                            currentIndex: settingsApi ? Math.max(0, Math.min(1, settingsApi.articulationMethod)) : 0
+                            onActivated: if (settingsApi)
+                                settingsApi.articulationMethod = model[index].id
+                            Layout.fillWidth: true
+                        }
+                        Hint {
+                            text: qsTr("Direct measures pauses in the signal. Legacy keeps the older estimate.")
                         }
 
                         FieldLabel { text: qsTr("Detect speech automatically") }

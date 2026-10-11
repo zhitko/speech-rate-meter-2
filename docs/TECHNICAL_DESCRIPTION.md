@@ -27,7 +27,7 @@ There is no waveform. After Stop, Listen plays the phrase files saved for that s
 
 ### 1.1 Headline results
 
-While a session is on, speech rate, articulation, fillers, and pauses describe the analysis window: the most recent Analysis window seconds of kept speech (section 1.2, default 10 s), so a change of pace shows within a few seconds. Speech is the exception: it is the total analyzed speech since Start. After Stop, speech rate, articulation, fillers, and pauses switch to the duration-weighted mean of every phrase kept since Start. A longer phrase counts more than a shorter one. Speech stays the sum of those phrases. The gauge chip is labeled `Mean values`. That is the same result as the session's History row. A phrase dropped for being too short is left out. Open File is one file, is not averaged, and is not labeled Mean values.
+While a session is on, speech rate, articulation, fillers, and pauses describe the analysis window: the most recent Analysis window seconds of kept speech (section 1.2, default 10 s), so a change of pace shows within a few seconds. Direct articulation and the direct pause length use that same window. They are not a running total from Start. A pause that ends a phrase under auto-detect is outside the kept audio, apart from the short trailing pad, so it does not enter the window's pause sum or its speech time. Speech is the exception: it is the total analyzed speech since Start. After Stop, speech rate, articulation, fillers, and pauses switch to the duration-weighted mean of every phrase kept since Start. A longer phrase counts more than a shorter one. Speech stays the sum of those phrases. The gauge chip is labeled `Mean values`. That is the same result as the session's History row. A phrase dropped for being too short is left out. Open File is one file, is not averaged, and is not labeled Mean values.
 
 Gauge (`General/gaugeMode`, default Speech rate) chooses what the arc draws. Speech rate draws speech rate. Articulation rate draws articulation. Both draws articulation on the outer arc and speech rate on an inner arc, with articulation above speech rate in the middle. A pace already drawn on the gauge is not also a tile. Each Home tile has a switch under Measurement. Show Speech rate tile and Show Articulation rate tile default on, and each switch is disabled while that pace is on the gauge: Speech rate or Both disables the speech-rate switch, Articulation rate or Both disables the articulation switch. Show Fillers tile defaults off. Show Pauses tile, Show Speech tile, and Show Whole recording tile default on. Whole recording is the summary card after Stop or Open File.
 
@@ -36,7 +36,7 @@ Gauge (`General/gaugeMode`, default Speech rate) chooses what the arc draws. Spe
 | Speech rate | Pace of the analysis window while recording; after Stop, the duration-weighted mean of kept phrases | words per minute | Large integer (`toFixed(0)`). On the gauge unless Gauge is Articulation rate, in which case it is a tile when Show Speech rate tile is on. While recording, a pace on the gauge shows the median of the last Gauge median readings of that pace. After Stop the gauge shows the session mean. The gauge marker clamps to `[Min RS, Max RS]`. The printed number does not. |
 | Articulation | Pace while speech is actually going | words per minute | Integer. On the gauge when Gauge is Articulation rate or Both (outer arc). A tile only when Gauge is Speech rate and Show Articulation rate tile is on. While recording, articulation on the gauge uses its own Gauge median; articulation left in the tile is the raw snapshot. |
 | Fillers | How much of the speech is stretched sounds | percent | Integer and ` %`, from section 6.5, with a thin bar for the same percent. The tile is hidden unless Show Fillers tile is on. |
-| Pauses | Extra gaps inside the kept phrases | seconds | Two decimals and ` sec`. No gauge. Hidden when Show Pauses tile is off. |
+| Pauses | Direct method: mean duration of phrasal pauses in the window. Legacy method: the indirect pause score from section 6.4 | seconds | Two decimals and ` sec`. No gauge. Hidden when Show Pauses tile is off. |
 | Speech | Analyzed speech since Start | seconds | Integer and ` sec`. Silence that ends a phrase is not included. This is not the `mm:ss` timer. Tile hint: `Total time counted as speech`. Hidden when Show Speech tile is off. |
 
 The other tile hints are Articulation `Pace while speaking, gaps left out`, Fillers `Drawn-out sounds, not words`, and Pauses `Longer gaps, not all silence`.
@@ -494,7 +494,25 @@ If `N_c` is 0 the denominator is just `T_v`. If that is also 0 the current code 
 
 The articulation value is printed as an integer. Gauge can put it on the arc (Articulation rate), on the outer arc (Both), or in a tile when Gauge is Speech rate and Show Articulation rate tile is on. The marker uses the same Min/Max RS range as speech rate. Legacy articulation min/max settings are still synchronized with Min/Max RS.
 
-### 6.4 Phrase pauses
+`General/articulationMethod` chooses which rate is published. `0` (Direct, the default) uses section 6.3.1. `1` (Legacy) uses the formula above. Both values are always computed. The Whole recording card shows them side by side.
+
+### 6.3.1 Direct articulation rate
+
+Phrasal pauses are measured on the signal, reusing the whole-recording detector. A frame is a pause frame only when its intensity is below `silenceThreshold` and it is not voiced. The threshold is 25 dB below the 98th percentile of the intensity contour (`kSilenceRelative` times that percentile), raised to the noise-floor gate (`noise percentile * speechOverNoise`) and capped at 20% of the speech percentile. A contour with no contrast (the 98th percentile is not at least 1.5 times the noise percentile) keeps the older speech-gate level. Voicing is the same normalized autocorrelation used for vowel peaks. Stop closures are quiet and unvoiced; the minimum length (default 150 ms, `General/phrasalPauseMs`) is what leaves a typical closure out. Fricatives stay above the level. A quiet vowel stays because it is voiced.
+
+An interior run of those frames at least `pauseThresholdMs` long is one pause. Leading and trailing silence are not pauses and stay inside `T_s`. `N_v` is the tempo vowel count from section 6.2, the same count speech rate uses.
+
+```
+ΣT_p = sum of those pause durations
+T_speak = T_s - ΣT_p
+R_a = K1 * N_v * 60 / T_speak
+```
+
+If `T_speak` is not positive, or this `R_a` would fall below `R_s`, the result is `R_s`. With no pauses the two rates are equal. `K1` keeps articulation on the same words-per-minute scale as speech rate.
+
+The published pause value in Direct mode is the mean pause duration (`ΣT_p / N_p`, or 0 when `N_p` is 0). Live mode measures `N_p`, `ΣT_p`, that mean, and `R_a` on the current analysis window only. After Stop the tiles are the duration-weighted mean of the kept phrases, each measured on its own audio. That mean is not recomputed by concatenating the phrases. The Whole recording card is the full take, including silence between phrases. It reports `N_p`, `ΣT_p`, the mean, the median, the 25th and 75th percentiles, a 50 ms histogram, the pause ratio `ΣT_p / T_s`, and both the direct and legacy rates and pause values.
+
+### 6.4 Phrase pauses (legacy score)
 
 ```
 K3 = 0.30          # default
@@ -585,6 +603,8 @@ Everyday labels use plain units. Silence Duration is edited in seconds and store
 | Show Whole recording tile | `General/showWholeRecordingTile` | on | Shows the whole-recording summary after Stop and after Open File. |
 | Gauge median | `General/gaugeAverageCount` | 3 | Middle of this many latest readings. Range 1…30. 1 is the current value. An odd count is the middle value after sorting. An even count is the mean of the two central values. Speech rate and articulation keep separate windows. |
 | Pause | `General/autoStopSilenceDuration` | 2 s | Silence that ends and saves the phrase. Auto-detect only. |
+| Phrasal pause (ms) | `General/phrasalPauseMs` | 150 | Silent, unvoiced gaps at least this long count as pauses. Range 50…2000. |
+| Articulation method | `General/articulationMethod` | Direct (`0`) | Direct measures pauses in the signal. Legacy (`1`) keeps section 6.3 and 6.4. |
 | Detect speech automatically | `General/autoCalibrate` | off | On: wait for speech; a pause ends the phrase. Off: start at once, in 15-second parts. |
 | Slow | Min RS | 70 wpm | Slow end of the gauge. The arc splits evenly up to Fast. Also copies to articulation min. |
 | Fast | Max RS | 210 wpm | The fast end of the gauge. Also copies to articulation max. |

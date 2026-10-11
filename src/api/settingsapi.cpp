@@ -453,6 +453,19 @@ void SettingsApi::setPhrasalPauseMs(int milliseconds)
     emit phrasalPauseMsChanged();
 }
 
+int SettingsApi::articulationMethod() const
+{
+    return m_settings.articulationMethod;
+}
+
+void SettingsApi::setArticulationMethod(int method)
+{
+    if (!assignIfChanged(m_settings.articulationMethod, std::clamp(method, 0, 1)))
+        return;
+    save();
+    emit articulationMethodChanged();
+}
+
 double SettingsApi::slowWpm() const
 {
     return m_settings.speechRateMin;
@@ -621,6 +634,7 @@ void SettingsApi::load()
     emit showWholeRecordingTileChanged();
     emit pauseSecChanged();
     emit phrasalPauseMsChanged();
+    emit articulationMethodChanged();
     emit slowWpmChanged();
     emit fastWpmChanged();
     emit meanValueDegryChanged();

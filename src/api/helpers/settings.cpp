@@ -139,6 +139,7 @@ Settings::loadSettings()
     settings.vadCalibrationDurationMs = qsettings.value("vadCalibrationDurationMs", 2000).toInt();
     settings.autoStopSilenceDuration = qsettings.value("autoStopSilenceDuration", 2000).toInt();
     settings.phrasalPauseMs = std::clamp(qsettings.value("phrasalPauseMs", 150).toInt(), 50, 2000);
+    settings.articulationMethod = std::clamp(qsettings.value("articulationMethod", 0).toInt(), 0, 1);
     settings.analysisWindowSec = std::clamp(qsettings.value("analysisWindowSec", 10).toInt(), 3, 30);
     settings.updatesPerMinute = std::clamp(qsettings.value("updatesPerMinute", 60).toInt(), 6, 240);
     settings.gaugeAverageCount = std::clamp(qsettings.value("gaugeAverageCount", 3).toInt(), 1, 30);
@@ -219,6 +220,7 @@ void Settings::saveSettings(const AppSettings& settings)
     qsettings.setValue("vadCalibrationDurationMs", settings.vadCalibrationDurationMs);
     qsettings.setValue("autoStopSilenceDuration", settings.autoStopSilenceDuration);
     qsettings.setValue("phrasalPauseMs", settings.phrasalPauseMs);
+    qsettings.setValue("articulationMethod", settings.articulationMethod);
     qsettings.setValue("analysisWindowSec", settings.analysisWindowSec);
     qsettings.setValue("updatesPerMinute", settings.updatesPerMinute);
     qsettings.setValue("gaugeAverageCount", settings.gaugeAverageCount);
