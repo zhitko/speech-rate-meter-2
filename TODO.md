@@ -16,7 +16,7 @@ Feedback from Boris Lobanov, Oct 10, 2026.
     - [x] the total number of vowel sounds
     - [x] the total number of phrasal pauses (at least 150 ms long)
     - [x] statistics of vowel durations (nice to have)
-      Whole-file summary after Stop and after Open File: vowel-nucleus count, phrasal-pause count (silent/unvoiced runs of at least `phrasalPauseMs`, default 150), and vowel-duration count, mean, median, min, max, and standard deviation. The live window is unchanged. The 150 ms cut and the voicing threshold still need tuning on the slow, medium, and fast samples.
+      Whole-file summary after Stop and after Open File: vowel-nucleus count, phrasal-pause count (silent/unvoiced runs of at least `phrasalPauseMs`, default 150), and vowel-duration count, mean, median, min, max, and standard deviation. The live window is unchanged. On Boris's 23 WAVs the 150 ms cut still counts 150–180 ms gaps inside clips labeled as having no pauses; 200–250 ms fits those labels better (`docs/eval-tests.md`). Tightening the −25 dB level did not remove those gaps.
 - [x] Measure pauses directly from the signal (Oct 11, 2026).
   - A frame is a pause frame only when it is below an adaptive silence level (about 25 dB under the 98th percentile of intensity, capped so it stays under ordinary speech) and it is not voiced. Stop closures are quiet and unvoiced; the existing minimum length (default 150 ms) is what keeps a typical closure out. Fricatives stay above the level. Quiet vowels stay because they are voiced.
   - The whole-recording card reports Np, ΣTp, mean, median, 25th and 75th percentiles, a 50 ms histogram, and the pause ratio ΣTp/Ts. The same detector feeds the tempo path.
@@ -25,5 +25,5 @@ Feedback from Boris Lobanov, Oct 10, 2026.
   - Live direct Tp and Ra use the current analysis window (the same audio as Rs), not a total since Start. After Stop the tiles are the duration-weighted mean of the kept phrases. The card is the full take, including silence between phrases.
 
 ## Waiting on Boris
-- [ ] Speech samples with slow, medium, and fast tempo for testing "Open File". The Drive link for tests.zip asks for a Google sign-in from this environment, so old-vs-new numbers on those files are not in this change. Synthetic signals cover the pause rules and both Ra formulas.
-- [ ] Recommended default settings (Boris is continuing to tune them).
+- [ ] Speech samples with slow, medium, and fast tempo for testing "Open File". The 23 WAVs are on branch `cursor/fix-test-wav-playback-ba86` under `data/tests/`. Direct-pause numbers, filename ground truth, and calibration notes are in `docs/eval-tests.md`. Playing those files in the app still depends on that branch's loader, which this branch does not include.
+- [ ] Recommended default settings (Boris is continuing to tune them). The test-set notes suggest trying a 200–250 ms pause minimum, and leaving k1 near 0.71 (the filename word counts imply about 0.73) and the −25 dB silence rule as they are.
