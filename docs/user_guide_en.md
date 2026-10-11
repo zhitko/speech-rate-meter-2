@@ -19,7 +19,7 @@ While you are recording, speech rate, articulation, fillers, and pauses use the 
 3. With **Detect speech automatically** on, a pause ends the phrase; it is saved, and the next one starts when you speak again. With it off, a pause does not end the phrase, and the recording is saved in 15-second parts.
 4. Press **Stop** when the session is finished. Home then shows the averages, with the chip **Mean values**. History shows the same averages.
 
-On a computer, **Open File** sits to the right of **Start**. It measures one existing WAV recording and does not save a session. The file must be 8000 Hz, mono, signed 16-bit PCM. Android does not show this button.
+On a computer, **Open File** sits to the right of **Start**. It measures one existing WAV recording and does not save a session. PCM and 32-bit float files are accepted, including other sample rates, stereo, and files with extra header data. The app converts them to 8000 Hz mono before measuring. **Listen to test** then plays that recording. If a file cannot be read, the page says why. Android does not show this button.
 
 Silence and background noise are not counted as speech. When the window holds no speech, the numbers stay and the chip reads **Listening**. A phrase shorter than one second is not saved; the chip then reads **Too short to save**. After **Stop**, **Listen** sits to the left of **Start** when a recording was saved, and plays that recording. Press it again to stop playback. The audio is deleted when you leave the app, unless **Keep recording files** is on.
 

@@ -244,6 +244,10 @@
         <translation>Слушать</translation>
     </message>
     <message>
+        <source>Listen to test</source>
+        <translation>Слушать тест</translation>
+    </message>
+    <message>
         <location filename="../ui/pages/HomePage.qml" line="194"/>
         <source>WAV files (*.wav)</source>
         <translation>Файлы WAV (*.wav)</translation>
@@ -708,23 +712,35 @@
     <name>SessionApi</name>
     <message>
         <source>The selected file cannot be opened.</source>
-        <translation type="vanished">Не удалось открыть выбранный файл.</translation>
+        <translation>Не удалось открыть выбранный файл.</translation>
     </message>
     <message>
         <source>The selected file is not a valid WAV file.</source>
-        <translation type="vanished">Выбранный файл не является корректным WAV-файлом.</translation>
+        <translation>Выбранный файл не является корректным WAV-файлом.</translation>
     </message>
     <message>
-        <source>Use a PCM WAV file: 8000 Hz, mono, signed 16-bit little-endian.</source>
-        <translation type="vanished">Используйте PCM WAV: 8000 Гц, один канал, знаковый 16-битный формат little-endian.</translation>
+        <source>The selected file has no audio samples.</source>
+        <translation>В выбранном файле нет звуковых отсчётов.</translation>
+    </message>
+    <message>
+        <source>The selected file is too large to open.</source>
+        <translation>Выбранный файл слишком велик, чтобы его открыть.</translation>
+    </message>
+    <message>
+        <source>This WAV encoding is not supported.</source>
+        <translation>Эта кодировка WAV не поддерживается.</translation>
+    </message>
+    <message>
+        <source>The file was measured, but it could not be prepared for playback.</source>
+        <translation>Файл измерен, но его не удалось подготовить к прослушиванию.</translation>
     </message>
     <message>
         <source>No measurable speech was found in the file.</source>
-        <translation type="vanished">В файле не найдена речь, которую можно измерить.</translation>
+        <translation>В файле не найдена речь, которую можно измерить.</translation>
     </message>
     <message>
         <source>Not enough speech for a pace estimate. The whole-recording summary is shown below.</source>
-        <translation type="vanished">Речи недостаточно для оценки темпа. Сводка по всей записи показана ниже.</translation>
+        <translation>Речи недостаточно для оценки темпа. Сводка по всей записи показана ниже.</translation>
     </message>
 </context>
 <context>
@@ -1757,6 +1773,13 @@
     <message>
         <source>Please stay quiet for %1 seconds so the background noise level can be measured.</source>
         <translation type="vanished">Сохраняйте тишину %1 с, чтобы измерить уровень фонового шума.</translation>
+    </message>
+</context>
+<context>
+    <name>AudioApi</name>
+    <message>
+        <source>The audio file could not be played.</source>
+        <translation>Не удалось воспроизвести звуковой файл.</translation>
     </message>
 </context>
 </TS>

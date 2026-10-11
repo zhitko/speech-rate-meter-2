@@ -77,6 +77,8 @@ qt_add_executable(appspeech-rate-meter-2
     src/api/helpers/beepplayer.h
     src/services/wavfileservice.h
     src/services/wavfileservice.cpp
+    src/services/wavloader.h
+    src/services/wavloader.cpp
     src/services/vadenergryservice.h
     src/services/vadenergryservice.cpp
     src/services/vadautocorrelationservice.h
@@ -326,6 +328,17 @@ if(NOT ANDROID)
     )
     target_link_libraries(sessionstore-test PRIVATE Qt6::Core)
     add_test(NAME sessionstore COMMAND sessionstore-test)
+
+    add_executable(wavloader-test
+        tests/wavloader_test.cpp
+        src/services/wavloader.cpp
+    )
+    target_include_directories(wavloader-test PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/services
+    )
+    target_link_libraries(wavloader-test PRIVATE Qt6::Core)
+    add_test(NAME wavloader COMMAND wavloader-test)
 endif()
 
 include(GNUInstallDirs)

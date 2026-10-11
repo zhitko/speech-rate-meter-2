@@ -137,7 +137,7 @@ The resampled segment lives in memory. A WAV under `data/records/` (executable d
 
 Delete the `.pending.json` sidecar once the segment’s metrics are in the session file, and leave the WAV. When **Keep recording files** is off (the default), delete those WAV files when the application closes. The same cleanup runs on the next launch if the previous exit did not finish it. When the setting is on, leave the WAV files in `data/records/`. Release the memory buffer when the sidecar is removed. Do not open the next segment’s scratch file while an earlier scratch is still waiting to be stored (a WAV that still has its sidecar). Kept WAVs do not block the next phrase. If writing the session file fails, keep the scratch file and its sidecar and retry; do not delete the only copy of a result that was not stored. Open File is not a scratch file and is never deleted.
 
-Open File (desktop): a WAV dialog starting at `<executable>/data/tests/`. The chosen file must be PCM WAV at exactly 8000 Hz, mono, signed 16-bit little-endian. Any other sample rate, channel count, encoding, or bit depth is rejected rather than converted. A valid file is analyzed once as a whole file; it is not cut at pauses or updated live. QML exposes availability through the `openFileAvailable` property/API; it is `false` on Android and `true` on desktop.
+Open File (desktop): a WAV dialog starting at `<executable>/data/tests/`. PCM (8, 16, 24, or 32-bit, including `WAVE_FORMAT_EXTENSIBLE`) and IEEE float (32 or 64-bit) are accepted. Extra chunks such as `LIST`, `bext`, and `fact` are skipped, in any order. Channels are mixed to mono and the audio is resampled to 8000 Hz before analysis, on the signed 16-bit scale used everywhere else. A file that is not a WAV, uses another encoding, or cannot be read produces an error on Home instead of an empty result. A valid file is analyzed once as a whole file; it is not cut at pauses or updated live. The converted 8000 Hz mono file is written under `data/playback/` and **Listen to test** plays that file, the same PCM layout microphone recordings use. QML exposes availability through the `openFileAvailable` property/API; it is `false` on Android and `true` on desktop.
 
 ### 1.3 Saved history
 
@@ -238,9 +238,9 @@ PCM s16le mono
 
 Every derived series is cached on a loaded file path. Changing settings does not invalidate that cache. A new segment, a live snapshot of the open segment, or a different file path creates a new analysis and therefore picks up the current settings. Re-opening the same saved path on the same backend object returns the old numbers.
 
-The sample rate used to convert frame counts into seconds is the constant **8000**, matching recorder output and the strict Open File validation. Open File rejects a WAV whose header does not specify 8000 Hz mono signed 16-bit PCM.
+The sample rate used to convert frame counts into seconds is the constant **8000**, matching recorder output. Open File resamples and downmixes to that rate before analysis, so a 44.1 kHz or stereo source is measured on the same time base.
 
-Samples are decoded as signed 16-bit integers regardless of other bit depths: sample count is `data_bytes / (bitDepth/8)`, then each step reads an `int16`. For the files this app writes, bit depth is 16, so this is just “little-endian int16 to float”.
+Open File decodes PCM and IEEE float into that signed 16-bit scale, then resamples. Microphone recordings are already 8000 Hz mono s16le, so their path is unchanged.
 
 ## 3. Time base
 

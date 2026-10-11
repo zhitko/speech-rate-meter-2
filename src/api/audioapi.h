@@ -42,6 +42,7 @@ class AudioApi : public QObject {
     Q_PROPERTY(bool isRecording READ isRecording NOTIFY isRecordingChanged)
     Q_PROPERTY(qreal audioLevel READ audioLevel NOTIFY isAudioLevelChanged)
     Q_PROPERTY(bool isPlaying READ isPlaying NOTIFY isPlayingChanged)
+    Q_PROPERTY(QString playbackError READ playbackError NOTIFY playbackErrorChanged)
     Q_PROPERTY(bool isVoiceDetected READ isVoiceDetected NOTIFY isVoiceDetectedChanged)
     Q_PROPERTY(int vadMethod READ vadMethod WRITE setVadMethod NOTIFY vadMethodChanged)
 
@@ -69,6 +70,7 @@ public:
      * @return true if audio playback is in progress, false otherwise.
      */
     bool isPlaying() const;
+    QString playbackError() const { return m_playbackError; }
 
     /**
      * Returns whether the Voice Activity Detection (VAD) has detected speech.
@@ -212,6 +214,7 @@ signals:
      * Signal emitted when the playback state changes (started or stopped).
      */
     void isPlayingChanged();
+    void playbackErrorChanged();
     /**
      * Signal emitted when voice activity detection state changes.
      */
@@ -251,6 +254,7 @@ private:
      */
     void setAudioLevel(qreal level = 0.0);
     void startFile(const QString& filePath);
+    void setPlaybackError(const QString& error);
 
     // Base buffer elements
     QAudioDevice m_audioDevice;
@@ -264,6 +268,7 @@ private:
     QMediaPlayer* m_player = nullptr;
     QAudioOutput* m_audioOutput = nullptr;
     bool m_isPlaying = false;
+    QString m_playbackError;
     QStringList m_playlist;
     int m_playlistIndex = 0;
     bool m_playlistActive = false;

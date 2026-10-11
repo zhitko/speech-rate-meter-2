@@ -341,7 +341,7 @@ WaveFile* processFile(WaveFile* waveFile)
 
             // Populate the existingCueChunk struct
             waveFile->cueChunk = (CueChunk*)malloc(sizeof(CueChunk));
-            if (waveFile->dataChunk == nullptr) {
+            if (waveFile->cueChunk == nullptr) {
                 LOG_CRITICAL() << "[processFile] Memory Allocation Error: Could not "
                                   "allocate memory for Wave File Cue Chunk";
                 waveCloseFile(waveFile);
@@ -372,17 +372,16 @@ WaveFile* processFile(WaveFile* waveFile)
             // We found an existing List Chunk
             waveFile->listChunks = (ListChunk*)realloc(
                 waveFile->listChunks, sizeof(ListChunk) * (waveFile->listCount + 1));
+            if (waveFile->listChunks == nullptr) {
+                LOG_CRITICAL() << "[processFile] Memory Allocation Error: Could not "
+                                  "allocate memory for Wave File List Chunk";
+                waveCloseFile(waveFile);
+                return nullptr;
+            }
 
             ListChunk* listChunk = &waveFile->listChunks[waveFile->listCount];
 
             waveFile->listCount++;
-
-            if (waveFile->dataChunk == nullptr) {
-                LOG_CRITICAL() << "[processFile] Memory Allocation Error: Could not "
-                                  "allocate memory for Wave File Cue Chunk";
-                waveCloseFile(waveFile);
-                return nullptr;
-            }
             listChunk->chunkID[0] = 'L';
             listChunk->chunkID[1] = 'I';
             listChunk->chunkID[2] = 'S';
