@@ -291,30 +291,37 @@ else()
     )
 
     # settings.ini is copied beside the executable. data/ (test recordings)
-    # is copied for local and Windows builds so Open File starts in
-    # <build>/data/tests. AppImage passes -DSRM_COPY_DATA=OFF. Android uses
-    # application-local storage and does not enter this branch.
-    option(SRM_COPY_DATA "Copy data/ into the build directory" ON)
+    # is copied so Open File starts in <executable>/data/tests. Single-config
+    # generators put that directory at the build root. Multi-config generators
+    # (Visual Studio, Ninja Multi-Config) put the executable in a per-config
+    # subdirectory, so the same files are copied there after the link.
+    # AppImage passes -DSRM_COPY_DATA=OFF. Android uses application-local
+    # storage and does not enter this branch.
+    option(SRM_COPY_DATA "Copy data/ next to the executable" ON)
 
-    set(_srm_runtime_comment "Copying settings.ini to the build directory")
-    set(_srm_copy_data_command "")
+    set(_srm_copy_data_tool "")
     if(SRM_COPY_DATA AND EXISTS "${CMAKE_SOURCE_DIR}/data")
         if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.26")
             set(_srm_copy_data_tool copy_directory_if_different)
         else()
             set(_srm_copy_data_tool copy_directory)
         endif()
+        message(STATUS "data/ will be copied next to the executable")
+    elseif(SRM_COPY_DATA)
+        message(STATUS "data/ is not in the source tree; not copying it")
+    else()
+        message(STATUS "data/ will not be copied next to the executable")
+    endif()
+
+    set(_srm_runtime_comment "Copying settings.ini to the build directory")
+    set(_srm_copy_data_command "")
+    if(_srm_copy_data_tool)
         set(_srm_copy_data_command
             COMMAND ${CMAKE_COMMAND} -E ${_srm_copy_data_tool}
                 "${CMAKE_SOURCE_DIR}/data"
                 "${CMAKE_BINARY_DIR}/data"
         )
         set(_srm_runtime_comment "Copying settings.ini and data/ to the build directory")
-        message(STATUS "data/ will be copied into the build directory")
-    elseif(SRM_COPY_DATA)
-        message(STATUS "data/ is not in the source tree; not copying it")
-    else()
-        message(STATUS "data/ will not be copied into the build directory")
     endif()
 
     add_custom_target(copy_runtime_resources ALL
@@ -324,6 +331,28 @@ else()
         ${_srm_copy_data_command}
         COMMENT "${_srm_runtime_comment}"
     )
+
+    # $<TARGET_FILE_DIR> is the per-config output directory. On a
+    # single-config generator it is CMAKE_BINARY_DIR, which the target
+    # above already fills.
+    if(CMAKE_CONFIGURATION_TYPES AND _srm_copy_data_tool)
+        add_custom_command(TARGET appspeech-rate-meter-2 POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${CMAKE_SOURCE_DIR}/settings.ini"
+                "$<TARGET_FILE_DIR:appspeech-rate-meter-2>/settings.ini"
+            COMMAND ${CMAKE_COMMAND} -E ${_srm_copy_data_tool}
+                "${CMAKE_SOURCE_DIR}/data"
+                "$<TARGET_FILE_DIR:appspeech-rate-meter-2>/data"
+            COMMENT "Copying settings.ini and data/ next to the executable"
+        )
+    elseif(CMAKE_CONFIGURATION_TYPES)
+        add_custom_command(TARGET appspeech-rate-meter-2 POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${CMAKE_SOURCE_DIR}/settings.ini"
+                "$<TARGET_FILE_DIR:appspeech-rate-meter-2>/settings.ini"
+            COMMENT "Copying settings.ini next to the executable"
+        )
+    endif()
 endif()
 
 add_dependencies(appspeech-rate-meter-2 copy_runtime_resources)
