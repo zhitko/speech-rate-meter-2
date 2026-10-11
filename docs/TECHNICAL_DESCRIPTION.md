@@ -475,7 +475,7 @@ K1 = 0.71          # default
 R_s_legacy = K1 * N_v * 60 / T_s        # words per minute
 ```
 
-`T_s` is the whole buffer, sample count / 8000. It includes interior pauses and any silence before the first speech frame and after the last. `K1` folds “vowels per minute” into “words per minute”. It is not derived at runtime. If `T_s` is 0 the current code divides by zero; the UI returns before that when duration is 0.
+`T_s` is the whole buffer, sample count / 8000. It includes interior pauses and any silence before the first speech frame and after the last. `K1` folds “vowels per minute” into “words per minute”. It is not derived at runtime. If `T_s` is not positive, `metricsFromLengths` returns an invalid result and does not divide.
 
 Section 11 checks this legacy formula on stored lengths, before a silence mask exists.
 
