@@ -206,6 +206,8 @@ void testDurationStatistics()
     expect(stats.count == 4, "duration count");
     expectNear(stats.mean, 0.25, "arithmetic mean");
     expectNear(stats.median, 0.25, "even median averages the two central values");
+    expectNear(stats.p25, 0.175, "25th percentile interpolates");
+    expectNear(stats.p75, 0.325, "75th percentile interpolates");
     expectNear(stats.min, 0.10, "min duration");
     expectNear(stats.max, 0.40, "max duration");
     expectNear(stats.stddev, std::sqrt(0.05 / 3.0), "sample standard deviation");
@@ -231,7 +233,7 @@ void testDurationStatistics()
 
 void testPhrasalPauseCounting()
 {
-    expect(speechrate::kDefaultPhrasalPauseMs == 150, "default phrasal pause is 150 ms");
+    expect(speechrate::kDefaultPhrasalPauseMs == 200, "default phrasal pause is 200 ms");
 
     auto run = [](int frames, std::uint8_t silent) {
         return std::vector<std::uint8_t>(static_cast<std::size_t>(frames), silent);
@@ -251,6 +253,9 @@ void testPhrasalPauseCounting()
     mask = join(mask, run(20, 1));
     expect(speechrate::countPhrasalPauses(mask, 120, 150) == 1,
         "only the interior 150 ms run counts; 135 ms and the edges do not");
+    const std::vector<double> onePause = speechrate::phrasalPauseDurations(mask, 120, 150);
+    expect(onePause.size() == 1, "duration list matches the count");
+    expectNear(onePause.front(), 10.0 * 120.0 / 8000.0, "150 ms run is 10 hops");
 
     mask = join(run(4, 0), run(10, 1));
     mask = join(mask, run(2, 0));
@@ -258,6 +263,13 @@ void testPhrasalPauseCounting()
     mask = join(mask, run(2, 0));
     expect(speechrate::countPhrasalPauses(mask, 120, 150) == 2, "two interior pauses");
     expect(speechrate::countPhrasalPauses(mask, 120, 151) == 1, "151 ms drops the 150 ms run");
+    // 14 hops is 210 ms, the first multiple of the 15 ms hop at or above the 200 ms default.
+    std::vector<std::uint8_t> atDefault = join(run(4, 0), run(10, 1));
+    atDefault = join(atDefault, run(2, 0));
+    atDefault = join(atDefault, run(14, 1));
+    atDefault = join(atDefault, run(2, 0));
+    expect(speechrate::countPhrasalPauses(atDefault, 120, speechrate::kDefaultPhrasalPauseMs) == 1,
+        "the 200 ms default keeps the 210 ms run and drops the 150 ms run");
     expect(speechrate::countPhrasalPauses(mask, 120, 10000) == 0, "a huge threshold counts nothing");
 
     expect(speechrate::countPhrasalPauses(run(40, 1), 120, 150) == 0, "silence with no speech is not a pause");
@@ -329,6 +341,232 @@ void testWholeRecordingSummary()
     expect(quiet.vowelCount == 0 && quiet.phrasalPauseCount == 0, "silence has no vowels and no interior pause");
 }
 
+void addSteady(std::vector<float>& samples, int start, int length, double frequency, double amplitude)
+{
+    const int count = static_cast<int>(samples.size());
+    for (int index = 0; index < length && start + index < count; ++index) {
+        samples[static_cast<std::size_t>(start + index)] += static_cast<float>(
+            amplitude * std::sin(2 * M_PI * frequency * index / 8000.0));
+    }
+}
+
+void testPauseTotalsJoin()
+{
+    speechrate::Parts left;
+    left.pauseCount = 1;
+    left.pauseTotalSec = 0.4;
+    speechrate::Parts right;
+    right.pauseCount = 2;
+    right.pauseTotalSec = 0.5;
+    left.speechSpanSec = 1.5;
+    right.speechSpanSec = 2.5;
+    speechrate::appendParts(left, right);
+    expect(left.pauseCount == 3, "joined pause counts add");
+    expectNear(left.pauseTotalSec, 0.9, "joined pause time adds");
+    expectNear(left.speechSpanSec, 4.0, "joined speech spans add");
+}
+
+void testSpeechSpan()
+{
+    const std::vector<std::uint8_t> silent { 1, 1, 0, 0, 1, 0, 1 };
+    expectNear(speechrate::speechSpanSec(silent, 8000), 4.0, "span runs from the first speech frame through the last");
+    expectNear(speechrate::speechSpanSec({}, 120), 0.0, "an empty mask has no span");
+    expectNear(speechrate::speechSpanSec({ 1, 1 }, 120), 0.0, "silence has no span");
+    expectNear(speechrate::speechSpanSec({ 0 }, 8000), 1.0, "one speech frame lasts one hop");
+}
+
+void testDirectSpeechRatePublishing()
+{
+    speechrate::Config cfg;
+    speechrate::Metrics metrics = speechrate::metricsFromLengths({ 4, 10 }, { 40 }, 10.0, cfg);
+    speechrate::applyPauseStats(metrics, 1, 2.0, 8.0, cfg);
+    expectNear(metrics.legacySpeechRate, 0.71 * 2.0 * 60.0 / 10.0, "legacy speech rate uses the whole buffer");
+    expectNear(metrics.directSpeechRate, 0.71 * 2.0 * 60.0 / 8.0, "direct speech rate uses the span");
+    expectNear(metrics.speechRate, metrics.directSpeechRate, "the default speech method publishes the direct rate");
+    expectNear(metrics.speechSpanSec, 8.0, "the span is kept");
+    expectNear(metrics.directArticulationRate, 0.71 * 2.0 * 60.0 / 6.0,
+        "direct articulation removes pauses from the span");
+    expect(metrics.directArticulationRate > metrics.directSpeechRate,
+        "pauses make direct articulation faster than direct speech rate");
+    expect(metrics.articulationRate + 1e-9 >= metrics.speechRate,
+        "published articulation stays at or above published speech rate");
+
+    speechrate::Config legacy = cfg;
+    legacy.speechRateMethod = speechrate::SpeechMethod::Legacy;
+    legacy.articulationMethod = speechrate::ArticulationMethod::Legacy;
+    speechrate::Metrics legacyMetrics = speechrate::metricsFromLengths({ 4, 10 }, { 40 }, 10.0, legacy);
+    const double legacyArticulation = legacyMetrics.articulationRate;
+    speechrate::applyPauseStats(legacyMetrics, 1, 2.0, 8.0, legacy);
+    expectNear(legacyMetrics.speechRate, legacyMetrics.legacySpeechRate,
+        "legacy method publishes the whole-buffer rate");
+    expectNear(legacyMetrics.articulationRate, legacyArticulation,
+        "legacy method publishes the length formula");
+    expectNear(legacyMetrics.directSpeechRate, metrics.directSpeechRate,
+        "the direct speech rate is still computed in legacy mode");
+
+    speechrate::Metrics missing = speechrate::metricsFromLengths({ 4, 10 }, { 40 }, 10.0, cfg);
+    speechrate::applyPauseStats(missing, 0, 0.0, 0.0, cfg);
+    expectNear(missing.directSpeechRate, missing.legacySpeechRate,
+        "a missing span uses the whole buffer");
+    expectNear(missing.directArticulationRate, missing.directSpeechRate,
+        "no pauses keeps the two direct rates equal");
+
+    expectNear(speechrate::directSpeechRate(10, 8.0, 0.71), 0.71 * 60.0 * 10.0 / 8.0, "direct formula");
+    expectNear(speechrate::directSpeechRate(10, 0.0, 0.71), 0.0, "a non-positive span is a zero rate");
+}
+
+void testDirectArticulationFormula()
+{
+    expectNear(speechrate::directArticulationRate(10, 10.0, 0.0, 0.71),
+        0.71 * 60.0 * 10.0 / 10.0, "no pauses leaves articulation equal to speech rate");
+    expectNear(speechrate::directArticulationRate(10, 10.0, 2.5, 0.71),
+        0.71 * 60.0 * 10.0 / 7.5, "speaking time excludes the pause sum");
+    expectNear(speechrate::directArticulationRate(10, 10.0, 10.0, 0.71),
+        0.71 * 60.0 * 10.0 / 10.0, "a fully paused buffer falls back to speech rate");
+    expectNear(speechrate::directArticulationRate(0, 10.0, 2.0, 0.71), 0.0, "no vowels is a zero rate");
+    expect(speechrate::directArticulationRate(4, 8.0, 1.0, 0.71)
+            > speechrate::directArticulationRate(4, 8.0, 0.0, 0.71),
+        "removing pauses raises articulation");
+}
+
+void testSilenceThresholdAdapts()
+{
+    speechrate::Config cfg;
+    const std::vector<double> flat(50, 10.0);
+    expectNear(speechrate::silenceThreshold(flat, cfg), speechrate::speechGateLevel(flat, cfg),
+        "a flat contour keeps the noise-floor gate");
+
+    std::vector<double> quiet(200, 5.0);
+    for (int index = 160; index < 200; ++index)
+        quiet[static_cast<std::size_t>(index)] = 200.0;
+    std::vector<double> loud = quiet;
+    for (double& value : loud)
+        value *= 8.0;
+    const double quietLevel = speechrate::silenceThreshold(quiet, cfg);
+    const double loudLevel = speechrate::silenceThreshold(loud, cfg);
+    expect(loudLevel > quietLevel * 2.0, "a louder take raises the silence level");
+    expect(quietLevel < 200.0 * speechrate::kSilenceMaxFraction, "the level stays under the speech peak");
+}
+
+std::vector<float> threeBursts()
+{
+    constexpr int kRate = 8000;
+    std::vector<float> samples(static_cast<std::size_t>(kRate * 2), 0);
+    const int vowel = 960;
+    int cursor = static_cast<int>(0.20 * kRate);
+    addTone(samples, cursor, vowel, 150, 6000);
+    cursor += vowel + static_cast<int>(0.08 * kRate);
+    addTone(samples, cursor, vowel, 150, 6000);
+    cursor += vowel + static_cast<int>(0.40 * kRate);
+    addTone(samples, cursor, vowel, 160, 6000);
+    return samples;
+}
+
+void testDirectPausesFromSignal()
+{
+    const std::vector<float> samples = threeBursts();
+    speechrate::Config direct;
+    const speechrate::Measurement measured = speechrate::measure(samples, direct);
+    expect(measured.metrics.valid, "three bursts are measurable speech");
+    expect(measured.metrics.pauseCount == 1, "the 80 ms closure is not a pause; the 400 ms gap is");
+    expect(measured.metrics.pauseTotal > 0.25 && measured.metrics.pauseTotal < 0.55,
+        "the counted pause is about 400 ms");
+    expectNear(measured.metrics.pauseMean, measured.metrics.pauseTotal, "one pause, mean equals the total");
+    expect(measured.metrics.speechSpanSec > 0.0
+            && measured.metrics.speechSpanSec < measured.metrics.speechDuration,
+        "the span drops leading and trailing silence");
+    expectNear(measured.metrics.directSpeechRate,
+        direct.k1 * measured.metrics.vowelCount * 60.0 / measured.metrics.speechSpanSec,
+        "direct speech rate uses K1 and the span");
+    expectNear(measured.metrics.speechRate, measured.metrics.directSpeechRate,
+        "the default speech method publishes the direct rate");
+    expectNear(measured.metrics.directArticulationRate,
+        direct.k1 * measured.metrics.vowelCount * 60.0
+            / (measured.metrics.speechSpanSec - measured.metrics.pauseTotal),
+        "direct articulation uses K1 and the span minus the pause sum");
+    expect(measured.metrics.directArticulationRate > measured.metrics.directSpeechRate,
+        "articulation is above speech rate when a pause was removed");
+    expectNear(measured.metrics.articulationRate, measured.metrics.directArticulationRate,
+        "the default articulation method publishes the direct rate");
+    expectNear(measured.metrics.phrasePauses, measured.metrics.pauseMean,
+        "the default pause tile is the direct mean");
+
+    const speechrate::Metrics legacyOnly = speechrate::metricsFromLengths(
+        measured.parts.vowelLengths,
+        measured.parts.gapLengths,
+        measured.parts.speechDuration,
+        direct,
+        measured.parts.vowelMaxFrames,
+        measured.parts.gapMaxFrames);
+    expectNear(measured.metrics.legacySpeechRate, legacyOnly.speechRate,
+        "legacy speech rate is the whole buffer");
+    expect(measured.metrics.directSpeechRate > measured.metrics.legacySpeechRate,
+        "leading silence makes the direct rate higher");
+    expectNear(measured.metrics.legacyArticulationRate, legacyOnly.articulationRate,
+        "legacy articulation is the length formula");
+    expectNear(measured.metrics.legacyPauseScore, legacyOnly.phrasePauses,
+        "legacy pause score is the indirect gap score");
+
+    speechrate::Config legacy = direct;
+    legacy.speechRateMethod = speechrate::SpeechMethod::Legacy;
+    legacy.articulationMethod = speechrate::ArticulationMethod::Legacy;
+    const speechrate::Measurement legacyMeasured = speechrate::measure(samples, legacy);
+    expectNear(legacyMeasured.metrics.speechRate, legacyMeasured.metrics.legacySpeechRate,
+        "legacy method publishes the old speech rate");
+    expectNear(legacyMeasured.metrics.articulationRate, legacyMeasured.metrics.legacyArticulationRate,
+        "legacy method publishes the old articulation rate");
+    expectNear(legacyMeasured.metrics.phrasePauses, legacyMeasured.metrics.legacyPauseScore,
+        "legacy method publishes the old pause score");
+    expectNear(legacyMeasured.metrics.directSpeechRate, measured.metrics.directSpeechRate,
+        "the direct speech rate is still computed in legacy mode");
+    expectNear(legacyMeasured.metrics.directArticulationRate, measured.metrics.directArticulationRate,
+        "the direct articulation rate is still computed in legacy mode");
+    expect(std::fabs(legacyMeasured.metrics.articulationRate - measured.metrics.articulationRate) > 1.0,
+        "the two methods disagree once a real pause is present");
+
+    const speechrate::RecordingSummary summary = speechrate::summarizeRecording(samples, direct);
+    expect(summary.phrasalPauseCount == measured.metrics.pauseCount, "summary pause count matches the tempo path");
+    expectNear(summary.pauseTotalSec, measured.metrics.pauseTotal, "summary pause sum matches");
+    expectNear(summary.directPauseMeanSec, summary.pauseDurations.mean, "shown mean is the distribution mean");
+    expectNear(summary.pauseRatio, summary.pauseTotalSec / summary.speechDurationSec, "pause ratio is sum over duration");
+    expect(summary.paceValid, "the compare block has a pace");
+    expectNear(summary.directSpeechRate, measured.metrics.directSpeechRate, "summary direct speech rate");
+    expectNear(summary.legacySpeechRate, measured.metrics.legacySpeechRate, "summary legacy speech rate");
+    expectNear(summary.speechRate, measured.metrics.speechRate, "summary publishes the selected speech rate");
+    expectNear(summary.directArticulationRate, measured.metrics.directArticulationRate, "summary direct rate");
+    expectNear(summary.legacyArticulationRate, measured.metrics.legacyArticulationRate, "summary legacy rate");
+    expectNear(summary.legacyPauseScore, measured.metrics.legacyPauseScore, "summary legacy pause score");
+    expect(summary.pauseDurations.p25 <= summary.pauseDurations.median
+            && summary.pauseDurations.median <= summary.pauseDurations.p75,
+        "pause percentiles are ordered");
+    int histogramTotal = 0;
+    for (const speechrate::HistogramBin& bin : summary.pauseDurations.histogram)
+        histogramTotal += bin.count;
+    expect(histogramTotal == summary.phrasalPauseCount, "pause histogram counts every pause");
+    expectNear(summary.pauseDurations.histogramBinSec, speechrate::kPauseHistogramBinSec, "pause bars are 50 ms");
+
+    std::vector<float> quieter = samples;
+    std::vector<float> louder = samples;
+    for (float& sample : quieter)
+        sample = static_cast<float>(sample * 0.3);
+    for (float& sample : louder)
+        sample = static_cast<float>(sample * 3.0);
+    const speechrate::RecordingSummary quietSummary = speechrate::summarizeRecording(quieter, direct);
+    const speechrate::RecordingSummary loudSummary = speechrate::summarizeRecording(louder, direct);
+    expect(quietSummary.phrasalPauseCount == 1 && loudSummary.phrasalPauseCount == 1,
+        "pause count does not follow the recording gain");
+    expect(std::fabs(quietSummary.pauseTotalSec - summary.pauseTotalSec) <= 0.02
+            && std::fabs(loudSummary.pauseTotalSec - summary.pauseTotalSec) <= 0.02,
+        "pause time stays within one hop when the gain changes");
+
+    std::vector<float> voicedGap(static_cast<std::size_t>(8000 * 2), 0);
+    addTone(voicedGap, 1600, 960, 150, 6000);
+    addSteady(voicedGap, 1600 + 960, static_cast<int>(0.40 * 8000), 150, 180);
+    addTone(voicedGap, 1600 + 960 + static_cast<int>(0.40 * 8000), 960, 150, 6000);
+    const speechrate::RecordingSummary voiced = speechrate::summarizeRecording(voicedGap, direct);
+    expect(voiced.phrasalPauseCount == 0, "a quiet voiced stretch is not a pause");
+}
+
 } // namespace
 
 int main()
@@ -347,6 +585,12 @@ int main()
     testDurationStatistics();
     testPhrasalPauseCounting();
     testWholeRecordingSummary();
+    testPauseTotalsJoin();
+    testSpeechSpan();
+    testDirectSpeechRatePublishing();
+    testDirectArticulationFormula();
+    testSilenceThresholdAdapts();
+    testDirectPausesFromSignal();
 
     if (g_failures != 0) {
         std::cerr << g_failures << " failure(s)\n";

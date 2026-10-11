@@ -24,8 +24,10 @@ class JobQueue;
  * pauses become the duration-weighted mean of every kept phrase. Speech stays
  * the total. Home labels that state Mean values. After Stop, and after Open
  * File, a separate whole-recording summary counts vowel nuclei, phrasal
- * pauses, and vowel-duration statistics. That pass does not change the live
- * numbers.
+ * pauses (including their duration distribution), and vowel-duration
+ * statistics, and it keeps both the direct and legacy pause estimates.
+ * That pass does not replace the phrase means already shown. Live direct
+ * pauses use the analysis window, not the whole take.
  */
 class SessionApi : public QObject {
     Q_OBJECT

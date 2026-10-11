@@ -76,6 +76,36 @@ std::vector<int> lengthsOf(const std::vector<Run>& runs)
     return lengths;
 }
 
+double percentileValue(const std::vector<double>& values, double fraction)
+{
+    if (values.empty())
+        return 0;
+    std::vector<double> sorted = values;
+    const double clamped = std::clamp(fraction, 0.0, 1.0);
+    const auto rank = static_cast<std::size_t>(clamped * static_cast<double>(sorted.size() - 1));
+    std::nth_element(sorted.begin(), sorted.begin() + static_cast<std::ptrdiff_t>(rank), sorted.end());
+    return sorted[rank];
+}
+
+double percentileSorted(const std::vector<double>& sorted, double probability)
+{
+    const int count = static_cast<int>(sorted.size());
+    if (count < 1)
+        return 0;
+    if (count == 1)
+        return sorted.front();
+    const double rank = (static_cast<double>(count) - 1.0) * std::clamp(probability, 0.0, 1.0);
+    const int low = static_cast<int>(std::floor(rank));
+    const int high = static_cast<int>(std::ceil(rank));
+    const double fraction = rank - static_cast<double>(low);
+    return sorted[static_cast<std::size_t>(low)] * (1.0 - fraction)
+        + sorted[static_cast<std::size_t>(high)] * fraction;
+}
+
+std::vector<std::uint8_t> silenceMask(const std::vector<float>& samples,
+    const std::vector<double>& contour,
+    const Config& cfg);
+
 } // namespace
 
 double secondsFromFrames(double frameCount, int shift)
@@ -208,11 +238,95 @@ double speechGateLevel(const std::vector<double>& contour, const Config& cfg)
 {
     if (contour.empty())
         return cfg.minSpeechLevel;
-    std::vector<double> sorted = contour;
-    const double fraction = std::clamp(cfg.noiseFloorPercentile, 0.0, 1.0);
-    const auto rank = static_cast<std::size_t>(fraction * static_cast<double>(sorted.size() - 1));
-    std::nth_element(sorted.begin(), sorted.begin() + static_cast<std::ptrdiff_t>(rank), sorted.end());
-    return std::max(cfg.minSpeechLevel, sorted[rank] * cfg.speechOverNoise);
+    const double noise = percentileValue(contour, cfg.noiseFloorPercentile);
+    return std::max(cfg.minSpeechLevel, noise * cfg.speechOverNoise);
+}
+
+double silenceThreshold(const std::vector<double>& contour, const Config& cfg)
+{
+    if (contour.empty())
+        return cfg.minSpeechLevel;
+    const double low = percentileValue(contour, cfg.noiseFloorPercentile);
+    const double high = percentileValue(contour, kSilenceSpeechPercentile);
+    const double legacy = std::max(cfg.minSpeechLevel, low * cfg.speechOverNoise);
+    if (!(high > 0.0) || !(high > low * kSilenceContrast))
+        return legacy;
+
+    double threshold = high * kSilenceRelative;
+    const double noiseGate = low * cfg.speechOverNoise;
+    if (noiseGate > threshold)
+        threshold = noiseGate;
+    const double cap = high * kSilenceMaxFraction;
+    if (threshold > cap)
+        threshold = cap;
+    // The absolute floor only applies when speech itself is well above it.
+    // A quiet take keeps the relative level so its pauses can still be found.
+    if (high >= cfg.minSpeechLevel * 8.0 && cfg.minSpeechLevel > threshold)
+        threshold = std::min(cfg.minSpeechLevel, cap);
+    return threshold;
+}
+
+double directSpeechRate(int vowelCount, double speechSpanSec, double k1)
+{
+    if (!(speechSpanSec > 0.0) || vowelCount < 0 || !std::isfinite(k1))
+        return 0;
+    const double rate = k1 * static_cast<double>(vowelCount) * 60.0 / speechSpanSec;
+    return std::isfinite(rate) ? rate : 0;
+}
+
+double directArticulationRate(int vowelCount,
+    double speechSpanSec,
+    double pauseTotalSec,
+    double k1)
+{
+    if (!(speechSpanSec > 0.0) || vowelCount < 0 || !std::isfinite(k1) || !std::isfinite(pauseTotalSec))
+        return 0;
+    const double speechRate = directSpeechRate(vowelCount, speechSpanSec, k1);
+    const double speaking = speechSpanSec - std::max(0.0, pauseTotalSec);
+    if (!(speaking > 0.0))
+        return speechRate;
+    const double rate = k1 * static_cast<double>(vowelCount) * 60.0 / speaking;
+    if (!std::isfinite(rate) || speechRate > rate)
+        return speechRate;
+    return rate;
+}
+
+void applyPauseStats(Metrics& metrics,
+    int pauseCount,
+    double pauseTotalSec,
+    double speechSpanSec,
+    const Config& cfg)
+{
+    if (!metrics.valid)
+        return;
+    metrics.legacySpeechRate = metrics.speechRate;
+    metrics.legacyArticulationRate = metrics.articulationRate;
+    metrics.legacyPauseScore = metrics.phrasePauses;
+    metrics.pauseCount = std::max(0, pauseCount);
+    metrics.pauseTotal = std::isfinite(pauseTotalSec) ? std::max(0.0, pauseTotalSec) : 0.0;
+    metrics.pauseMean = metrics.pauseCount > 0 ? metrics.pauseTotal / static_cast<double>(metrics.pauseCount) : 0.0;
+    metrics.pauseRatio = metrics.speechDuration > 0.0 ? metrics.pauseTotal / metrics.speechDuration : 0.0;
+
+    double span = std::isfinite(speechSpanSec) && speechSpanSec > 0.0 ? speechSpanSec : metrics.speechDuration;
+    if (metrics.speechDuration > 0.0 && span > metrics.speechDuration)
+        span = metrics.speechDuration;
+    metrics.speechSpanSec = span;
+    metrics.directSpeechRate = directSpeechRate(metrics.vowelCount, span, cfg.k1);
+    metrics.directArticulationRate = directArticulationRate(
+        metrics.vowelCount, span, metrics.pauseTotal, cfg.k1);
+    if (cfg.speechRateMethod == SpeechMethod::Direct)
+        metrics.speechRate = metrics.directSpeechRate;
+    if (cfg.articulationMethod == ArticulationMethod::Direct) {
+        metrics.articulationRate = metrics.directArticulationRate;
+        metrics.phrasePauses = metrics.pauseMean;
+    }
+    // The published articulation rate stays at or above the published speech rate.
+    if (metrics.speechRate > metrics.articulationRate)
+        metrics.articulationRate = metrics.speechRate;
+    metrics.valid = std::isfinite(metrics.speechRate) && std::isfinite(metrics.articulationRate)
+        && std::isfinite(metrics.phrasePauses) && std::isfinite(metrics.fillerScore)
+        && std::isfinite(metrics.directSpeechRate) && std::isfinite(metrics.legacySpeechRate)
+        && std::isfinite(metrics.directArticulationRate) && std::isfinite(metrics.legacyArticulationRate);
 }
 
 std::vector<Run> gateNuclei(const std::vector<Run>& nuclei,
@@ -337,6 +451,9 @@ void appendParts(Parts& base, const Parts& extra)
     base.speechDuration += extra.speechDuration;
     base.vowelMaxFrames = std::max(base.vowelMaxFrames, extra.vowelMaxFrames);
     base.gapMaxFrames = std::max(base.gapMaxFrames, extra.gapMaxFrames);
+    base.pauseCount += extra.pauseCount;
+    base.pauseTotalSec += extra.pauseTotalSec;
+    base.speechSpanSec += extra.speechSpanSec;
 }
 
 bool sameMeasurement(const Config& left, const Config& right)
@@ -352,7 +469,10 @@ bool sameMeasurement(const Config& left, const Config& right)
         && left.k4 == right.k4
         && left.speechOverNoise == right.speechOverNoise
         && left.minSpeechLevel == right.minSpeechLevel
-        && left.noiseFloorPercentile == right.noiseFloorPercentile;
+        && left.noiseFloorPercentile == right.noiseFloorPercentile
+        && left.pauseThresholdMs == right.pauseThresholdMs
+        && left.articulationMethod == right.articulationMethod
+        && left.speechRateMethod == right.speechRateMethod;
 }
 
 Metrics blendMetrics(const Metrics& left, const Metrics& right)
@@ -451,6 +571,24 @@ Measurement measure(const std::vector<float>& samples, const Config& cfg)
         cfg,
         measurement.parts.vowelMaxFrames,
         measurement.parts.gapMaxFrames);
+    const std::vector<std::uint8_t> silent = silenceMask(samples, contour, cfg);
+    const std::vector<double> pauses = phrasalPauseDurations(silent, cfg.shift, cfg.pauseThresholdMs);
+    double pauseTotal = 0;
+    for (double duration : pauses)
+        pauseTotal += duration;
+    measurement.parts.pauseCount = static_cast<int>(pauses.size());
+    measurement.parts.pauseTotalSec = pauseTotal;
+    double span = speechSpanSec(silent, cfg.shift);
+    if (!(span > 0.0))
+        span = measurement.parts.speechDuration;
+    else if (span > measurement.parts.speechDuration)
+        span = measurement.parts.speechDuration;
+    measurement.parts.speechSpanSec = span;
+    applyPauseStats(measurement.metrics,
+        measurement.parts.pauseCount,
+        pauseTotal,
+        measurement.parts.speechSpanSec,
+        cfg);
     return measurement;
 }
 
@@ -519,9 +657,28 @@ bool frameVoiced(const std::vector<float>& samples, int frameIndex, int frame, i
     return peakNacf(samples, frameIndex * shift - half, frame) >= kVoicingNacf;
 }
 
+std::vector<std::uint8_t> silenceMask(const std::vector<float>& samples,
+    const std::vector<double>& contour,
+    const Config& cfg)
+{
+    const int frames = static_cast<int>(contour.size());
+    std::vector<std::uint8_t> silent(static_cast<std::size_t>(std::max(0, frames)), 0);
+    if (frames <= 0 || cfg.frame <= 0 || cfg.shift <= 0)
+        return silent;
+    const double threshold = silenceThreshold(contour, cfg);
+    for (int index = 0; index < frames; ++index) {
+        if (contour[static_cast<std::size_t>(index)] >= threshold)
+            continue;
+        if (frameVoiced(samples, index, cfg.frame, cfg.shift))
+            continue;
+        silent[static_cast<std::size_t>(index)] = 1;
+    }
+    return silent;
+}
+
 } // namespace
 
-DurationStats durationStatistics(const std::vector<double>& durationsSec)
+DurationStats durationStatistics(const std::vector<double>& durationsSec, double binSec, int maxBins)
 {
     DurationStats stats;
     std::vector<double> durations;
@@ -546,11 +703,9 @@ DurationStats durationStatistics(const std::vector<double>& durationsSec)
 
     std::vector<double> sorted = durations;
     std::sort(sorted.begin(), sorted.end());
-    const int mid = stats.count / 2;
-    if (stats.count % 2 == 1)
-        stats.median = sorted[static_cast<std::size_t>(mid)];
-    else
-        stats.median = 0.5 * (sorted[static_cast<std::size_t>(mid - 1)] + sorted[static_cast<std::size_t>(mid)]);
+    stats.median = percentileSorted(sorted, 0.5);
+    stats.p25 = percentileSorted(sorted, 0.25);
+    stats.p75 = percentileSorted(sorted, 0.75);
 
     if (stats.count >= 2) {
         double square = 0;
@@ -561,13 +716,17 @@ DurationStats durationStatistics(const std::vector<double>& durationsSec)
         stats.stddev = std::sqrt(square / static_cast<double>(stats.count - 1));
     }
 
-    const double binWidth = kVowelHistogramBinSec;
+    if (!(binSec > 0.0))
+        binSec = kVowelHistogramBinSec;
+    if (maxBins < 1)
+        maxBins = kVowelHistogramMaxBins;
+    const double binWidth = binSec;
     stats.histogramBinSec = binWidth;
     int needed = static_cast<int>(std::floor(stats.max / binWidth)) + 1;
     if (needed < 1)
         needed = 1;
-    const bool overflow = needed > kVowelHistogramMaxBins;
-    const int bins = overflow ? kVowelHistogramMaxBins : needed;
+    const bool overflow = needed > maxBins;
+    const int bins = overflow ? maxBins : needed;
     stats.histogram.resize(static_cast<std::size_t>(bins));
     for (int index = 0; index < bins; ++index) {
         HistogramBin& bin = stats.histogram[static_cast<std::size_t>(index)];
@@ -586,10 +745,13 @@ DurationStats durationStatistics(const std::vector<double>& durationsSec)
     return stats;
 }
 
-int countPhrasalPauses(const std::vector<std::uint8_t>& silent, int shiftSamples, int thresholdMs)
+std::vector<double> phrasalPauseDurations(const std::vector<std::uint8_t>& silent,
+    int shiftSamples,
+    int thresholdMs)
 {
+    std::vector<double> durations;
     if (shiftSamples <= 0 || silent.empty())
-        return 0;
+        return durations;
     const int count = static_cast<int>(silent.size());
     int firstSpeech = -1;
     int lastSpeech = -1;
@@ -601,18 +763,17 @@ int countPhrasalPauses(const std::vector<std::uint8_t>& silent, int shiftSamples
         }
     }
     if (firstSpeech < 0 || lastSpeech <= firstSpeech)
-        return 0;
+        return durations;
 
     if (thresholdMs < 0)
         thresholdMs = 0;
     const double frameSec = static_cast<double>(shiftSamples) / kSampleRate;
     const double thresholdSec = static_cast<double>(thresholdMs) / 1000.0;
 
-    int pauses = 0;
     int run = 0;
     const auto closeRun = [&]() {
         if (run > 0 && static_cast<double>(run) * frameSec + 1e-9 >= thresholdSec)
-            ++pauses;
+            durations.push_back(static_cast<double>(run) * frameSec);
         run = 0;
     };
     for (int index = firstSpeech + 1; index < lastSpeech; ++index) {
@@ -622,7 +783,32 @@ int countPhrasalPauses(const std::vector<std::uint8_t>& silent, int shiftSamples
             closeRun();
     }
     closeRun();
-    return pauses;
+    return durations;
+}
+
+int countPhrasalPauses(const std::vector<std::uint8_t>& silent, int shiftSamples, int thresholdMs)
+{
+    return static_cast<int>(phrasalPauseDurations(silent, shiftSamples, thresholdMs).size());
+}
+
+double speechSpanSec(const std::vector<std::uint8_t>& silent, int shiftSamples)
+{
+    if (shiftSamples <= 0 || silent.empty())
+        return 0;
+    int firstSpeech = -1;
+    int lastSpeech = -1;
+    const int count = static_cast<int>(silent.size());
+    for (int index = 0; index < count; ++index) {
+        if (silent[static_cast<std::size_t>(index)] != 0)
+            continue;
+        if (firstSpeech < 0)
+            firstSpeech = index;
+        lastSpeech = index;
+    }
+    if (firstSpeech < 0)
+        return 0;
+    const double frameSec = static_cast<double>(shiftSamples) / kSampleRate;
+    return static_cast<double>(lastSpeech - firstSpeech + 1) * frameSec;
 }
 
 RecordingSummary summarizeRecording(const std::vector<float>& samples,
@@ -634,26 +820,18 @@ RecordingSummary summarizeRecording(const std::vector<float>& samples,
     if (samples.empty() || cfg.frame <= 0 || cfg.shift <= 0)
         return summary;
 
+    Config local = cfg;
+    local.pauseThresholdMs = summary.pauseThresholdMs;
+    summary.speechDurationSec = static_cast<double>(samples.size()) / kSampleRate;
+
     const std::vector<double> contour = intensity(samples, cfg.frame, cfg.shift);
     summary.valid = true;
     if (contour.empty())
         return summary;
 
+    summary.silenceLevel = silenceThreshold(contour, local);
     const int frames = static_cast<int>(contour.size());
-    const double gate = speechGateLevel(contour, cfg);
-    std::vector<std::uint8_t> silent(static_cast<std::size_t>(frames), 0);
-    std::vector<std::uint8_t> voiced(static_cast<std::size_t>(frames), 0);
-    for (int index = 0; index < frames; ++index) {
-        const double level = contour[static_cast<std::size_t>(index)];
-        if (level < cfg.minSpeechLevel) {
-            silent[static_cast<std::size_t>(index)] = 1;
-            continue;
-        }
-        if (frameVoiced(samples, index, cfg.frame, cfg.shift))
-            voiced[static_cast<std::size_t>(index)] = 1;
-        if (level < gate && voiced[static_cast<std::size_t>(index)] == 0)
-            silent[static_cast<std::size_t>(index)] = 1;
-    }
+    const std::vector<std::uint8_t> silent = silenceMask(samples, contour, local);
 
     std::vector<Run> nuclei;
     const std::vector<double> normalized = normalize(contour);
@@ -676,7 +854,11 @@ RecordingSummary summarizeRecording(const std::vector<float>& samples,
                 peak = index;
             }
         }
-        if (peak >= 0 && peak < frames && voiced[static_cast<std::size_t>(peak)] != 0)
+        // A peak at or below the absolute floor was not treated as voiced before.
+        const bool voicedPeak = peak >= 0 && peak < frames
+            && contour[static_cast<std::size_t>(peak)] >= cfg.minSpeechLevel
+            && frameVoiced(samples, peak, cfg.frame, cfg.shift);
+        if (voicedPeak)
             kept.push_back(nucleus);
     }
 
@@ -685,9 +867,31 @@ RecordingSummary summarizeRecording(const std::vector<float>& samples,
     for (const Run& nucleus : kept)
         durations.push_back(secondsFromFrames(nucleus.length, cfg.shift));
 
+    const std::vector<double> pauses = phrasalPauseDurations(silent, cfg.shift, summary.pauseThresholdMs);
+    double pauseTotal = 0;
+    for (double duration : pauses)
+        pauseTotal += duration;
+
     summary.vowelCount = static_cast<int>(kept.size());
     summary.vowelDurations = durationStatistics(durations);
-    summary.phrasalPauseCount = countPhrasalPauses(silent, cfg.shift, summary.pauseThresholdMs);
+    summary.phrasalPauseCount = static_cast<int>(pauses.size());
+    summary.pauseTotalSec = pauseTotal;
+    summary.pauseRatio = summary.speechDurationSec > 0.0 ? pauseTotal / summary.speechDurationSec : 0.0;
+    summary.pauseDurations = durationStatistics(pauses, kPauseHistogramBinSec, kPauseHistogramMaxBins);
+    summary.directPauseMeanSec = summary.pauseDurations.mean;
+
+    const Measurement tempo = measure(samples, local);
+    if (tempo.metrics.valid) {
+        summary.paceValid = true;
+        summary.paceVowelCount = tempo.metrics.vowelCount;
+        summary.speechSpanSec = tempo.metrics.speechSpanSec;
+        summary.speechRate = tempo.metrics.speechRate;
+        summary.directSpeechRate = tempo.metrics.directSpeechRate;
+        summary.legacySpeechRate = tempo.metrics.legacySpeechRate;
+        summary.directArticulationRate = tempo.metrics.directArticulationRate;
+        summary.legacyArticulationRate = tempo.metrics.legacyArticulationRate;
+        summary.legacyPauseScore = tempo.metrics.legacyPauseScore;
+    }
     return summary;
 }
 

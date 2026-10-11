@@ -18,7 +18,7 @@ Package id: `by.intoncore.SpeechRateMeter2`. Version name `1.0.0`, version code 
 
 1. Press **Start**. The microphone stays open for the whole session.
 2. With **Detect speech automatically** on, a pause ends the current phrase, the phrase is measured, and the next one starts when you speak again. With it off, measuring starts when you press Start, a pause does not end the phrase, and the take is split into 15-second parts.
-3. While you speak, speech rate, articulation, fillers, and pauses follow the **analysis window** — the most recent kept speech (10 seconds by default) — so a change of pace shows within a few seconds. **Speech** is the total time measured since Start.
+3. While you speak, speech rate, articulation, fillers, and pauses follow the **analysis window** — the most recent kept speech (10 seconds by default) — so a change of pace shows within a few seconds. Direct articulation and the pause length use that same window, not a total since Start. **Speech** is the total time measured since Start.
 4. Press **Stop**. Home and History then show the mean speech rate, articulation, fillers, and pauses of every phrase kept from Start to Stop. Speech is the total time. The screen is labeled **Mean values**. A phrase shorter than one second is dropped.
 5. The scratch WAV stays after that phrase’s numbers are stored, so **Listen** can play it after **Stop**. Unless **Keep recording files** is on, those files are deleted when you leave the app. There is no waveform.
 
@@ -66,7 +66,7 @@ An **Advanced** checkbox at the bottom of Measurement is not saved and turns off
 | Section | What you control |
 | --- | --- |
 | **General (always visible)** | UI language (EN/RU), light/dark/system theme, accent color (Blue/Green/Purple/Orange/Red), navigation menu, font size, delete user data |
-| **Measurement (always visible)** | Analysis window, updates per minute, gauge (speech rate, articulation rate, or both), gauge median, pause length, Detect speech automatically, Slow and Fast ends of the gauge |
+| **Measurement (always visible)** | Analysis window, updates per minute, gauge (speech rate, articulation rate, or both), gauge median, pause length, phrasal-pause minimum, articulation method (direct or legacy), Detect speech automatically, Slow and Fast ends of the gauge |
 | **Advanced (hidden behind the checkbox)** | Keep recording files, voice-activity method and thresholds, calibration, intensity frame/shift/smooth, vowel-length limit, power-mean degree, coefficients K1–K4 and the filler range |
 
 **Detect speech automatically** measures background noise after Start, then waits for speech. A pause ends the phrase. When it is off, measuring starts when you press Start, a pause does not end the phrase, and the recording is saved in 15-second parts.

@@ -25,29 +25,69 @@
  * kVowelHistogramBinSec, with at most kVowelHistogramMaxBins bins; the last
  * bin is open-ended when durations run past that.
  *
- * A phrasal pause is an interior run of silent/unvoiced frames lasting at
- * least pauseThresholdMs (default kDefaultPhrasalPauseMs). A frame is silent
- * when its intensity is below the speech-gate level and it is not voiced.
- * Frames at or below minSpeechLevel are silence without a voicing test.
+ * A phrasal pause is an interior run of frames that are both quiet and
+ * unvoiced, lasting at least pauseThresholdMs (default kDefaultPhrasalPauseMs).
+ * Quiet is below silenceThreshold(): about 25 dB under the 98th percentile of
+ * the intensity contour, raised toward the noise floor and capped so it cannot
+ * climb into ordinary speech. A flat contour keeps the older noise-floor gate.
+ * A frame below that level still counts as speech when it is voiced, so a
+ * quiet vowel is not a pause. An unvoiced consonant with energy (a fricative)
+ * stays above the level. A stop closure is quiet and unvoiced, and the
+ * minimum length is what keeps a typical closure out of the pause list.
  * Silence before the first non-silent frame and after the last is not a
- * pause. Loud unvoiced consonants stay above the gate, so they are not pauses.
- * Run duration is frame count times the intensity hop.
+ * pause. Run duration is frame count times the intensity hop.
+ *
+ * Direct speech rate uses that same mask. T_span runs from the first
+ * non-silent frame through the last, so interior pauses stay in and leading
+ * and trailing silence stay out:
+ *   R_s = K1 * N_v * 60 / T_span
+ * Direct articulation then removes the pause sum from that span:
+ *   R_a = K1 * N_v * 60 / (T_span - sum of pause durations)
+ * K1 is shared, so the two direct rates match when there is no pause. N_v is
+ * the tempo vowel count, not the stricter summary count. The legacy speech
+ * rate keeps the whole buffer as T_s. The legacy articulation formula and
+ * the legacy pause score stay available.
+ *
+ * Live metrics use the current analysis window (the same audio as speech
+ * rate), not a total since Start. The whole-recording summary is the
+ * cumulative view: it includes silence between phrases and reports the
+ * pause-duration distribution plus both pause estimates.
  *
  * Limitations: hop quantization (15 ms at the default shift), the one-frame
  * short nucleus length, and the minimum-length rule can drop or shorten very
- * short vowels. Quiet speech near the noise floor can look like a pause.
- * The 150 ms floor is a conventional phrasal-pause cut and should be tuned
- * on real slow, medium, and fast samples. This path does not change the live
- * speech-rate, articulation, filler, or pause-score numbers.
+ * short vowels. A stop closure longer than the pause minimum is counted.
+ * Leading and trailing silence stay in T_s (legacy speech rate, and the
+ * Speech time) and out of T_span. They are not part of the pause sum.
  */
 namespace speechrate {
 
-constexpr int kDefaultPhrasalPauseMs = 150;
+constexpr int kDefaultPhrasalPauseMs = 200;
 constexpr double kVoicingNacf = 0.45;
 constexpr double kVoicingMinHz = 75.0;
 constexpr double kVoicingMaxHz = 400.0;
 constexpr double kVowelHistogramBinSec = 0.020;
 constexpr int kVowelHistogramMaxBins = 30;
+// Pause bars are wider than vowel bars: the default minimum is 200 ms.
+constexpr double kPauseHistogramBinSec = 0.050;
+constexpr int kPauseHistogramMaxBins = 40;
+// Speech reference for the adaptive silence level (see silenceThreshold).
+constexpr double kSilenceSpeechPercentile = 0.98;
+// 10^(-25/20): 25 dB below that reference.
+constexpr double kSilenceRelative = 0.05623413251903491;
+constexpr double kSilenceContrast = 1.5;
+constexpr double kSilenceMaxFraction = 0.20;
+
+/** Which articulation rate and pause tile the tempo path publishes. */
+enum class ArticulationMethod {
+    Direct = 0,
+    Legacy = 1,
+};
+
+/** Which speech rate the tempo path publishes. */
+enum class SpeechMethod {
+    Direct = 0,
+    Legacy = 1,
+};
 
 /**
  * Speech-rate analysis from vowel-like intensity peaks.
@@ -64,6 +104,10 @@ struct Config {
     double k3 = 0.30;
     double k4 = 100.0;
     double peakMargin = 0.009;
+    // Direct articulation subtracts interior pauses at least this long.
+    int pauseThresholdMs = kDefaultPhrasalPauseMs;
+    ArticulationMethod articulationMethod = ArticulationMethod::Direct;
+    SpeechMethod speechRateMethod = SpeechMethod::Direct;
     // Speech gate. A nucleus counts only when its raw intensity peak reaches
     // max(minSpeechLevel, noise floor * speechOverNoise). The noise floor is the
     // noiseFloorPercentile of the raw intensity contour of the analyzed buffer.
@@ -88,10 +132,20 @@ struct Moments {
 
 struct Metrics {
     bool valid = false;
-    double speechDuration = 0; // T_s
-    double speechRate = 0; // R_s
-    double articulationRate = 0; // R_a
-    double phrasePauses = 0; // P
+    double speechDuration = 0; // T_s, the whole buffer
+    double speechSpanSec = 0; // T_span used by the direct rate
+    double speechRate = 0; // published R_s (direct or legacy)
+    double articulationRate = 0; // published R_a (direct or legacy)
+    double phrasePauses = 0; // published pause value (direct mean, or legacy P)
+    double directSpeechRate = 0;
+    double legacySpeechRate = 0;
+    double directArticulationRate = 0;
+    double legacyArticulationRate = 0;
+    double legacyPauseScore = 0; // P from the indirect gap formula
+    int pauseCount = 0; // N_p
+    double pauseTotal = 0; // sum of interior pause durations, seconds
+    double pauseMean = 0; // direct T_p
+    double pauseRatio = 0; // pauseTotal / T_s
     double fillerScore = 0; // raw F
     int vowelCount = 0;
     int gapCount = 0;
@@ -144,6 +198,12 @@ struct Parts {
     double speechDuration = 0;
     double vowelMaxFrames = 0;
     double gapMaxFrames = 0;
+    // Interior phrasal pauses measured on this buffer. Joining phrases sums them.
+    int pauseCount = 0;
+    double pauseTotalSec = 0;
+    // Utterance span for this buffer. Joining phrases sums the spans.
+    // 0 means the span was not measured; the direct rate then uses T_s.
+    double speechSpanSec = 0;
 };
 
 struct Measurement {
@@ -198,6 +258,8 @@ struct DurationStats {
     int count = 0;
     double mean = 0;
     double median = 0;
+    double p25 = 0;
+    double p75 = 0;
     double min = 0;
     double max = 0;
     double stddev = 0;
@@ -210,15 +272,82 @@ struct RecordingSummary {
     int vowelCount = 0;
     int phrasalPauseCount = 0;
     int pauseThresholdMs = kDefaultPhrasalPauseMs;
+    double speechDurationSec = 0; // T_s of the whole buffer
+    double pauseTotalSec = 0; // Σ T_p
+    double pauseRatio = 0; // Σ T_p / T_s
     DurationStats vowelDurations;
+    DurationStats pauseDurations;
+    // Tempo comparison on the same buffer. paceValid is false when the
+    // vowel gate rejects the buffer (fewer than minVowels).
+    bool paceValid = false;
+    int paceVowelCount = 0; // N_v used by R_s and R_a
+    double speechSpanSec = 0;
+    double speechRate = 0; // published R_s
+    double directSpeechRate = 0;
+    double legacySpeechRate = 0;
+    double directArticulationRate = 0;
+    double legacyArticulationRate = 0;
+    double directPauseMeanSec = 0;
+    double legacyPauseScore = 0;
+    double silenceLevel = 0;
 };
 
 /**
- * Arithmetic mean, statistical median, min, max, and sample standard
- * deviation of durations in seconds, plus a fixed-width histogram.
- * An empty list returns zeros. Non-finite values are ignored.
+ * Arithmetic mean, statistical median, 25th and 75th percentiles, min, max,
+ * and sample standard deviation of durations in seconds, plus a fixed-width
+ * histogram. Percentiles use the linear rank (n − 1) * p. An empty list
+ * returns zeros. Non-finite values are ignored. binSec and maxBins default
+ * to the vowel histogram; pass the pause constants for pause durations.
  */
-DurationStats durationStatistics(const std::vector<double>& durationsSec);
+DurationStats durationStatistics(const std::vector<double>& durationsSec,
+    double binSec = kVowelHistogramBinSec,
+    int maxBins = kVowelHistogramMaxBins);
+
+/**
+ * Level below which a frame may be silence. Adaptive to the recording:
+ * 25 dB under the 98th percentile of intensity, not below the noise-floor
+ * gate, and not above 20% of that percentile. A contour with no contrast
+ * returns the older speech-gate level.
+ */
+double silenceThreshold(const std::vector<double>& contour, const Config& cfg);
+
+/**
+ * R_s = K1 * N_v * 60 / T_span. A non-positive span returns 0.
+ */
+double directSpeechRate(int vowelCount, double speechSpanSec, double k1);
+
+/**
+ * R_a = K1 * N_v * 60 / (T_span − Σ T_p). speechSpanSec is the utterance
+ * span, not the whole buffer. When the speaking time is not positive, or
+ * the result would fall below the direct speech rate on that span, returns
+ * that speech rate.
+ */
+double directArticulationRate(int vowelCount,
+    double speechSpanSec,
+    double pauseTotalSec,
+    double k1);
+
+/**
+ * Time from the first non-silent frame through the last, in seconds.
+ * A frame is non-silent when silent[i] == 0. Duration is frame count times
+ * shiftSamples / 8000. An empty mask, or a mask with no speech frame,
+ * returns 0. A single speech frame lasts one hop.
+ */
+double speechSpanSec(const std::vector<std::uint8_t>& silent, int shiftSamples);
+
+/**
+ * Copies the legacy headlines, fills the direct pause and speech-rate
+ * fields, and publishes the selected speech rate, articulation rate, and
+ * pause value. speechSpanSec is T_span for this buffer; 0 uses T_s, which
+ * is how a segment stored before the span was recorded is read.
+ * metricsFromLengths leaves the legacy speech rate and the legacy
+ * articulation pair in the published fields.
+ */
+void applyPauseStats(Metrics& metrics,
+    int pauseCount,
+    double pauseTotalSec,
+    double speechSpanSec,
+    const Config& cfg);
 
 /**
  * Interior silent/unvoiced runs whose duration is at least thresholdMs.
@@ -227,6 +356,14 @@ DurationStats durationStatistics(const std::vector<double>& durationsSec);
  * A buffer with no non-silent frame, or only one, has no phrasal pause.
  */
 int countPhrasalPauses(const std::vector<std::uint8_t>& silent,
+    int shiftSamples,
+    int thresholdMs);
+
+/**
+ * Durations, in seconds, of the runs countPhrasalPauses would count.
+ * Order is the order they occur. n frames last n * shiftSamples / 8000.
+ */
+std::vector<double> phrasalPauseDurations(const std::vector<std::uint8_t>& silent,
     int shiftSamples,
     int thresholdMs);
 

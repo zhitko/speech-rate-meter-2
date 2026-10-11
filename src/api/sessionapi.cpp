@@ -76,6 +76,13 @@ speechrate::Config configFrom(const AppSettings& settings)
     config.k2 = settings.articulationK2;
     config.k3 = settings.pausesK3;
     config.k4 = settings.fillerK4;
+    config.pauseThresholdMs = settings.phrasalPauseMs;
+    config.articulationMethod = settings.articulationMethod == 1
+        ? speechrate::ArticulationMethod::Legacy
+        : speechrate::ArticulationMethod::Direct;
+    config.speechRateMethod = settings.speechRateMethod == 1
+        ? speechrate::SpeechMethod::Legacy
+        : speechrate::SpeechMethod::Direct;
     return config;
 }
 
@@ -171,9 +178,31 @@ QString analysisCacheKey(const QString& path,
         + number(cfg.minSpeechLevel) + QLatin1Char('|')
         + number(cfg.noiseFloorPercentile) + QLatin1Char('|')
         + QString::number(cfg.minVowels) + QLatin1Char('|')
+        + QString::number(cfg.pauseThresholdMs) + QLatin1Char('|')
+        + QString::number(static_cast<int>(cfg.articulationMethod)) + QLatin1Char('|')
+        + QString::number(static_cast<int>(cfg.speechRateMethod)) + QLatin1Char('|')
         + QString::number(pauseThresholdMs) + QLatin1Char('|')
         + number(fillerMin) + QLatin1Char('|')
         + number(fillerMax);
+}
+
+QVariantList histogramToList(const std::vector<speechrate::HistogramBin>& bins)
+{
+    QVariantList histogram;
+    int firstBin = 0;
+    const int binCount = static_cast<int>(bins.size());
+    while (firstBin < binCount && bins[static_cast<std::size_t>(firstBin)].count == 0)
+        ++firstBin;
+    for (int index = firstBin; index < binCount; ++index) {
+        const speechrate::HistogramBin& bin = bins[static_cast<std::size_t>(index)];
+        QVariantMap entry;
+        entry.insert(QStringLiteral("startMs"), qRound(bin.startSec * 1000.0));
+        entry.insert(QStringLiteral("endMs"), qRound(bin.endSec * 1000.0));
+        entry.insert(QStringLiteral("count"), bin.count);
+        entry.insert(QStringLiteral("openEnded"), bin.openEnded);
+        histogram.push_back(entry);
+    }
+    return histogram;
 }
 
 QVariantMap summaryToMap(const speechrate::RecordingSummary& summary)
@@ -183,6 +212,9 @@ QVariantMap summaryToMap(const speechrate::RecordingSummary& summary)
     map.insert(QStringLiteral("vowelCount"), summary.vowelCount);
     map.insert(QStringLiteral("phrasalPauseCount"), summary.phrasalPauseCount);
     map.insert(QStringLiteral("pauseThresholdMs"), summary.pauseThresholdMs);
+    map.insert(QStringLiteral("speechDurationSec"), summary.speechDurationSec);
+    map.insert(QStringLiteral("pauseTotalSec"), summary.pauseTotalSec);
+    map.insert(QStringLiteral("pauseRatio"), summary.pauseRatio);
     map.insert(QStringLiteral("count"), summary.vowelDurations.count);
     map.insert(QStringLiteral("mean"), summary.vowelDurations.mean);
     map.insert(QStringLiteral("median"), summary.vowelDurations.median);
@@ -191,23 +223,25 @@ QVariantMap summaryToMap(const speechrate::RecordingSummary& summary)
     map.insert(QStringLiteral("stddev"), summary.vowelDurations.stddev);
     map.insert(QStringLiteral("histogramBinMs"),
         qRound(summary.vowelDurations.histogramBinSec * 1000.0));
-    QVariantList histogram;
-    int firstBin = 0;
-    const int binCount = static_cast<int>(summary.vowelDurations.histogram.size());
-    while (firstBin < binCount
-        && summary.vowelDurations.histogram[static_cast<std::size_t>(firstBin)].count == 0) {
-        ++firstBin;
-    }
-    for (int index = firstBin; index < binCount; ++index) {
-        const speechrate::HistogramBin& bin = summary.vowelDurations.histogram[static_cast<std::size_t>(index)];
-        QVariantMap entry;
-        entry.insert(QStringLiteral("startMs"), qRound(bin.startSec * 1000.0));
-        entry.insert(QStringLiteral("endMs"), qRound(bin.endSec * 1000.0));
-        entry.insert(QStringLiteral("count"), bin.count);
-        entry.insert(QStringLiteral("openEnded"), bin.openEnded);
-        histogram.push_back(entry);
-    }
-    map.insert(QStringLiteral("histogram"), histogram);
+    map.insert(QStringLiteral("histogram"), histogramToList(summary.vowelDurations.histogram));
+    map.insert(QStringLiteral("pauseMean"), summary.pauseDurations.mean);
+    map.insert(QStringLiteral("pauseMedian"), summary.pauseDurations.median);
+    map.insert(QStringLiteral("pauseP25"), summary.pauseDurations.p25);
+    map.insert(QStringLiteral("pauseP75"), summary.pauseDurations.p75);
+    map.insert(QStringLiteral("pauseMin"), summary.pauseDurations.min);
+    map.insert(QStringLiteral("pauseMax"), summary.pauseDurations.max);
+    map.insert(QStringLiteral("pauseHistogramBinMs"),
+        qRound(summary.pauseDurations.histogramBinSec * 1000.0));
+    map.insert(QStringLiteral("pauseHistogram"), histogramToList(summary.pauseDurations.histogram));
+    map.insert(QStringLiteral("paceValid"), summary.paceValid);
+    map.insert(QStringLiteral("paceVowelCount"), summary.paceVowelCount);
+    map.insert(QStringLiteral("speechRate"), summary.speechRate);
+    map.insert(QStringLiteral("directSpeechRate"), summary.directSpeechRate);
+    map.insert(QStringLiteral("legacySpeechRate"), summary.legacySpeechRate);
+    map.insert(QStringLiteral("directArticulationRate"), summary.directArticulationRate);
+    map.insert(QStringLiteral("legacyArticulationRate"), summary.legacyArticulationRate);
+    map.insert(QStringLiteral("directPauseMeanSec"), summary.directPauseMeanSec);
+    map.insert(QStringLiteral("legacyPauseScore"), summary.legacyPauseScore);
     return map;
 }
 
@@ -1424,12 +1458,13 @@ void SessionApi::applyMetrics(const QVariantMap& metrics)
     if (!SessionStore::takeMeasurement(metrics, parts, config, fillerMin, fillerMax))
         return;
 
-    const speechrate::Metrics phrase = speechrate::metricsFromLengths(parts.vowelLengths,
+    speechrate::Metrics phrase = speechrate::metricsFromLengths(parts.vowelLengths,
         parts.gapLengths,
         parts.speechDuration,
         config,
         parts.vowelMaxFrames,
         parts.gapMaxFrames);
+    speechrate::applyPauseStats(phrase, parts.pauseCount, parts.pauseTotalSec, parts.speechSpanSec, config);
 
     if (!acc.ready || (acc.pooled && speechrate::sameMeasurement(acc.config, config))) {
         if (!acc.ready)
@@ -1446,6 +1481,11 @@ void SessionApi::applyMetrics(const QVariantMap& metrics)
             acc.config,
             acc.parts.vowelMaxFrames,
             acc.parts.gapMaxFrames);
+        speechrate::applyPauseStats(acc.metrics,
+            acc.parts.pauseCount,
+            acc.parts.pauseTotalSec,
+            acc.parts.speechSpanSec,
+            acc.config);
         acc.ready = acc.metrics.valid;
     } else {
         acc.pooled = false;

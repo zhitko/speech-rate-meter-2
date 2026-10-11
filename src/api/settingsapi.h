@@ -42,6 +42,8 @@ class SettingsApi : public QObject {
     Q_PROPERTY(bool showWholeRecordingTile READ showWholeRecordingTile WRITE setShowWholeRecordingTile NOTIFY showWholeRecordingTileChanged)
     Q_PROPERTY(int pauseSec READ pauseSec WRITE setPauseSec NOTIFY pauseSecChanged)
     Q_PROPERTY(int phrasalPauseMs READ phrasalPauseMs WRITE setPhrasalPauseMs NOTIFY phrasalPauseMsChanged)
+    Q_PROPERTY(int articulationMethod READ articulationMethod WRITE setArticulationMethod NOTIFY articulationMethodChanged)
+    Q_PROPERTY(int speechRateMethod READ speechRateMethod WRITE setSpeechRateMethod NOTIFY speechRateMethodChanged)
     Q_PROPERTY(double slowWpm READ slowWpm WRITE setSlowWpm NOTIFY slowWpmChanged)
     Q_PROPERTY(double fastWpm READ fastWpm WRITE setFastWpm NOTIFY fastWpmChanged)
     Q_PROPERTY(int meanValueDegry READ meanValueDegry WRITE setMeanValueDegry NOTIFY meanValueDegryChanged)
@@ -140,6 +142,10 @@ public:
     void setPauseSec(int seconds);
     int phrasalPauseMs() const;
     void setPhrasalPauseMs(int milliseconds);
+    int articulationMethod() const;
+    void setArticulationMethod(int method);
+    int speechRateMethod() const;
+    void setSpeechRateMethod(int method);
     double slowWpm() const;
     void setSlowWpm(double wpm);
     double fastWpm() const;
@@ -203,6 +209,8 @@ signals:
     void showWholeRecordingTileChanged();
     void pauseSecChanged();
     void phrasalPauseMsChanged();
+    void articulationMethodChanged();
+    void speechRateMethodChanged();
     void slowWpmChanged();
     void fastWpmChanged();
     void meanValueDegryChanged();

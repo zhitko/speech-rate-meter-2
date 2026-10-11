@@ -440,6 +440,12 @@ void SessionStore::insertMeasurement(QVariantMap& target,
     target.insert(QStringLiteral("k2"), config.k2);
     target.insert(QStringLiteral("k3"), config.k3);
     target.insert(QStringLiteral("k4"), config.k4);
+    target.insert(QStringLiteral("pauseThresholdMs"), config.pauseThresholdMs);
+    target.insert(QStringLiteral("articulationMethod"), static_cast<int>(config.articulationMethod));
+    target.insert(QStringLiteral("speechRateMethod"), static_cast<int>(config.speechRateMethod));
+    target.insert(QStringLiteral("pauseCount"), parts.pauseCount);
+    target.insert(QStringLiteral("pauseTotalSec"), parts.pauseTotalSec);
+    target.insert(QStringLiteral("speechSpanSec"), parts.speechSpanSec);
     target.insert(QStringLiteral("fillerMin"), fillerMin);
     target.insert(QStringLiteral("fillerMax"), fillerMax);
 }
@@ -458,6 +464,10 @@ bool SessionStore::takeMeasurement(const QVariantMap& source,
     parts.speechDuration = source.value(QStringLiteral("speechDuration")).toDouble();
     parts.vowelMaxFrames = source.value(QStringLiteral("vowelMaxFrames")).toDouble();
     parts.gapMaxFrames = source.value(QStringLiteral("gapMaxFrames")).toDouble();
+    parts.pauseCount = source.value(QStringLiteral("pauseCount")).toInt();
+    parts.pauseTotalSec = source.value(QStringLiteral("pauseTotalSec")).toDouble();
+    if (source.contains(QStringLiteral("speechSpanSec")))
+        parts.speechSpanSec = source.value(QStringLiteral("speechSpanSec")).toDouble();
     config = {};
     config.frame = source.value(QStringLiteral("frame")).toInt();
     config.shift = source.value(QStringLiteral("shift")).toInt();
@@ -468,6 +478,18 @@ bool SessionStore::takeMeasurement(const QVariantMap& source,
     config.k2 = source.value(QStringLiteral("k2")).toDouble();
     config.k3 = source.value(QStringLiteral("k3")).toDouble();
     config.k4 = source.value(QStringLiteral("k4")).toDouble();
+    if (source.contains(QStringLiteral("pauseThresholdMs")))
+        config.pauseThresholdMs = source.value(QStringLiteral("pauseThresholdMs")).toInt();
+    if (source.contains(QStringLiteral("articulationMethod"))) {
+        config.articulationMethod = source.value(QStringLiteral("articulationMethod")).toInt() == 1
+            ? speechrate::ArticulationMethod::Legacy
+            : speechrate::ArticulationMethod::Direct;
+    }
+    if (source.contains(QStringLiteral("speechRateMethod"))) {
+        config.speechRateMethod = source.value(QStringLiteral("speechRateMethod")).toInt() == 1
+            ? speechrate::SpeechMethod::Legacy
+            : speechrate::SpeechMethod::Direct;
+    }
     fillerMin = source.value(QStringLiteral("fillerMin")).toDouble();
     fillerMax = source.value(QStringLiteral("fillerMax")).toDouble();
     return config.shift > 0 && parts.speechDuration > 0;
