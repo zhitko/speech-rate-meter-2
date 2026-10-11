@@ -52,6 +52,7 @@ class SessionApi : public QObject {
     Q_PROPERTY(bool busy READ busy NOTIFY busyChanged)
     Q_PROPERTY(QString errorMessage READ openFileError NOTIFY openFileErrorChanged)
     Q_PROPERTY(QStringList listenFiles READ listenFiles NOTIFY listenFilesChanged)
+    Q_PROPERTY(bool openedPlayback READ openedPlayback NOTIFY openedPlaybackChanged)
 
 public:
     enum Phase {
@@ -90,6 +91,7 @@ public:
     bool clearingUserData() const { return m_clearPending; }
     bool busy() const { return m_openFileBusy || m_clearPending; }
     QStringList listenFiles() const { return m_listenFiles; }
+    bool openedPlayback() const { return m_openedPlayback; }
 
     Q_INVOKABLE void startSession();
     Q_INVOKABLE void stopSession();
@@ -117,6 +119,7 @@ signals:
     void userDataCleared();
     void busyChanged();
     void listenFilesChanged();
+    void openedPlaybackChanged();
 
 private slots:
     void applyPhase(int phase, int seconds, int epoch);
@@ -130,6 +133,7 @@ private slots:
     void applyRecordingSummary(quint64 generation, QVariantMap summary);
     void notifySessions();
     void noteListenFile(quint64 generation, const QString& path);
+    void noteOpenedPlayback(quint64 generation, const QString& path);
 
 private:
     void beginCapture();
@@ -177,6 +181,7 @@ private:
     bool m_recordingSummaryPending = false;
     QVariantMap m_recordingSummary;
     QStringList m_listenFiles;
+    bool m_openedPlayback = false;
     quint64 m_listenGeneration = 0;
     QString m_shownSessionId;
     QString m_shownSessionStartedAt;

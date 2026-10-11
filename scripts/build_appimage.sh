@@ -122,6 +122,9 @@ configure_and_build() {
         -DCMAKE_INSTALL_PREFIX=/usr
         -DCMAKE_INSTALL_RPATH_USE_LINK_PATH=ON
         -DSPTK_INSTALL=OFF
+        # Test recordings stay on the build machine. Sessions are stored
+        # beside the AppImage file, not in this build directory.
+        -DSRM_COPY_DATA=OFF
     )
     if command -v ninja >/dev/null 2>&1; then
         cmake_args+=(-G Ninja)

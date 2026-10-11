@@ -2,9 +2,9 @@
 
 #include "helpers/logger.h"
 #include "helpers/settings.h"
-#include "src/services/helpers/wavFile.h"
 #include "src/services/sessionstore.h"
 #include "src/services/speechrateanalysis.h"
+#include "src/services/wavloader.h"
 #include "src/services/vadautocorrelationservice.h"
 #include "src/services/vadenergryservice.h"
 
@@ -112,87 +112,38 @@ QVariantMap metricsToMap(const speechrate::Metrics& metrics,
     return map;
 }
 
-std::vector<float> readWavSamples(const QString& path)
+QString playbackDir()
 {
-    WaveFile* wave = waveOpenFile(path.toStdString());
-    if (!wave || !wave->dataChunk || !wave->formatChunk) {
-        if (wave)
-            waveCloseFile(wave);
-        return {};
-    }
-
-    const std::uint32_t dataSize = littleEndianBytesToUInt32(wave->dataChunk->chunkDataSize);
-    const std::uint16_t bitDepth = littleEndianBytesToUInt16(wave->formatChunk->significantBitsPerSample);
-    const int bytesPerSample = bitDepth / 8;
-    std::vector<float> samples;
-    if (bytesPerSample > 0 && wave->dataChunk->waveformData && dataSize > 0) {
-        const auto* bytes = reinterpret_cast<const unsigned char*>(wave->dataChunk->waveformData);
-        const int count = static_cast<int>(dataSize / static_cast<std::uint32_t>(bytesPerSample));
-        samples.reserve(static_cast<std::size_t>(count));
-        for (int index = 0; index < count; ++index) {
-            const int offset = index * bytesPerSample;
-            if (offset + 1 >= static_cast<int>(dataSize))
-                break;
-            const auto value = static_cast<std::int16_t>(bytes[offset] | (bytes[offset + 1] << 8));
-            samples.push_back(static_cast<float>(value));
-        }
-    }
-    waveCloseFile(wave);
-    return samples;
+    return Settings::getAppDataDir() + QStringLiteral("/data/playback");
 }
 
-QString validateWavFile(const QString& path)
+void removeOpenedPlaybackFiles()
 {
-    const QFileInfo info(path);
-    if (!info.exists() || !info.isFile() || !info.isReadable())
-        return QCoreApplication::translate("SessionApi", "The selected file cannot be opened.");
+    QDir dir(playbackDir());
+    if (!dir.exists())
+        return;
+    const QFileInfoList files = dir.entryInfoList({ QStringLiteral("opened-test-*.wav") }, QDir::Files);
+    for (const QFileInfo& info : files)
+        QFile::remove(info.absoluteFilePath());
+}
 
-    QFile file(path);
-    if (!file.open(QIODevice::ReadOnly))
-        return QCoreApplication::translate("SessionApi", "The selected file cannot be opened.");
-    const QByteArray bytes = file.readAll();
-    if (bytes.size() < 12 || bytes.first(4) != "RIFF" || bytes.sliced(8, 4) != "WAVE") {
-        return QCoreApplication::translate("SessionApi", "The selected file is not a valid WAV file.");
-    }
+QString prepareOpenedPlayback(const std::vector<float>& samples, quint64 generation)
+{
+    if (!QDir().mkpath(playbackDir()))
+        return {};
+    const QString path = playbackDir() + QStringLiteral("/opened-test-")
+        + QString::number(generation) + QStringLiteral(".wav");
+    if (!writePcm16MonoWav(path, samples, kSampleRate))
+        return {};
+    return QFileInfo(path).absoluteFilePath();
+}
 
-    const auto u16 = [&bytes](qsizetype at) {
-        const auto* p = reinterpret_cast<const unsigned char*>(bytes.constData() + at);
-        return std::uint16_t(p[0] | (p[1] << 8));
-    };
-    const auto u32 = [&bytes](qsizetype at) {
-        const auto* p = reinterpret_cast<const unsigned char*>(bytes.constData() + at);
-        return std::uint32_t(p[0]) | (std::uint32_t(p[1]) << 8)
-            | (std::uint32_t(p[2]) << 16) | (std::uint32_t(p[3]) << 24);
-    };
-    const std::uint32_t riffSize = u32(4);
-    if (riffSize < 4 || static_cast<quint64>(riffSize) + 8 > static_cast<quint64>(bytes.size()))
-        return QCoreApplication::translate("SessionApi", "The selected file is not a valid WAV file.");
-
-    bool exactPcm = false;
-    bool validData = false;
-    qsizetype offset = 12;
-    const qsizetype riffEnd = static_cast<qsizetype>(riffSize) + 8;
-    while (offset + 8 <= riffEnd) {
-        const QByteArray id = bytes.sliced(offset, 4);
-        const std::uint32_t size = u32(offset + 4);
-        const quint64 end = static_cast<quint64>(offset) + 8 + size;
-        const quint64 paddedEnd = end + (size & 1U);
-        if (end > static_cast<quint64>(riffEnd) || paddedEnd > static_cast<quint64>(riffEnd))
-            return QCoreApplication::translate("SessionApi", "The selected file is not a valid WAV file.");
-        if (id == "fmt " && size >= 16) {
-            const qsizetype body = offset + 8;
-            exactPcm = u16(body) == 1 && u16(body + 2) == 1
-                && u32(body + 4) == kSampleRate && u32(body + 8) == kSampleRate * 2
-                && u16(body + 12) == 2 && u16(body + 14) == 16;
-        } else if (id == "data") {
-            validData = size >= 2 && (size % 2) == 0;
-        }
-        offset = static_cast<qsizetype>(paddedEnd);
-    }
-    if (!exactPcm || !validData) {
-        return QCoreApplication::translate(
-            "SessionApi", "Use a PCM WAV file: 8000 Hz, mono, signed 16-bit little-endian.");
-    }
+QString localPathFromUrl(const QUrl& url)
+{
+    if (url.isLocalFile() || url.scheme() == QLatin1String("file"))
+        return url.toLocalFile();
+    if (url.scheme().isEmpty())
+        return url.toString();
     return {};
 }
 
@@ -391,6 +342,7 @@ protected:
             }
 
             QVariantMap map;
+            QString openFileNotice;
             const auto stampJob = [&](QVariantMap& target) {
                 target.insert(QStringLiteral("scope"),
                     job.kind == JobKind::OpenFile ? QStringLiteral("file") : QStringLiteral("phrase"));
@@ -399,23 +351,37 @@ protected:
                 target.insert(QStringLiteral("sessionStartedAt"), job.sessionStartedAt);
             };
             if (job.kind == JobKind::OpenFile) {
-                const QString filePath = QFileInfo(job.path).canonicalFilePath();
-                if (filePath.isEmpty()) {
+                QString filePath = QFileInfo(job.path).canonicalFilePath();
+                if (filePath.isEmpty())
+                    filePath = QFileInfo(job.path).absoluteFilePath();
+                const WavLoadResult loaded = loadAnalysisWav(filePath);
+                if (!loaded.ok) {
+                    const QString error = loaded.error.isEmpty()
+                        ? QCoreApplication::translate("SessionApi", "The selected file cannot be opened.")
+                        : loaded.error;
                     QMetaObject::invokeMethod(m_api, "applyOpenFileFinished", Qt::QueuedConnection,
                         Q_ARG(bool, false),
-                        Q_ARG(QString, QCoreApplication::translate("SessionApi", "The selected file cannot be opened.")));
+                        Q_ARG(QString, error));
                     continue;
+                }
+                const QString playback = prepareOpenedPlayback(loaded.samples, job.generation);
+                if (!playback.isEmpty()) {
+                    QMetaObject::invokeMethod(m_api, "noteOpenedPlayback", Qt::QueuedConnection,
+                        Q_ARG(quint64, job.generation),
+                        Q_ARG(QString, playback));
+                } else {
+                    openFileNotice = QCoreApplication::translate("SessionApi",
+                        "The file was measured, but it could not be prepared for playback.");
                 }
                 const QString key = analysisCacheKey(filePath, job.config, job.pauseThresholdMs, job.fillerMin, job.fillerMax);
                 const auto cached = m_cache.constFind(key);
                 if (cached != m_cache.cend()) {
                     map = cached.value();
                 } else {
-                    const std::vector<float> samples = readWavSamples(job.path);
                     const speechrate::RecordingSummary summary = speechrate::summarizeRecording(
-                        samples, job.config, job.pauseThresholdMs);
+                        loaded.samples, job.config, job.pauseThresholdMs);
                     const QVariantMap summaryMap = summaryToMap(summary);
-                    const speechrate::Measurement measured = speechrate::measure(samples, job.config);
+                    const speechrate::Measurement measured = speechrate::measure(loaded.samples, job.config);
                     if (!measured.metrics.valid) {
                         const bool hasCounts = summary.vowelCount > 0 || summary.phrasalPauseCount > 0;
                         if (hasCounts) {
@@ -497,7 +463,7 @@ protected:
             QMetaObject::invokeMethod(m_api, "applyMetrics", Qt::QueuedConnection, Q_ARG(QVariantMap, map));
             if (job.kind == JobKind::OpenFile) {
                 QMetaObject::invokeMethod(m_api, "applyOpenFileFinished", Qt::QueuedConnection,
-                    Q_ARG(bool, true), Q_ARG(QString, QString()));
+                    Q_ARG(bool, true), Q_ARG(QString, openFileNotice));
             }
             if (map.value(QStringLiteral("stored")).toBool())
                 QMetaObject::invokeMethod(m_api, "notifySessions", Qt::QueuedConnection);
@@ -1143,6 +1109,7 @@ SessionApi::SessionApi(QObject* parent)
     connect(m_worker, &CaptureWorker::deviceFailed, this, &SessionApi::applyDeviceFailed, Qt::QueuedConnection);
     SessionStore::recoverPending();
     SessionStore::discardUnkeptRecordings();
+    removeOpenedPlaybackFiles();
     m_captureThread->start();
     m_analysisThread->start();
 }
@@ -1160,6 +1127,7 @@ SessionApi::~SessionApi()
     delete m_queue;
     m_worker = nullptr;
     SessionStore::discardUnkeptRecordings();
+    removeOpenedPlaybackFiles();
 }
 
 bool SessionApi::openFileAvailable() const
@@ -1198,6 +1166,10 @@ void SessionApi::startSession()
 
 void SessionApi::clearListenFiles()
 {
+    if (m_openedPlayback) {
+        m_openedPlayback = false;
+        emit openedPlaybackChanged();
+    }
     if (m_listenFiles.isEmpty())
         return;
     m_listenFiles.clear();
@@ -1212,6 +1184,30 @@ void SessionApi::noteListenFile(quint64 generation, const QString& path)
         return;
     m_listenFiles.append(path);
     emit listenFilesChanged();
+}
+
+void SessionApi::noteOpenedPlayback(quint64 generation, const QString& path)
+{
+    if (!m_alive.load() || generation != m_listenGeneration || path.isEmpty() || !QFileInfo::exists(path))
+        return;
+    if (!m_openedPlayback) {
+        m_openedPlayback = true;
+        emit openedPlaybackChanged();
+    }
+    // Replace whatever Listen was playing. Clearing first stops playback of a
+    // microphone recording before the opened file is shown.
+    if (!(m_listenFiles.size() == 1 && m_listenFiles.first() == path)) {
+        m_listenFiles.clear();
+        emit listenFilesChanged();
+        m_listenFiles.append(path);
+        emit listenFilesChanged();
+    }
+    const QFileInfoList older = QDir(playbackDir()).entryInfoList(
+        { QStringLiteral("opened-test-*.wav") }, QDir::Files);
+    for (const QFileInfo& info : older) {
+        if (info.absoluteFilePath() != path)
+            QFile::remove(info.absoluteFilePath());
+    }
 }
 
 void SessionApi::beginCapture()
@@ -1273,16 +1269,16 @@ void SessionApi::openWavFile(const QUrl& url)
 {
     if (m_sessionActive || m_startPending || m_stopPending || m_openFileBusy || m_clearPending || !openFileAvailable())
         return;
-    const QString path = url.isLocalFile() ? url.toLocalFile() : url.toString();
-    const QString error = path.isEmpty()
-        ? QCoreApplication::translate("SessionApi", "The selected file cannot be opened.")
-        : validateWavFile(path);
-    if (!error.isEmpty()) {
+    const QString path = localPathFromUrl(url);
+    const QFileInfo info(path);
+    if (path.isEmpty() || !info.exists() || !info.isFile() || !info.isReadable()) {
+        const QString error = QCoreApplication::translate("SessionApi", "The selected file cannot be opened.");
         setOpenFileError(error);
         emit openFileFinished(false, error);
         return;
     }
     ++m_captureGeneration;
+    m_listenGeneration = m_captureGeneration;
     resetResultState();
     setOpenFileError({});
     m_openFileBusy = true;

@@ -5,6 +5,7 @@
 #include <QDateTime>
 #include <QDebug>
 #include <QDir>
+#include <QFileInfo>
 #include <QIODevice>
 #include <QMediaDevices>
 #include <QUrl>
@@ -39,6 +40,8 @@ AudioApi::AudioApi(QObject* parent)
     connect(m_player, &QMediaPlayer::playbackStateChanged, this,
         [this](QMediaPlayer::PlaybackState state) {
             bool isPlaying = (state == QMediaPlayer::PlayingState);
+            if (isPlaying)
+                setPlaybackError({});
             if (m_isPlaying != isPlaying) {
                 m_isPlaying = isPlaying;
                 emit isPlayingChanged();
@@ -60,8 +63,11 @@ AudioApi::AudioApi(QObject* parent)
             });
         });
     connect(m_player, &QMediaPlayer::errorOccurred, this,
-        [this](QMediaPlayer::Error, const QString&) {
+        [this](QMediaPlayer::Error, const QString& message) {
             m_playlistActive = false;
+            const QString detail = message.trimmed();
+            const QString text = tr("The audio file could not be played.");
+            setPlaybackError(detail.isEmpty() ? text : text + QLatin1Char(' ') + detail);
         });
 
     // Forward BeepPlayer finished signal
@@ -154,13 +160,32 @@ void AudioApi::setVadMethod(int method)
     emit vadMethodChanged();
 }
 
+void AudioApi::setPlaybackError(const QString& error)
+{
+    if (m_playbackError == error)
+        return;
+    m_playbackError = error;
+    emit playbackErrorChanged();
+}
+
 void AudioApi::startFile(const QString& filePath)
 {
     if (!m_player) {
         LOG_CRITICAL() << "QMediaPlayer is not initialized";
+        setPlaybackError(tr("The audio file could not be played."));
         return;
     }
-    const QString fullPath = QDir(Settings::getAppDataDir()).filePath(filePath);
+    QString fullPath = filePath;
+    if (QFileInfo(filePath).isRelative())
+        fullPath = QDir(Settings::getAppDataDir()).filePath(filePath);
+    fullPath = QFileInfo(fullPath).absoluteFilePath();
+    if (!QFileInfo::exists(fullPath)) {
+        LOG_WARNING() << "Playback file is missing:" << fullPath;
+        m_playlistActive = false;
+        setPlaybackError(tr("The audio file could not be played."));
+        return;
+    }
+    setPlaybackError({});
     m_player->setSource(QUrl::fromLocalFile(fullPath));
     m_player->play();
 }
@@ -222,6 +247,7 @@ void AudioApi::stopPlayback()
     m_playlistActive = false;
     m_playlist.clear();
     m_playlistIndex = 0;
+    setPlaybackError({});
     if (m_player) {
         m_player->stop();
     }

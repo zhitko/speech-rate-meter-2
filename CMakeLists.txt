@@ -77,6 +77,8 @@ qt_add_executable(appspeech-rate-meter-2
     src/api/helpers/beepplayer.h
     src/services/wavfileservice.h
     src/services/wavfileservice.cpp
+    src/services/wavloader.h
+    src/services/wavloader.cpp
     src/services/vadenergryservice.h
     src/services/vadenergryservice.cpp
     src/services/vadautocorrelationservice.h
@@ -288,13 +290,39 @@ else()
         PRIVATE Qt6::Quick Qt6::Multimedia sptk OpenMP::OpenMP_CXX
     )
 
-    # Copy runtime resources to build directory so settings.ini and data/ are
-    # available next to the built executable. This runs at build time.
+    # settings.ini is copied beside the executable. data/ (test recordings)
+    # is copied for local and Windows builds so Open File starts in
+    # <build>/data/tests. AppImage passes -DSRM_COPY_DATA=OFF. Android uses
+    # application-local storage and does not enter this branch.
+    option(SRM_COPY_DATA "Copy data/ into the build directory" ON)
+
+    set(_srm_runtime_comment "Copying settings.ini to the build directory")
+    set(_srm_copy_data_command "")
+    if(SRM_COPY_DATA AND EXISTS "${CMAKE_SOURCE_DIR}/data")
+        if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.26")
+            set(_srm_copy_data_tool copy_directory_if_different)
+        else()
+            set(_srm_copy_data_tool copy_directory)
+        endif()
+        set(_srm_copy_data_command
+            COMMAND ${CMAKE_COMMAND} -E ${_srm_copy_data_tool}
+                "${CMAKE_SOURCE_DIR}/data"
+                "${CMAKE_BINARY_DIR}/data"
+        )
+        set(_srm_runtime_comment "Copying settings.ini and data/ to the build directory")
+        message(STATUS "data/ will be copied into the build directory")
+    elseif(SRM_COPY_DATA)
+        message(STATUS "data/ is not in the source tree; not copying it")
+    else()
+        message(STATUS "data/ will not be copied into the build directory")
+    endif()
+
     add_custom_target(copy_runtime_resources ALL
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
             "${CMAKE_SOURCE_DIR}/settings.ini"
             "${CMAKE_BINARY_DIR}/settings.ini"
-        COMMENT "Copying settings.ini to build directory"
+        ${_srm_copy_data_command}
+        COMMENT "${_srm_runtime_comment}"
     )
 endif()
 
@@ -326,6 +354,18 @@ if(NOT ANDROID)
     )
     target_link_libraries(sessionstore-test PRIVATE Qt6::Core)
     add_test(NAME sessionstore COMMAND sessionstore-test)
+
+    add_executable(wavloader-test
+        tests/wavloader_test.cpp
+        src/services/wavloader.cpp
+    )
+    target_include_directories(wavloader-test PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/services
+    )
+    target_link_libraries(wavloader-test PRIVATE Qt6::Core)
+    target_compile_definitions(wavloader-test PRIVATE "SRM_SOURCE_DIR=\"${CMAKE_SOURCE_DIR}\"")
+    add_test(NAME wavloader COMMAND wavloader-test)
 endif()
 
 include(GNUInstallDirs)

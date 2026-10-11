@@ -34,6 +34,12 @@ Page {
     readonly property bool showSpeechTile: settingsApi ? settingsApi.showSpeechTile : true
     readonly property bool showWholeRecordingTile: settingsApi ? settingsApi.showWholeRecordingTile : true
     readonly property bool gaugeAtRest: !sessionApi || (active && phase() !== SessionApi.Measuring)
+    readonly property string fileError: {
+        var opened = sessionApi && sessionApi.errorMessage ? sessionApi.errorMessage : ""
+        if (opened.length > 0)
+            return opened
+        return listenAudio.playbackError
+    }
 
     // With the navigation bar visible the page is shorter. Size the column from the
     // full width so a scrollbar that we are about to remove cannot change the layout.
@@ -276,7 +282,9 @@ Page {
                         Accessible.role: Accessible.Button
                         Accessible.name: listenAudio.isPlaying
                                          ? qsTr("Stop playback")
-                                         : qsTr("Listen to the recording")
+                                         : (sessionApi && sessionApi.openedPlayback
+                                            ? qsTr("Listen to test")
+                                            : qsTr("Listen to the recording"))
                         onClicked: {
                             if (listenAudio.isPlaying)
                                 listenAudio.stopPlayback()
@@ -319,7 +327,9 @@ Page {
                     Layout.fillWidth: true
                     horizontalAlignment: Text.AlignHCenter
                     wrapMode: Text.WordWrap
-                    text: listenAudio.isPlaying ? qsTr("Stop") : qsTr("Listen")
+                    text: listenAudio.isPlaying
+                          ? qsTr("Stop")
+                          : (sessionApi && sessionApi.openedPlayback ? qsTr("Listen to test") : qsTr("Listen"))
                     font.pixelSize: AppScale.fs(root.wideLayout ? 16 : 14)
                     font.weight: Font.DemiBold
                     color: Theme.onSurface(Material.theme)
@@ -678,10 +688,10 @@ Page {
 
                     Rectangle {
                         Layout.fillWidth: true
-                        visible: sessionApi && (sessionApi.busy || sessionApi.errorMessage.length > 0)
+                        visible: sessionApi && (sessionApi.busy || root.fileError.length > 0)
                         implicitHeight: bannerRow.implicitHeight + 24
                         radius: Theme.shapeLarge
-                        color: sessionApi && sessionApi.errorMessage.length > 0
+                        color: root.fileError.length > 0
                                ? Theme.errorContainer(Material.theme)
                                : Theme.secondaryContainer(Material.theme)
 
@@ -702,10 +712,10 @@ Page {
                             Label {
                                 Layout.fillWidth: true
                                 wrapMode: Text.Wrap
-                                text: sessionApi && sessionApi.errorMessage.length > 0
-                                      ? sessionApi.errorMessage
+                                text: root.fileError.length > 0
+                                      ? root.fileError
                                       : qsTr("Analyzing audio…")
-                                color: sessionApi && sessionApi.errorMessage.length > 0
+                                color: root.fileError.length > 0
                                        ? Theme.onErrorContainer(Material.theme)
                                        : Theme.onSecondaryContainer(Material.theme)
                                 font.pixelSize: AppScale.fs(14)

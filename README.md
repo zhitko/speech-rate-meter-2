@@ -75,7 +75,7 @@ An **Advanced** checkbox at the bottom of Measurement is not saved and turns off
 
 **Delete user data** removes saved sessions and any recording files still kept in `data/records`. Settings are kept.
 
-**Open File** (desktop, to the right of Start) measures one WAV without saving a session. It accepts only 8000 Hz, mono, signed 16-bit PCM.
+**Open File** (desktop, to the right of Start) measures one WAV without saving a session. PCM and 32-bit float files are converted to 8000 Hz mono before analysis, including other sample rates, stereo, and files with extra header chunks. **Listen to test** plays that converted file. A file that cannot be read shows an error.
 
 Settings take effect on the next phrase. The in-app [User Guide](docs/user_guide_en.md) describes the same flow for someone using the app.
 
@@ -98,7 +98,7 @@ Settings take effect on the next phrase. The in-app [User Guide](docs/user_guide
 | **Session file** | One JSON file per session under `data/sessions/`: every on-screen change and every kept phrase, including the vowel and gap lengths needed to recompute the joined result. No audio path. |
 | **Recording files** | A WAV under `data/records/` is written while a phrase is stored and can be played with **Listen** after Stop. It is deleted when the app closes unless **Keep recording files** is on. |
 | **Speech gate** | A buffer whose nuclei do not rise above the noise floor is not published and not stored, so silence does not read as fast speech. |
-| **Open File** | Desktop-only whole-file analysis of an 8000 Hz mono s16le WAV. It is not cut into phrases and is not written to History. |
+| **Open File** | Desktop-only whole-file analysis. PCM and float WAV files are converted to 8000 Hz mono, then measured. The result is not cut into phrases and is not written to History. Listen plays the converted file. |
 | **i18n** | English and Russian UI via Qt Linguist. |
 
 ---
