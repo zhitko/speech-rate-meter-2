@@ -338,6 +338,7 @@ if(NOT ANDROID)
         ${CMAKE_CURRENT_SOURCE_DIR}/src/services
     )
     target_link_libraries(wavloader-test PRIVATE Qt6::Core)
+    target_compile_definitions(wavloader-test PRIVATE "SRM_SOURCE_DIR=\"${CMAKE_SOURCE_DIR}\"")
     add_test(NAME wavloader COMMAND wavloader-test)
 endif()
 

@@ -22,6 +22,12 @@ void expect(bool condition, const char* message)
     }
 }
 
+void expectMsg(bool condition, const QString& message)
+{
+    const QByteArray utf8 = message.toUtf8();
+    expect(condition, utf8.constData());
+}
+
 void appendU16(QByteArray& bytes, quint16 value)
 {
     const char stored[2] = { char(value & 0xff), char((value >> 8) & 0xff) };
@@ -374,6 +380,67 @@ void testPlaybackRoundTrip()
         expect(loaded.samples[static_cast<std::size_t>(index)] == expected[index], "playback round trip value");
 }
 
+QString findBundledTestsDir()
+{
+    QStringList roots;
+#ifdef SRM_SOURCE_DIR
+    roots << QString::fromUtf8(SRM_SOURCE_DIR);
+#endif
+    roots << QDir::currentPath();
+    roots << QCoreApplication::applicationDirPath();
+
+    for (const QString& root : roots) {
+        QDir dir(root);
+        for (int depth = 0; depth < 7; ++depth) {
+            const QString candidate = dir.filePath(QStringLiteral("data/tests"));
+            if (QDir(candidate).exists())
+                return QDir(candidate).absolutePath();
+            if (!dir.cdUp())
+                break;
+        }
+    }
+    return {};
+}
+
+void testBundledRecordings()
+{
+    const QString dirPath = findBundledTestsDir();
+    QDir dir(dirPath);
+    const QStringList names = dirPath.isEmpty()
+        ? QStringList()
+        : dir.entryList({ QStringLiteral("*.wav"), QStringLiteral("*.WAV") }, QDir::Files, QDir::Name);
+    if (names.isEmpty()) {
+        std::cout << "data/tests absent, skipped\n";
+        return;
+    }
+
+    QTemporaryDir playback;
+    expect(playback.isValid(), "bundled playback temp dir");
+    if (!playback.isValid())
+        return;
+
+    int loadedCount = 0;
+    for (const QString& name : names) {
+        const WavLoadResult loaded = loadAnalysisWav(dir.filePath(name));
+        expectMsg(loaded.ok, name + QStringLiteral(" loads"));
+        expectMsg(!loaded.samples.empty(), name + QStringLiteral(" has samples"));
+        expectMsg(loaded.sampleRate > 0 && loaded.channelCount > 0 && loaded.bitsPerSample > 0,
+                  name + QStringLiteral(" reports format"));
+        if (!loaded.ok || loaded.samples.empty())
+            continue;
+
+        const QString out = playback.filePath(QStringLiteral("playback-%1.wav").arg(loadedCount));
+        expectMsg(writePcm16MonoWav(out, loaded.samples, 8000), name + QStringLiteral(" writes 8 kHz playback"));
+        const WavLoadResult again = loadAnalysisWav(out);
+        expectMsg(again.ok && again.samples.size() == loaded.samples.size() && again.sampleRate == 8000,
+                  name + QStringLiteral(" playback reloads at 8 kHz"));
+        ++loadedCount;
+    }
+
+    expect(loadedCount == names.size(), "every bundled wav loaded");
+    std::cout << "loaded " << loadedCount << " bundled test files from " << dirPath.toUtf8().constData() << '\n';
+}
+
 } // namespace
 
 int main(int argc, char** argv)
@@ -387,6 +454,7 @@ int main(int argc, char** argv)
     testCyrillicPath();
     testFailures();
     testPlaybackRoundTrip();
+    testBundledRecordings();
     if (failures != 0) {
         std::cerr << failures << " failure(s)\n";
         return EXIT_FAILURE;
