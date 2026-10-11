@@ -250,14 +250,27 @@ Rectangle {
             rowSpacing: 4
 
             Label {
-                text: qsTr("Speech rate")
+                text: qsTr("Speech rate, direct")
                 font.pixelSize: AppScale.fs(13)
                 color: Theme.onSurfaceVariant(Material.theme)
             }
             Label {
                 Layout.fillWidth: true
                 horizontalAlignment: Text.AlignRight
-                text: root.wpm(root.summary ? root.summary.speechRate : 0)
+                text: root.wpm(root.summary ? root.summary.directSpeechRate : 0)
+                font.pixelSize: AppScale.fs(13)
+                font.features: { "tnum": 1 }
+                color: Theme.onSurface(Material.theme)
+            }
+            Label {
+                text: qsTr("Speech rate, legacy")
+                font.pixelSize: AppScale.fs(13)
+                color: Theme.onSurfaceVariant(Material.theme)
+            }
+            Label {
+                Layout.fillWidth: true
+                horizontalAlignment: Text.AlignRight
+                text: root.wpm(root.summary ? root.summary.legacySpeechRate : 0)
                 font.pixelSize: AppScale.fs(13)
                 font.features: { "tnum": 1 }
                 color: Theme.onSurface(Material.theme)

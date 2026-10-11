@@ -27,7 +27,7 @@ There is no waveform. After Stop, Listen plays the phrase files saved for that s
 
 ### 1.1 Headline results
 
-While a session is on, speech rate, articulation, fillers, and pauses describe the analysis window: the most recent Analysis window seconds of kept speech (section 1.2, default 10 s), so a change of pace shows within a few seconds. Direct articulation and the direct pause length use that same window. They are not a running total from Start. A pause that ends a phrase under auto-detect is outside the kept audio, apart from the short trailing pad, so it does not enter the window's pause sum or its speech time. Speech is the exception: it is the total analyzed speech since Start. After Stop, speech rate, articulation, fillers, and pauses switch to the duration-weighted mean of every phrase kept since Start. A longer phrase counts more than a shorter one. Speech stays the sum of those phrases. The gauge chip is labeled `Mean values`. That is the same result as the session's History row. A phrase dropped for being too short is left out. Open File is one file, is not averaged, and is not labeled Mean values.
+While a session is on, speech rate, articulation, fillers, and pauses describe the analysis window: the most recent Analysis window seconds of kept speech (section 1.2, default 10 s), so a change of pace shows within a few seconds. Direct speech rate, direct articulation, and the direct pause length use that same window. They are not a running total from Start. A pause that ends a phrase under auto-detect is outside the kept audio, apart from the short trailing pad, so it does not enter the window's pause sum or its speech time. Speech is the exception: it is the total analyzed speech since Start. After Stop, speech rate, articulation, fillers, and pauses switch to the duration-weighted mean of every phrase kept since Start. A longer phrase counts more than a shorter one. Speech stays the sum of those phrases. The gauge chip is labeled `Mean values`. That is the same result as the session's History row. A phrase dropped for being too short is left out. Open File is one file, is not averaged, and is not labeled Mean values.
 
 Gauge (`General/gaugeMode`, default Speech rate) chooses what the arc draws. Speech rate draws speech rate. Articulation rate draws articulation. Both draws articulation on the outer arc and speech rate on an inner arc, with articulation above speech rate in the middle. A pace already drawn on the gauge is not also a tile. Each Home tile has a switch under Measurement. Show Speech rate tile and Show Articulation rate tile default on, and each switch is disabled while that pace is on the gauge: Speech rate or Both disables the speech-rate switch, Articulation rate or Both disables the articulation switch. Show Fillers tile defaults off. Show Pauses tile, Show Speech tile, and Show Whole recording tile default on. Whole recording is the summary card after Stop or Open File.
 
@@ -214,7 +214,7 @@ Newest session first. A row is scannable without opening it:
 - Subtitle: phrase count and how many times the on-screen numbers changed, such as `8 phrases · numbers changed 46 times`. English uses `numbers changed 1 time` when the count is 1.
 - Third line: the other four session values, in the Home order, with the same rounding as the live labels.
 
-Those five values are the duration-weighted mean of the kept phrases’ headline numbers, except speech, which is the sum of their speech durations. A longer phrase therefore counts more than a shorter one. Each segment also stores `vowelLengths`, `gapLengths`, `vowelMaxFrames`, `gapMaxFrames`, and the coefficients used (`frame`, `shift`, `smooth`, `minLengthMs`, `degree`, `k1`–`k4`, `fillerMin`, `fillerMax`). The filler percent is the duration-weighted mean of the phrases’ filler percents. An empty list says `No sessions yet. Start on Home and speak.`
+Those five values are the duration-weighted mean of the kept phrases’ headline numbers, except speech, which is the sum of their speech durations. A longer phrase therefore counts more than a shorter one. Each segment also stores `vowelLengths`, `gapLengths`, `vowelMaxFrames`, `gapMaxFrames`, `pauseCount`, `pauseTotalSec`, `speechSpanSec`, and the coefficients used (`frame`, `shift`, `smooth`, `minLengthMs`, `degree`, `k1`–`k4`, `pauseThresholdMs`, `articulationMethod`, `speechRateMethod`, `fillerMin`, `fillerMax`). A segment saved before `speechSpanSec` was stored is read as having no span, and the direct rate then uses `T_s`. The filler percent is the duration-weighted mean of the phrases’ filler percents. An empty list says `No sessions yet. Start on Home and speak.`
 
 **Session charts**
 
@@ -472,23 +472,37 @@ The same applies to the gap sum `T_c`, which is shown on the details screen but 
 
 ```
 K1 = 0.71          # default
-R_s = K1 * N_v * 60 / T_s        # words per minute
+R_s_legacy = K1 * N_v * 60 / T_s        # words per minute
 ```
 
-`K1` folds “vowels per minute” into “words per minute”. It is not derived at runtime. If `T_s` is 0 the current code divides by zero; the UI returns before that when duration is 0.
+`T_s` is the whole buffer, sample count / 8000. It includes interior pauses and any silence before the first speech frame and after the last. `K1` folds “vowels per minute” into “words per minute”. It is not derived at runtime. If `T_s` is 0 the current code divides by zero; the UI returns before that when duration is 0.
+
+Section 11 checks this legacy formula on stored lengths, before a silence mask exists.
 
 Printed value: `round-half-away-from-zero` via `toFixed(0)` (JavaScript, not C++ truncation).
 
-Gauge marker: clamp `R_s` into `[MinRS, MaxRS]`, default `[70, 210]`.
+Gauge marker: clamp the published `R_s` into `[MinRS, MaxRS]`, default `[70, 210]`.
+
+### 6.2.1 Direct speech rate
+
+The silence mask is the one in section 6.3.1. `T_span` is the time from the first non-silent frame through the last, `frame count * shift / 8000`. Interior pauses stay inside `T_span`. Silence before the first speech frame and after the last does not. A mask with no speech frame, or a non-positive span, uses `T_s`. The span is never longer than `T_s`. A segment that has no stored span uses `T_s`.
+
+```
+R_s_direct = K1 * N_v * 60 / T_span
+```
+
+`General/speechRateMethod` chooses which rate is published as `speechRate`. `0` (Direct, the default) publishes `R_s_direct`. `1` (Legacy) publishes `R_s_legacy`. Both are always computed. The Whole recording card shows them side by side.
+
+On a buffer that is speech from the first framed sample to the last, the two rates still differ by the samples the intensity contour does not cover at the ends, about one or two hops (15 ms at the default shift). Real leading or trailing silence is what moves the number. `N_v` is the tempo vowel count. With no interior pauses, direct articulation on this same span equals `R_s_direct`.
 
 ### 6.3 Articulation rate
 
 ```
 K2 = 1.2           # default
-R_a = R_s * T_s / (T_v + K2 * T_c_med * N_c)
+R_a = R_s_legacy * T_s / (T_v + K2 * T_c_med * N_c)
 ```
 
-If `R_s > R_a`, the function returns `R_s`. Articulation rate is never shown below speech rate. That happens when the denominator is larger than `T_s`, and also guards some short-file cases.
+If `R_s_legacy > R_a`, the function returns `R_s_legacy`. After the selected speech rate and articulation rate are chosen, the published articulation rate is raised to the published speech rate when it would otherwise be lower. Articulation is never shown below speech rate.
 
 If `N_c` is 0 the denominator is just `T_v`. If that is also 0 the current code divides by zero.
 
@@ -500,17 +514,17 @@ The articulation value is printed as an integer. Gauge can put it on the arc (Ar
 
 Phrasal pauses are measured on the signal, reusing the whole-recording detector. A frame is a pause frame only when its intensity is below `silenceThreshold` and it is not voiced. The threshold is 25 dB below the 98th percentile of the intensity contour (`kSilenceRelative` times that percentile), raised to the noise-floor gate (`noise percentile * speechOverNoise`) and capped at 20% of the speech percentile. A contour with no contrast (the 98th percentile is not at least 1.5 times the noise percentile) keeps the older speech-gate level. Voicing is the same normalized autocorrelation used for vowel peaks. Stop closures are quiet and unvoiced; the minimum length (default 200 ms, `General/phrasalPauseMs`) is what leaves a typical closure out. Fricatives stay above the level. A quiet vowel stays because it is voiced.
 
-An interior run of those frames at least `pauseThresholdMs` long is one pause. Leading and trailing silence are not pauses and stay inside `T_s`. `N_v` is the tempo vowel count from section 6.2, the same count speech rate uses.
+An interior run of those frames at least `pauseThresholdMs` long is one pause. Leading and trailing silence are not pauses. They stay inside `T_s` and outside `T_span`. `N_v` is the tempo vowel count from section 6.2, the same count speech rate uses.
 
 ```
 ΣT_p = sum of those pause durations
-T_speak = T_s - ΣT_p
+T_speak = T_span - ΣT_p
 R_a = K1 * N_v * 60 / T_speak
 ```
 
-If `T_speak` is not positive, or this `R_a` would fall below `R_s`, the result is `R_s`. With no pauses the two rates are equal. `K1` keeps articulation on the same words-per-minute scale as speech rate.
+`T_span` is the utterance span from section 6.2.1. If `T_speak` is not positive, or this `R_a` would fall below `R_s_direct`, the result is `R_s_direct`. With no pauses the two direct rates are equal. `K1` keeps articulation on the same words-per-minute scale as speech rate.
 
-The published pause value in Direct mode is the mean pause duration (`ΣT_p / N_p`, or 0 when `N_p` is 0). Live mode measures `N_p`, `ΣT_p`, that mean, and `R_a` on the current analysis window only. After Stop the tiles are the duration-weighted mean of the kept phrases, each measured on its own audio. That mean is not recomputed by concatenating the phrases. The Whole recording card is the full take, including silence between phrases. It reports `N_p`, `ΣT_p`, the mean, the median, the 25th and 75th percentiles, a 50 ms histogram, the pause ratio `ΣT_p / T_s`, and both the direct and legacy rates and pause values.
+The published pause value in Direct mode is the mean pause duration (`ΣT_p / N_p`, or 0 when `N_p` is 0). Live mode measures `N_p`, `ΣT_p`, that mean, and `R_a` on the current analysis window only. After Stop the tiles are the duration-weighted mean of the kept phrases, each measured on its own audio. That mean is not recomputed by concatenating the phrases. The Whole recording card is the full take, including silence between phrases. It reports `N_p`, `ΣT_p`, the mean, the median, the 25th and 75th percentiles, a 50 ms histogram, the pause ratio `ΣT_p / T_s`, both speech rates, both articulation rates, and both pause values.
 
 ### 6.4 Phrase pauses (legacy score)
 
@@ -604,6 +618,7 @@ Everyday labels use plain units. Silence Duration is edited in seconds and store
 | Gauge median | `General/gaugeAverageCount` | 3 | Middle of this many latest readings. Range 1…30. 1 is the current value. An odd count is the middle value after sorting. An even count is the mean of the two central values. Speech rate and articulation keep separate windows. |
 | Pause | `General/autoStopSilenceDuration` | 2 s | Silence that ends and saves the phrase. Auto-detect only. |
 | Phrasal pause (ms) | `General/phrasalPauseMs` | 200 | Silent, unvoiced gaps at least this long count as pauses. Range 50…2000. A stored 150, the previous default, is rewritten to 200 on load and marked with `General/phrasalPauseMsMigrated200`. Any other stored value is kept, and a 150 chosen after that mark stays 150. |
+| Speech rate method | `General/speechRateMethod` | Direct (`0`) | Direct uses the utterance span (section 6.2.1). Legacy (`1`) uses the whole buffer, section 6.2. |
 | Articulation method | `General/articulationMethod` | Direct (`0`) | Direct measures pauses in the signal. Legacy (`1`) keeps section 6.3 and 6.4. |
 | Detect speech automatically | `General/autoCalibrate` | off | On: wait for speech; a pause ends the phrase. Off: start at once, in 15-second parts. |
 | Slow | Min RS | 70 wpm | Slow end of the gauge. The arc splits evenly up to Fast. Also copies to articulation min. |
@@ -699,6 +714,8 @@ function analyze(samples, cfg):
 
 `seconds(v)` is `trunc_toward_zero(v) * SHIFT / 8000`.
 
+That skeleton is the legacy pair from stored lengths. Direct speech rate and direct articulation replace the published values afterwards, using the silence mask (sections 6.2.1 and 6.3.1). The published articulation rate is then raised to the published speech rate when it would be lower.
+
 Display layer, separate from `analyze`:
 
 ```
@@ -767,7 +784,7 @@ Do not implement these for behavioral parity:
 6. Durations truncate fractional frame counts before multiplying by `SHIFT/8000`.
 7. Means on the details screen and in the formulas are power means of degree 3, not arithmetic means.
 8. Even-count medians use integer division.
-9. `R_s`, `R_a` (with the `R_s` floor), `P`, and `F` match section 6, including the filler remap onto 120…240 → 0…100%.
+9. Published `R_s` follows `speechRateMethod` and published `R_a` follows `articulationMethod` (section 6, including the floor that keeps articulation at or above the published speech rate). `P` and `F` match section 6, including the filler remap onto 120…240 → 0…100%.
 10. The gauge clamps each marker to Min/Max RS; printed wpm and the pause do not. Gauge selects speech rate, articulation rate, or both arcs. Filler is clamped before percent conversion.
 11. Settings defaults and the Advanced visibility rules match section 9. Advanced itself is not persisted.
 12. Each recording session is a JSON file of its kept segments, without audio, plus each change Home showed from Start to Stop. History lists sessions with the five metrics recomputed on all kept phrases together. Opening a session shows those values and one chart per metric against the times the numbers changed.

@@ -211,6 +211,7 @@ void testPhrasalPauseDefaultMigration()
     expect(Settings::getDefaultSettings().phrasalPauseMs == speechrate::kDefaultPhrasalPauseMs,
         "settings pause default matches the analysis default");
     expect(Settings::getDefaultSettings().phrasalPauseMs == 200, "in-code pause default is 200 ms");
+    expect(Settings::getDefaultSettings().speechRateMethod == 0, "speech rate method defaults to direct");
 
     const QString path = Settings::getAppDataDir() + QStringLiteral("/settings.ini");
     auto rewritePause = [&path](int milliseconds, bool clearMigrationFlag) {

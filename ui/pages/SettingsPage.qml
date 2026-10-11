@@ -376,6 +376,22 @@ Page {
                             text: qsTr("Silent, unvoiced gaps at least this long count as pauses.")
                         }
 
+                        FieldLabel { text: qsTr("Speech rate method") }
+                        ComboBox {
+                            textRole: "name"
+                            model: [
+                                { name: qsTr("Direct"), id: 0 },
+                                { name: qsTr("Legacy"), id: 1 }
+                            ]
+                            currentIndex: settingsApi ? Math.max(0, Math.min(1, settingsApi.speechRateMethod)) : 0
+                            onActivated: if (settingsApi)
+                                settingsApi.speechRateMethod = model[index].id
+                            Layout.fillWidth: true
+                        }
+                        Hint {
+                            text: qsTr("Direct leaves out silence before the first sound and after the last. Legacy uses the whole buffer.")
+                        }
+
                         FieldLabel { text: qsTr("Articulation method") }
                         ComboBox {
                             textRole: "name"

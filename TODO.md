@@ -22,6 +22,7 @@ Feedback from Boris Lobanov, Oct 10, 2026.
   - The whole-recording card reports Np, ΣTp, mean, median, 25th and 75th percentiles, a 50 ms histogram, and the pause ratio ΣTp/Ts. The same detector feeds the tempo path.
   - Direct articulation, the default: Ra = k1 * 60 * Nv / (Ts − ΣTp), with the tempo vowel count Nv and the same k1 as speech rate. No pauses means Ra = Rs.
   - Settings → Measurement → Articulation method: Direct (default) or Legacy. Legacy keeps Ra = Rs * Ts / (Tv + k2 * Tc_med * Nc) and the pause score P = k3 * (Tc_mean − Tc_med) / Tc_med. The card's Compare block shows both rates and both pause values.
+  - Settings → Measurement → Speech rate method: Direct (default) or Legacy. Direct is Rs = k1 * 60 * Nv / T_span, where T_span runs from the first non-silent frame through the last (interior pauses stay in; leading and trailing silence stay out). Legacy keeps Rs = k1 * 60 * Nv / Ts. Direct articulation uses that same span minus ΣTp, so the two direct rates match when there is no pause. The card's Compare block shows both speech rates. A segment saved without a span is read as Ts.
   - Live direct Tp and Ra use the current analysis window (the same audio as Rs), not a total since Start. After Stop the tiles are the duration-weighted mean of the kept phrases. The card is the full take, including silence between phrases.
 
 ## Waiting on Boris

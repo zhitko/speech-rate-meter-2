@@ -358,9 +358,61 @@ void testPauseTotalsJoin()
     speechrate::Parts right;
     right.pauseCount = 2;
     right.pauseTotalSec = 0.5;
+    left.speechSpanSec = 1.5;
+    right.speechSpanSec = 2.5;
     speechrate::appendParts(left, right);
     expect(left.pauseCount == 3, "joined pause counts add");
     expectNear(left.pauseTotalSec, 0.9, "joined pause time adds");
+    expectNear(left.speechSpanSec, 4.0, "joined speech spans add");
+}
+
+void testSpeechSpan()
+{
+    const std::vector<std::uint8_t> silent { 1, 1, 0, 0, 1, 0, 1 };
+    expectNear(speechrate::speechSpanSec(silent, 8000), 4.0, "span runs from the first speech frame through the last");
+    expectNear(speechrate::speechSpanSec({}, 120), 0.0, "an empty mask has no span");
+    expectNear(speechrate::speechSpanSec({ 1, 1 }, 120), 0.0, "silence has no span");
+    expectNear(speechrate::speechSpanSec({ 0 }, 8000), 1.0, "one speech frame lasts one hop");
+}
+
+void testDirectSpeechRatePublishing()
+{
+    speechrate::Config cfg;
+    speechrate::Metrics metrics = speechrate::metricsFromLengths({ 4, 10 }, { 40 }, 10.0, cfg);
+    speechrate::applyPauseStats(metrics, 1, 2.0, 8.0, cfg);
+    expectNear(metrics.legacySpeechRate, 0.71 * 2.0 * 60.0 / 10.0, "legacy speech rate uses the whole buffer");
+    expectNear(metrics.directSpeechRate, 0.71 * 2.0 * 60.0 / 8.0, "direct speech rate uses the span");
+    expectNear(metrics.speechRate, metrics.directSpeechRate, "the default speech method publishes the direct rate");
+    expectNear(metrics.speechSpanSec, 8.0, "the span is kept");
+    expectNear(metrics.directArticulationRate, 0.71 * 2.0 * 60.0 / 6.0,
+        "direct articulation removes pauses from the span");
+    expect(metrics.directArticulationRate > metrics.directSpeechRate,
+        "pauses make direct articulation faster than direct speech rate");
+    expect(metrics.articulationRate + 1e-9 >= metrics.speechRate,
+        "published articulation stays at or above published speech rate");
+
+    speechrate::Config legacy = cfg;
+    legacy.speechRateMethod = speechrate::SpeechMethod::Legacy;
+    legacy.articulationMethod = speechrate::ArticulationMethod::Legacy;
+    speechrate::Metrics legacyMetrics = speechrate::metricsFromLengths({ 4, 10 }, { 40 }, 10.0, legacy);
+    const double legacyArticulation = legacyMetrics.articulationRate;
+    speechrate::applyPauseStats(legacyMetrics, 1, 2.0, 8.0, legacy);
+    expectNear(legacyMetrics.speechRate, legacyMetrics.legacySpeechRate,
+        "legacy method publishes the whole-buffer rate");
+    expectNear(legacyMetrics.articulationRate, legacyArticulation,
+        "legacy method publishes the length formula");
+    expectNear(legacyMetrics.directSpeechRate, metrics.directSpeechRate,
+        "the direct speech rate is still computed in legacy mode");
+
+    speechrate::Metrics missing = speechrate::metricsFromLengths({ 4, 10 }, { 40 }, 10.0, cfg);
+    speechrate::applyPauseStats(missing, 0, 0.0, 0.0, cfg);
+    expectNear(missing.directSpeechRate, missing.legacySpeechRate,
+        "a missing span uses the whole buffer");
+    expectNear(missing.directArticulationRate, missing.directSpeechRate,
+        "no pauses keeps the two direct rates equal");
+
+    expectNear(speechrate::directSpeechRate(10, 8.0, 0.71), 0.71 * 60.0 * 10.0 / 8.0, "direct formula");
+    expectNear(speechrate::directSpeechRate(10, 0.0, 0.71), 0.0, "a non-positive span is a zero rate");
 }
 
 void testDirectArticulationFormula()
@@ -420,14 +472,22 @@ void testDirectPausesFromSignal()
     expect(measured.metrics.pauseTotal > 0.25 && measured.metrics.pauseTotal < 0.55,
         "the counted pause is about 400 ms");
     expectNear(measured.metrics.pauseMean, measured.metrics.pauseTotal, "one pause, mean equals the total");
+    expect(measured.metrics.speechSpanSec > 0.0
+            && measured.metrics.speechSpanSec < measured.metrics.speechDuration,
+        "the span drops leading and trailing silence");
+    expectNear(measured.metrics.directSpeechRate,
+        direct.k1 * measured.metrics.vowelCount * 60.0 / measured.metrics.speechSpanSec,
+        "direct speech rate uses K1 and the span");
+    expectNear(measured.metrics.speechRate, measured.metrics.directSpeechRate,
+        "the default speech method publishes the direct rate");
     expectNear(measured.metrics.directArticulationRate,
         direct.k1 * measured.metrics.vowelCount * 60.0
-            / (measured.metrics.speechDuration - measured.metrics.pauseTotal),
-        "direct articulation uses K1 and the pause sum");
-    expect(measured.metrics.directArticulationRate > measured.metrics.speechRate,
+            / (measured.metrics.speechSpanSec - measured.metrics.pauseTotal),
+        "direct articulation uses K1 and the span minus the pause sum");
+    expect(measured.metrics.directArticulationRate > measured.metrics.directSpeechRate,
         "articulation is above speech rate when a pause was removed");
     expectNear(measured.metrics.articulationRate, measured.metrics.directArticulationRate,
-        "the default method publishes the direct rate");
+        "the default articulation method publishes the direct rate");
     expectNear(measured.metrics.phrasePauses, measured.metrics.pauseMean,
         "the default pause tile is the direct mean");
 
@@ -438,21 +498,29 @@ void testDirectPausesFromSignal()
         direct,
         measured.parts.vowelMaxFrames,
         measured.parts.gapMaxFrames);
+    expectNear(measured.metrics.legacySpeechRate, legacyOnly.speechRate,
+        "legacy speech rate is the whole buffer");
+    expect(measured.metrics.directSpeechRate > measured.metrics.legacySpeechRate,
+        "leading silence makes the direct rate higher");
     expectNear(measured.metrics.legacyArticulationRate, legacyOnly.articulationRate,
         "legacy articulation is the length formula");
     expectNear(measured.metrics.legacyPauseScore, legacyOnly.phrasePauses,
         "legacy pause score is the indirect gap score");
-    expectNear(measured.metrics.speechRate, legacyOnly.speechRate, "speech rate is unchanged");
 
     speechrate::Config legacy = direct;
+    legacy.speechRateMethod = speechrate::SpeechMethod::Legacy;
     legacy.articulationMethod = speechrate::ArticulationMethod::Legacy;
     const speechrate::Measurement legacyMeasured = speechrate::measure(samples, legacy);
+    expectNear(legacyMeasured.metrics.speechRate, legacyMeasured.metrics.legacySpeechRate,
+        "legacy method publishes the old speech rate");
     expectNear(legacyMeasured.metrics.articulationRate, legacyMeasured.metrics.legacyArticulationRate,
         "legacy method publishes the old articulation rate");
     expectNear(legacyMeasured.metrics.phrasePauses, legacyMeasured.metrics.legacyPauseScore,
         "legacy method publishes the old pause score");
+    expectNear(legacyMeasured.metrics.directSpeechRate, measured.metrics.directSpeechRate,
+        "the direct speech rate is still computed in legacy mode");
     expectNear(legacyMeasured.metrics.directArticulationRate, measured.metrics.directArticulationRate,
-        "the direct rate is still computed in legacy mode");
+        "the direct articulation rate is still computed in legacy mode");
     expect(std::fabs(legacyMeasured.metrics.articulationRate - measured.metrics.articulationRate) > 1.0,
         "the two methods disagree once a real pause is present");
 
@@ -462,6 +530,9 @@ void testDirectPausesFromSignal()
     expectNear(summary.directPauseMeanSec, summary.pauseDurations.mean, "shown mean is the distribution mean");
     expectNear(summary.pauseRatio, summary.pauseTotalSec / summary.speechDurationSec, "pause ratio is sum over duration");
     expect(summary.paceValid, "the compare block has a pace");
+    expectNear(summary.directSpeechRate, measured.metrics.directSpeechRate, "summary direct speech rate");
+    expectNear(summary.legacySpeechRate, measured.metrics.legacySpeechRate, "summary legacy speech rate");
+    expectNear(summary.speechRate, measured.metrics.speechRate, "summary publishes the selected speech rate");
     expectNear(summary.directArticulationRate, measured.metrics.directArticulationRate, "summary direct rate");
     expectNear(summary.legacyArticulationRate, measured.metrics.legacyArticulationRate, "summary legacy rate");
     expectNear(summary.legacyPauseScore, measured.metrics.legacyPauseScore, "summary legacy pause score");
@@ -515,6 +586,8 @@ int main()
     testPhrasalPauseCounting();
     testWholeRecordingSummary();
     testPauseTotalsJoin();
+    testSpeechSpan();
+    testDirectSpeechRatePublishing();
     testDirectArticulationFormula();
     testSilenceThresholdAdapts();
     testDirectPausesFromSignal();

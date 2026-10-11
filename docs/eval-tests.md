@@ -6,7 +6,7 @@ This run uses the shipped default pause minimum of **200 ms**. k1 stays 0.71 and
 
 This branch's application code does not include PR #5's loader. That loader was compiled into a throwaway program. It skips `LIST` and `cue` chunks, mixes to mono, and resamples to 8 kHz on the signed 16-bit scale the analyzer expects. Every file in this set is already 8 kHz, mono, 16-bit PCM, so the loaded sample count equals the data chunk. Eleven of the twenty-three files also carry `LIST` and/or `cue` chunks.
 
-`Nv` is the tempo vowel count that `Rs` and `Ra` use. The stricter whole-recording vowel count (voiced peak, tail flushed) is `summary_vowels` in the CSV. Rates are words per minute.
+`Rs` in the tables is the legacy whole-buffer rate, k1 × 60 × Nv / Ts. Direct speech rate uses the utterance span and is not tabulated here. `Nv` is the tempo vowel count that `Rs` and `Ra` use. The stricter whole-recording vowel count (voiced peak, tail flushed) is `summary_vowels` in the CSV. Rates are words per minute.
 
 `Tp legacy` is k3 × (Tc − Tm), with Tc the power-mean inter-nucleus gap and Tm the median gap, both in seconds. That product can be negative. The pause score the app still publishes in Legacy mode is the normalized one, P = k3 × (Tc − Tm) / Tm, and it is 0 when Tc < Tm. On this set Tc ≥ Tm for every file, so P = Tp legacy / Tm. `legacy_P` in the CSV is that score. Legacy `Ra` and `Tp legacy` do not use the pause minimum, so they are the same at 150 ms and at 200 ms. Direct `Ra` is k1 × 60 × Nv / (Ts − ΣTp). Leading and trailing silence stay inside Ts and outside ΣTp.
 

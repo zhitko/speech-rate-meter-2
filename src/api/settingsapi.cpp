@@ -466,6 +466,19 @@ void SettingsApi::setArticulationMethod(int method)
     emit articulationMethodChanged();
 }
 
+int SettingsApi::speechRateMethod() const
+{
+    return m_settings.speechRateMethod;
+}
+
+void SettingsApi::setSpeechRateMethod(int method)
+{
+    if (!assignIfChanged(m_settings.speechRateMethod, std::clamp(method, 0, 1)))
+        return;
+    save();
+    emit speechRateMethodChanged();
+}
+
 double SettingsApi::slowWpm() const
 {
     return m_settings.speechRateMin;
@@ -635,6 +648,7 @@ void SettingsApi::load()
     emit pauseSecChanged();
     emit phrasalPauseMsChanged();
     emit articulationMethodChanged();
+    emit speechRateMethodChanged();
     emit slowWpmChanged();
     emit fastWpmChanged();
     emit meanValueDegryChanged();

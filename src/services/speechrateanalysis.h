@@ -37,11 +37,16 @@
  * Silence before the first non-silent frame and after the last is not a
  * pause. Run duration is frame count times the intensity hop.
  *
- * Direct articulation uses those pauses:
- *   R_a = K1 * N_v * 60 / (T_s - sum of pause durations)
- * K1 is the same scale as speech rate, so the two rates match when there is
- * no pause. N_v is the tempo vowel count, not the stricter summary count.
- * The legacy articulation formula and the legacy pause score stay available.
+ * Direct speech rate uses that same mask. T_span runs from the first
+ * non-silent frame through the last, so interior pauses stay in and leading
+ * and trailing silence stay out:
+ *   R_s = K1 * N_v * 60 / T_span
+ * Direct articulation then removes the pause sum from that span:
+ *   R_a = K1 * N_v * 60 / (T_span - sum of pause durations)
+ * K1 is shared, so the two direct rates match when there is no pause. N_v is
+ * the tempo vowel count, not the stricter summary count. The legacy speech
+ * rate keeps the whole buffer as T_s. The legacy articulation formula and
+ * the legacy pause score stay available.
  *
  * Live metrics use the current analysis window (the same audio as speech
  * rate), not a total since Start. The whole-recording summary is the
@@ -51,7 +56,8 @@
  * Limitations: hop quantization (15 ms at the default shift), the one-frame
  * short nucleus length, and the minimum-length rule can drop or shorten very
  * short vowels. A stop closure longer than the pause minimum is counted.
- * Leading and trailing silence stay in T_s and are not part of the pause sum.
+ * Leading and trailing silence stay in T_s (legacy speech rate, and the
+ * Speech time) and out of T_span. They are not part of the pause sum.
  */
 namespace speechrate {
 
@@ -77,6 +83,12 @@ enum class ArticulationMethod {
     Legacy = 1,
 };
 
+/** Which speech rate the tempo path publishes. */
+enum class SpeechMethod {
+    Direct = 0,
+    Legacy = 1,
+};
+
 /**
  * Speech-rate analysis from vowel-like intensity peaks.
  * Time base is the constant 8000 Hz described in the technical specification.
@@ -95,6 +107,7 @@ struct Config {
     // Direct articulation subtracts interior pauses at least this long.
     int pauseThresholdMs = kDefaultPhrasalPauseMs;
     ArticulationMethod articulationMethod = ArticulationMethod::Direct;
+    SpeechMethod speechRateMethod = SpeechMethod::Direct;
     // Speech gate. A nucleus counts only when its raw intensity peak reaches
     // max(minSpeechLevel, noise floor * speechOverNoise). The noise floor is the
     // noiseFloorPercentile of the raw intensity contour of the analyzed buffer.
@@ -119,10 +132,13 @@ struct Moments {
 
 struct Metrics {
     bool valid = false;
-    double speechDuration = 0; // T_s
-    double speechRate = 0; // R_s
+    double speechDuration = 0; // T_s, the whole buffer
+    double speechSpanSec = 0; // T_span used by the direct rate
+    double speechRate = 0; // published R_s (direct or legacy)
     double articulationRate = 0; // published R_a (direct or legacy)
     double phrasePauses = 0; // published pause value (direct mean, or legacy P)
+    double directSpeechRate = 0;
+    double legacySpeechRate = 0;
     double directArticulationRate = 0;
     double legacyArticulationRate = 0;
     double legacyPauseScore = 0; // P from the indirect gap formula
@@ -185,6 +201,9 @@ struct Parts {
     // Interior phrasal pauses measured on this buffer. Joining phrases sums them.
     int pauseCount = 0;
     double pauseTotalSec = 0;
+    // Utterance span for this buffer. Joining phrases sums the spans.
+    // 0 means the span was not measured; the direct rate then uses T_s.
+    double speechSpanSec = 0;
 };
 
 struct Measurement {
@@ -262,7 +281,10 @@ struct RecordingSummary {
     // vowel gate rejects the buffer (fewer than minVowels).
     bool paceValid = false;
     int paceVowelCount = 0; // N_v used by R_s and R_a
-    double speechRate = 0;
+    double speechSpanSec = 0;
+    double speechRate = 0; // published R_s
+    double directSpeechRate = 0;
+    double legacySpeechRate = 0;
     double directArticulationRate = 0;
     double legacyArticulationRate = 0;
     double directPauseMeanSec = 0;
@@ -290,20 +312,42 @@ DurationStats durationStatistics(const std::vector<double>& durationsSec,
 double silenceThreshold(const std::vector<double>& contour, const Config& cfg);
 
 /**
- * R_a = K1 * N_v * 60 / (T_s − Σ T_p). When the speaking time is not
- * positive, or the result would fall below speech rate, returns speech rate.
+ * R_s = K1 * N_v * 60 / T_span. A non-positive span returns 0.
+ */
+double directSpeechRate(int vowelCount, double speechSpanSec, double k1);
+
+/**
+ * R_a = K1 * N_v * 60 / (T_span − Σ T_p). speechSpanSec is the utterance
+ * span, not the whole buffer. When the speaking time is not positive, or
+ * the result would fall below the direct speech rate on that span, returns
+ * that speech rate.
  */
 double directArticulationRate(int vowelCount,
-    double speechDurationSec,
+    double speechSpanSec,
     double pauseTotalSec,
     double k1);
 
 /**
- * Copies the legacy headlines, fills the direct pause fields, and publishes
- * either the direct or the legacy pair in articulationRate and phrasePauses.
- * metricsFromLengths leaves the legacy pair in those two fields.
+ * Time from the first non-silent frame through the last, in seconds.
+ * A frame is non-silent when silent[i] == 0. Duration is frame count times
+ * shiftSamples / 8000. An empty mask, or a mask with no speech frame,
+ * returns 0. A single speech frame lasts one hop.
  */
-void applyPauseStats(Metrics& metrics, int pauseCount, double pauseTotalSec, const Config& cfg);
+double speechSpanSec(const std::vector<std::uint8_t>& silent, int shiftSamples);
+
+/**
+ * Copies the legacy headlines, fills the direct pause and speech-rate
+ * fields, and publishes the selected speech rate, articulation rate, and
+ * pause value. speechSpanSec is T_span for this buffer; 0 uses T_s, which
+ * is how a segment stored before the span was recorded is read.
+ * metricsFromLengths leaves the legacy speech rate and the legacy
+ * articulation pair in the published fields.
+ */
+void applyPauseStats(Metrics& metrics,
+    int pauseCount,
+    double pauseTotalSec,
+    double speechSpanSec,
+    const Config& cfg);
 
 /**
  * Interior silent/unvoiced runs whose duration is at least thresholdMs.

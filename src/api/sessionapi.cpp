@@ -80,6 +80,9 @@ speechrate::Config configFrom(const AppSettings& settings)
     config.articulationMethod = settings.articulationMethod == 1
         ? speechrate::ArticulationMethod::Legacy
         : speechrate::ArticulationMethod::Direct;
+    config.speechRateMethod = settings.speechRateMethod == 1
+        ? speechrate::SpeechMethod::Legacy
+        : speechrate::SpeechMethod::Direct;
     return config;
 }
 
@@ -177,6 +180,7 @@ QString analysisCacheKey(const QString& path,
         + QString::number(cfg.minVowels) + QLatin1Char('|')
         + QString::number(cfg.pauseThresholdMs) + QLatin1Char('|')
         + QString::number(static_cast<int>(cfg.articulationMethod)) + QLatin1Char('|')
+        + QString::number(static_cast<int>(cfg.speechRateMethod)) + QLatin1Char('|')
         + QString::number(pauseThresholdMs) + QLatin1Char('|')
         + number(fillerMin) + QLatin1Char('|')
         + number(fillerMax);
@@ -232,6 +236,8 @@ QVariantMap summaryToMap(const speechrate::RecordingSummary& summary)
     map.insert(QStringLiteral("paceValid"), summary.paceValid);
     map.insert(QStringLiteral("paceVowelCount"), summary.paceVowelCount);
     map.insert(QStringLiteral("speechRate"), summary.speechRate);
+    map.insert(QStringLiteral("directSpeechRate"), summary.directSpeechRate);
+    map.insert(QStringLiteral("legacySpeechRate"), summary.legacySpeechRate);
     map.insert(QStringLiteral("directArticulationRate"), summary.directArticulationRate);
     map.insert(QStringLiteral("legacyArticulationRate"), summary.legacyArticulationRate);
     map.insert(QStringLiteral("directPauseMeanSec"), summary.directPauseMeanSec);
@@ -1458,7 +1464,7 @@ void SessionApi::applyMetrics(const QVariantMap& metrics)
         config,
         parts.vowelMaxFrames,
         parts.gapMaxFrames);
-    speechrate::applyPauseStats(phrase, parts.pauseCount, parts.pauseTotalSec, config);
+    speechrate::applyPauseStats(phrase, parts.pauseCount, parts.pauseTotalSec, parts.speechSpanSec, config);
 
     if (!acc.ready || (acc.pooled && speechrate::sameMeasurement(acc.config, config))) {
         if (!acc.ready)
@@ -1478,6 +1484,7 @@ void SessionApi::applyMetrics(const QVariantMap& metrics)
         speechrate::applyPauseStats(acc.metrics,
             acc.parts.pauseCount,
             acc.parts.pauseTotalSec,
+            acc.parts.speechSpanSec,
             acc.config);
         acc.ready = acc.metrics.valid;
     } else {

@@ -759,11 +759,16 @@
     </message>
     <message>
         <location filename="../ui/components/RecordingSummaryCard.qml" line="253"/>
-        <source>Speech rate</source>
-        <translation>Темп речи</translation>
+        <source>Speech rate, direct</source>
+        <translation>Темп речи, прямой</translation>
     </message>
     <message>
         <location filename="../ui/components/RecordingSummaryCard.qml" line="266"/>
+        <source>Speech rate, legacy</source>
+        <translation>Темп речи, прежний</translation>
+    </message>
+    <message>
+        <location filename="../ui/components/RecordingSummaryCard.qml" line="279"/>
         <source>Articulation, direct</source>
         <translation>Артикуляция, прямая</translation>
     </message>
@@ -1516,6 +1521,16 @@
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="379"/>
+        <source>Speech rate method</source>
+        <translation>Метод темпа речи</translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SettingsPage.qml" line="379"/>
+        <source>Direct leaves out silence before the first sound and after the last. Legacy uses the whole buffer.</source>
+        <translation>Прямой отбрасывает тишину до первого звука и после последнего. Прежний берёт весь буфер.</translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SettingsPage.qml" line="392"/>
         <source>Articulation method</source>
         <translation>Метод артикуляции</translation>
     </message>
