@@ -367,7 +367,7 @@ Page {
                             to: 2000
                             stepSize: 10
                             editable: true
-                            value: settingsApi ? settingsApi.phrasalPauseMs : 150
+                            value: settingsApi ? settingsApi.phrasalPauseMs : 200
                             onValueModified: if (settingsApi)
                                 settingsApi.phrasalPauseMs = value
                             Layout.fillWidth: true

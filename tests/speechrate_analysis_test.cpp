@@ -233,7 +233,7 @@ void testDurationStatistics()
 
 void testPhrasalPauseCounting()
 {
-    expect(speechrate::kDefaultPhrasalPauseMs == 150, "default phrasal pause is 150 ms");
+    expect(speechrate::kDefaultPhrasalPauseMs == 200, "default phrasal pause is 200 ms");
 
     auto run = [](int frames, std::uint8_t silent) {
         return std::vector<std::uint8_t>(static_cast<std::size_t>(frames), silent);
@@ -263,6 +263,13 @@ void testPhrasalPauseCounting()
     mask = join(mask, run(2, 0));
     expect(speechrate::countPhrasalPauses(mask, 120, 150) == 2, "two interior pauses");
     expect(speechrate::countPhrasalPauses(mask, 120, 151) == 1, "151 ms drops the 150 ms run");
+    // 14 hops is 210 ms, the first multiple of the 15 ms hop at or above the 200 ms default.
+    std::vector<std::uint8_t> atDefault = join(run(4, 0), run(10, 1));
+    atDefault = join(atDefault, run(2, 0));
+    atDefault = join(atDefault, run(14, 1));
+    atDefault = join(atDefault, run(2, 0));
+    expect(speechrate::countPhrasalPauses(atDefault, 120, speechrate::kDefaultPhrasalPauseMs) == 1,
+        "the 200 ms default keeps the 210 ms run and drops the 150 ms run");
     expect(speechrate::countPhrasalPauses(mask, 120, 10000) == 0, "a huge threshold counts nothing");
 
     expect(speechrate::countPhrasalPauses(run(40, 1), 120, 150) == 0, "silence with no speech is not a pause");

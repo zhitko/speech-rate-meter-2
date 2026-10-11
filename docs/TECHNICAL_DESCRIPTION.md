@@ -498,7 +498,7 @@ The articulation value is printed as an integer. Gauge can put it on the arc (Ar
 
 ### 6.3.1 Direct articulation rate
 
-Phrasal pauses are measured on the signal, reusing the whole-recording detector. A frame is a pause frame only when its intensity is below `silenceThreshold` and it is not voiced. The threshold is 25 dB below the 98th percentile of the intensity contour (`kSilenceRelative` times that percentile), raised to the noise-floor gate (`noise percentile * speechOverNoise`) and capped at 20% of the speech percentile. A contour with no contrast (the 98th percentile is not at least 1.5 times the noise percentile) keeps the older speech-gate level. Voicing is the same normalized autocorrelation used for vowel peaks. Stop closures are quiet and unvoiced; the minimum length (default 150 ms, `General/phrasalPauseMs`) is what leaves a typical closure out. Fricatives stay above the level. A quiet vowel stays because it is voiced.
+Phrasal pauses are measured on the signal, reusing the whole-recording detector. A frame is a pause frame only when its intensity is below `silenceThreshold` and it is not voiced. The threshold is 25 dB below the 98th percentile of the intensity contour (`kSilenceRelative` times that percentile), raised to the noise-floor gate (`noise percentile * speechOverNoise`) and capped at 20% of the speech percentile. A contour with no contrast (the 98th percentile is not at least 1.5 times the noise percentile) keeps the older speech-gate level. Voicing is the same normalized autocorrelation used for vowel peaks. Stop closures are quiet and unvoiced; the minimum length (default 200 ms, `General/phrasalPauseMs`) is what leaves a typical closure out. Fricatives stay above the level. A quiet vowel stays because it is voiced.
 
 An interior run of those frames at least `pauseThresholdMs` long is one pause. Leading and trailing silence are not pauses and stay inside `T_s`. `N_v` is the tempo vowel count from section 6.2, the same count speech rate uses.
 
@@ -603,7 +603,7 @@ Everyday labels use plain units. Silence Duration is edited in seconds and store
 | Show Whole recording tile | `General/showWholeRecordingTile` | on | Shows the whole-recording summary after Stop and after Open File. |
 | Gauge median | `General/gaugeAverageCount` | 3 | Middle of this many latest readings. Range 1…30. 1 is the current value. An odd count is the middle value after sorting. An even count is the mean of the two central values. Speech rate and articulation keep separate windows. |
 | Pause | `General/autoStopSilenceDuration` | 2 s | Silence that ends and saves the phrase. Auto-detect only. |
-| Phrasal pause (ms) | `General/phrasalPauseMs` | 150 | Silent, unvoiced gaps at least this long count as pauses. Range 50…2000. |
+| Phrasal pause (ms) | `General/phrasalPauseMs` | 200 | Silent, unvoiced gaps at least this long count as pauses. Range 50…2000. A stored 150, the previous default, is rewritten to 200 on load and marked with `General/phrasalPauseMsMigrated200`. Any other stored value is kept, and a 150 chosen after that mark stays 150. |
 | Articulation method | `General/articulationMethod` | Direct (`0`) | Direct measures pauses in the signal. Legacy (`1`) keeps section 6.3 and 6.4. |
 | Detect speech automatically | `General/autoCalibrate` | off | On: wait for speech; a pause ends the phrase. Off: start at once, in 15-second parts. |
 | Slow | Min RS | 70 wpm | Slow end of the gauge. The arc splits evenly up to Fast. Also copies to articulation min. |

@@ -55,13 +55,13 @@
  */
 namespace speechrate {
 
-constexpr int kDefaultPhrasalPauseMs = 150;
+constexpr int kDefaultPhrasalPauseMs = 200;
 constexpr double kVoicingNacf = 0.45;
 constexpr double kVoicingMinHz = 75.0;
 constexpr double kVoicingMaxHz = 400.0;
 constexpr double kVowelHistogramBinSec = 0.020;
 constexpr int kVowelHistogramMaxBins = 30;
-// Pause bars are wider than vowel bars: phrasal pauses start at 150 ms.
+// Pause bars are wider than vowel bars: the default minimum is 200 ms.
 constexpr double kPauseHistogramBinSec = 0.050;
 constexpr int kPauseHistogramMaxBins = 40;
 // Speech reference for the adaptive silence level (see silenceThreshold).

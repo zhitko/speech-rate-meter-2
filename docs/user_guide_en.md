@@ -43,7 +43,7 @@ Under **Measurement**:
 - **Show Pauses tile**, **Show Speech tile**, and **Show Whole recording tile** are on by default. Whole recording is the summary after Stop or Open File.
 - **Gauge median** is how many latest readings of each pace on the gauge it takes the middle of. The default is 3. Set it to 1 to show the current reading.
 - **Pause** is how much silence ends a phrase and saves it. This is used only when **Detect speech automatically** is on.
-- **Phrasal pause** is the shortest silent, unvoiced gap that counts as a pause. The default is 150 ms.
+- **Phrasal pause** is the shortest silent, unvoiced gap that counts as a pause. The default is 200 ms.
 - **Articulation method** chooses Direct or Legacy. Direct measures pauses in the signal. Legacy keeps the older estimate. The Whole recording card shows both.
 - **Detect speech automatically** measures background noise after **Start**, then waits for you to speak. When it is off, measuring starts when you press **Start**, a pause does not end the phrase, and the recording is saved in 15-second parts.
 

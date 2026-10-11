@@ -5,6 +5,7 @@
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
+#include <QSettings>
 #include <QTemporaryDir>
 
 #include <cmath>
@@ -205,6 +206,52 @@ void testDiscardSkipsUnsavedWav()
     SessionStore::clearAll();
 }
 
+void testPhrasalPauseDefaultMigration()
+{
+    expect(Settings::getDefaultSettings().phrasalPauseMs == speechrate::kDefaultPhrasalPauseMs,
+        "settings pause default matches the analysis default");
+    expect(Settings::getDefaultSettings().phrasalPauseMs == 200, "in-code pause default is 200 ms");
+
+    const QString path = Settings::getAppDataDir() + QStringLiteral("/settings.ini");
+    auto rewritePause = [&path](int milliseconds, bool clearMigrationFlag) {
+        QSettings stored(path, QSettings::IniFormat);
+        stored.beginGroup(QStringLiteral("General"));
+        stored.setValue(QStringLiteral("phrasalPauseMs"), milliseconds);
+        if (clearMigrationFlag)
+            stored.remove(QStringLiteral("phrasalPauseMsMigrated200"));
+        stored.endGroup();
+        stored.sync();
+    };
+
+    AppSettings custom = Settings::getDefaultSettings();
+    custom.phrasalPauseMs = 180;
+    Settings::saveSettings(custom);
+    rewritePause(180, true);
+    expect(Settings::loadSettings().phrasalPauseMs == 180, "a custom pause minimum is kept");
+
+    rewritePause(150, true);
+    expect(Settings::loadSettings().phrasalPauseMs == 200, "a stored 150 moves to 200");
+    expect(Settings::loadSettings().phrasalPauseMs == 200, "the migrated 200 stays on the next load");
+
+    AppSettings chosen = Settings::loadSettings();
+    chosen.phrasalPauseMs = 150;
+    Settings::saveSettings(chosen);
+    expect(Settings::loadSettings().phrasalPauseMs == 150, "a pause minimum chosen after migration stays 150");
+
+    rewritePause(250, true);
+    expect(Settings::loadSettings().phrasalPauseMs == 250, "250 ms is left alone");
+
+    {
+        QSettings stored(path, QSettings::IniFormat);
+        stored.beginGroup(QStringLiteral("General"));
+        stored.remove(QStringLiteral("phrasalPauseMs"));
+        stored.remove(QStringLiteral("phrasalPauseMsMigrated200"));
+        stored.endGroup();
+        stored.sync();
+    }
+    expect(Settings::loadSettings().phrasalPauseMs == 200, "a missing pause minimum uses 200");
+}
+
 void testMalformedJsonIsQuarantined()
 {
     QDir().mkpath(SessionStore::sessionsDir());
@@ -236,6 +283,7 @@ int main(int argc, char** argv)
     testCommitKeepsWavWhenEnabled();
     testDiscardSkipsUnsavedWav();
     testMalformedJsonIsQuarantined();
+    testPhrasalPauseDefaultMigration();
 
     Settings::clearAppDataDirForTests();
     if (failures != 0) {

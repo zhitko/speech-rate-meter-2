@@ -25,7 +25,7 @@ struct AppSettings {
     int autoStopSilenceDuration = 2000;
     // Whole-recording phrasal pauses: silent/unvoiced runs at least this long.
     // Matches speechrate::kDefaultPhrasalPauseMs.
-    int phrasalPauseMs = 150;
+    int phrasalPauseMs = 200;
     // 0: direct pauses from the signal. 1: legacy gap-distribution estimate.
     int articulationMethod = 0;
     int analysisWindowSec = 10; // live metrics cover this much recent speech, 3…30
