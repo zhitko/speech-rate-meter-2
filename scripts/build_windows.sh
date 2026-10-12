@@ -670,7 +670,9 @@ EOF
             cmake "${cmake_args[@]}"
     fi
 
-    local -a build_args=(--target "$APP_TARGET" --parallel "$JOBS")
+    # The app target does not depend on the .qm catalogs, so ask for them
+    # explicitly (the AppImage script does the same).
+    local -a build_args=(--target "$APP_TARGET" --target release_translations --parallel "$JOBS")
     if [[ "$MULTI_CONFIG" == 1 ]]; then
         build_args+=(--config "$CMAKE_CONFIG")
     fi
@@ -1120,6 +1122,18 @@ package_app() {
     cp -a "$PROJECT_ROOT/licenses/." "$PACKAGE_DIR/licenses/"
     cp -a "$PROJECT_ROOT/settings.ini" "$PACKAGE_DIR/settings.ini"
     write_package_readme
+
+    # SettingsApi loads speech-rate-meter-2_<lang>.qm from the executable's
+    # folder (SettingsApi::updateTranslator). Qt's own qt_*.qm go to translations/
+    # via windeployqt; the app catalogs must sit next to the exe.
+    local qm found_qm=0
+    for qm in "$BUILD_DIR"/speech-rate-meter-2_*.qm; do
+        [[ -f "$qm" ]] || continue
+        cp -a "$qm" "$PACKAGE_DIR/"
+        echo "  translation: $(basename "$qm")"
+        found_qm=1
+    done
+    [[ "$found_qm" == 1 ]] || die "No speech-rate-meter-2_*.qm catalogs were built in $BUILD_DIR"
 
     SEARCH_DIRS=("$QT_WINDOWS/bin" "$QT_WINDOWS/plugins" "$QT_WINDOWS/lib")
     if [[ "$TOOLCHAIN" == "mingw" ]]; then

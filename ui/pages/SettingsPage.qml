@@ -89,13 +89,32 @@ Page {
         }
     }
 
-    component FieldLabel: Label {
+    component FieldLabel: RowLayout {
+        id: fieldLabel
+        property alias text: label.text
+        property string help: ""
+        property string formula: ""
         readonly property bool twoColumns: parent && parent.columns > 1
         Layout.preferredWidth: twoColumns ? Math.max(140, parent.width * 0.35) : -1
         Layout.fillWidth: !twoColumns
         Layout.alignment: Qt.AlignVCenter
-        wrapMode: Text.Wrap
-        color: Theme.onSurface(Material.theme)
+        spacing: 4
+
+        Label {
+            id: label
+            Layout.fillWidth: true
+            wrapMode: Text.Wrap
+            color: Theme.onSurface(Material.theme)
+        }
+        ToolButton {
+            visible: fieldLabel.help.length > 0
+            Layout.alignment: Qt.AlignVCenter
+            font.family: Icons.familySolid
+            font.pixelSize: AppScale.fs(16)
+            text: Icons.faCircleInfo
+            Accessible.name: qsTr("Help: %1").arg(label.text)
+            onClicked: helpDialog.openFor(label.text, fieldLabel.help, fieldLabel.formula)
+        }
     }
 
     component SubHeader: Label {
@@ -131,6 +150,10 @@ Page {
         isDestructive: true
         onAccepted: if (sessionApi && !sessionApi.sessionActive && !sessionApi.busy)
             sessionApi.clearUserData()
+    }
+
+    SettingHelpDialog {
+        id: helpDialog
     }
 
     Material.theme: ApplicationWindow.window ? ApplicationWindow.window.theme : Material.Light
@@ -319,7 +342,11 @@ Page {
                         rowSpacing: 10
                         Layout.fillWidth: true
 
-                        FieldLabel { text: qsTr("Analysis window (s)") }
+                        FieldLabel {
+                            text: qsTr("Analysis window (s)")
+                            help: qsTr("Length of the recent speech used for the live numbers on Home. The app joins the kept phrases of this session and the phrase in progress, keeps only the last N seconds, and runs the whole analysis on that buffer. The vowel count, speaking span and pauses all come from this buffer, so a shorter window reacts faster but has fewer vowels and noisier numbers. Range 3 to 30 s, default 10 s.")
+                            formula: "buffer = last N seconds of (kept phrases + phrase in progress)"
+                        }
                         SpinBox {
                             from: 3
                             to: 30
@@ -333,7 +360,11 @@ Page {
                             text: qsTr("Recent speech used on Home. Shorter reacts faster.")
                         }
 
-                        FieldLabel { text: qsTr("Updates per minute") }
+                        FieldLabel {
+                            text: qsTr("Updates per minute")
+                            help: qsTr("How often the live numbers are recalculated while you speak. The interval is 60000 divided by this value, in milliseconds. Changing it changes only the refresh rate, not the values. If a new buffer is ready before the previous analysis finishes, the older run is dropped. With Detect speech automatically on, new snapshots start only on speech frames. Range 6 to 240 per minute, default 60 (one second).")
+                            formula: "interval (ms) = 60000 / Updates per minute"
+                        }
                         SpinBox {
                             from: 6
                             to: 240
@@ -347,7 +378,10 @@ Page {
                             text: qsTr("How often Home updates while you speak.")
                         }
 
-                        FieldLabel { text: qsTr("Pause (s)") }
+                        FieldLabel {
+                            text: qsTr("Pause (s)")
+                            help: qsTr("Silence that closes a phrase while Detect speech automatically is on. The phrase is saved at that pause. A phrase shorter than 1 s is dropped. A phrase longer than 15 s is cut at the next pause, or at 15 s. Stored as General/autoStopSilenceDuration in milliseconds, default 2 s.")
+                        }
                         SpinBox {
                             from: 0
                             to: 60
@@ -361,7 +395,11 @@ Page {
                             text: qsTr("Silence that ends and saves the phrase. Auto-detect only.")
                         }
 
-                        FieldLabel { text: qsTr("Phrasal pause (ms)") }
+                        FieldLabel {
+                            text: qsTr("Phrasal pause (ms)")
+                            help: qsTr("Shortest silent, unvoiced gap that counts as a pause. A frame is a pause frame when its loudness is below the silence level (25 dB under the 98th percentile of the intensity curve, with a noise-floor limit) and it is not voiced (autocorrelation below the voicing threshold). Consecutive pause frames form one pause only if they last at least this long, so short stop closures are not counted. Used by Direct articulation and by the Pauses value in Direct mode. Legacy does not use it. Range 50 to 2000 ms, default 200 ms.")
+                            formula: "pause = run of silent, unvoiced frames with length >= Phrasal pause\nΣTp = sum of pause lengths, Np = number of pauses\nPauses value (Direct) = ΣTp / Np"
+                        }
                         SpinBox {
                             from: 50
                             to: 2000
@@ -376,7 +414,11 @@ Page {
                             text: qsTr("Silent, unvoiced gaps at least this long count as pauses.")
                         }
 
-                        FieldLabel { text: qsTr("Speech rate method") }
+                        FieldLabel {
+                            text: qsTr("Speech rate method")
+                            help: qsTr("Which speech-rate formula is shown. Both are always computed, and the Whole recording card shows both. Direct (default) divides by the span from the first to the last speech frame, so silence before the first word and after the last one is not counted, while pauses between words are. Legacy divides by the whole buffer, including leading and trailing silence.")
+                            formula: "Direct: Rs = K1 × Nv × 60 / T_span\nLegacy: Rs = K1 × Nv × 60 / T_s\nNv = vowel nuclei, T_s = buffer length in seconds"
+                        }
                         ComboBox {
                             textRole: "name"
                             model: [
@@ -392,7 +434,11 @@ Page {
                             text: qsTr("Direct leaves out silence before the first sound and after the last. Legacy uses the whole buffer.")
                         }
 
-                        FieldLabel { text: qsTr("Articulation method") }
+                        FieldLabel {
+                            text: qsTr("Articulation method")
+                            help: qsTr("Which articulation-rate formula is shown. Both are always computed. Direct (default) removes the measured pause time from the span, so the denominator is speaking time only. Legacy estimates speaking time from the vowel and gap lengths and uses Articulation scale (K2). The published articulation is never lower than the published speech rate.")
+                            formula: "Direct: Ra = K1 × Nv × 60 / (T_span − ΣTp)\nLegacy: Ra = Rs × T_s / (Tv + K2 × Tc_med × Nc)"
+                        }
                         ComboBox {
                             textRole: "name"
                             model: [
@@ -408,7 +454,10 @@ Page {
                             text: qsTr("Direct measures pauses in the signal. Legacy keeps the older estimate.")
                         }
 
-                        FieldLabel { text: qsTr("Detect speech automatically") }
+                        FieldLabel {
+                            text: qsTr("Detect speech automatically")
+                            help: qsTr("On: recording waits for speech. A phrase starts at the first speech frame and ends at a pause of the Pause length. Off: recording starts at once and is cut into 15-second parts, with no speech detection. The detection method and thresholds are in the Speech detection stage, shown with Advanced on.")
+                        }
                         Switch {
                             checked: settingsApi ? settingsApi.autoCalibrate : false
                             onToggled: if (settingsApi)
@@ -418,7 +467,10 @@ Page {
                             text: qsTr("On: wait for speech; a pause ends the phrase. Off: start at once, in 15-second parts.")
                         }
 
-                        FieldLabel { text: qsTr("Gauge") }
+                        FieldLabel {
+                            text: qsTr("Gauge")
+                            help: qsTr("Which pace the gauge shows. Speech rate: one arc. Articulation rate: one arc. Both: articulation on the outer arc and speech rate on the inner arc. This changes only the display; the values are the same. Each arc position is the median set by Gauge median, placed on the scale from Slow to Fast.")
+                        }
                         ComboBox {
                             textRole: "name"
                             model: [
@@ -435,14 +487,20 @@ Page {
                             text: qsTr("One pace, or both: articulation outside, speech rate inside.")
                         }
 
-                        FieldLabel { text: qsTr("Show Speech rate tile") }
+                        FieldLabel {
+                            text: qsTr("Show Speech rate tile")
+                            help: qsTr("Shows or hides this card on Home. Display only: the value is the same either way. The switch is disabled when the gauge already shows this pace.")
+                        }
                         Switch {
                             enabled: !!settingsApi && settingsApi.gaugeMode === 1
                             checked: settingsApi ? settingsApi.showSpeechRateTile : true
                             onToggled: if (settingsApi)
                                 settingsApi.showSpeechRateTile = checked
                         }
-                        FieldLabel { text: qsTr("Show Articulation rate tile") }
+                        FieldLabel {
+                            text: qsTr("Show Articulation rate tile")
+                            help: qsTr("Shows or hides this card on Home. Display only: the value is the same either way. The switch is disabled when the gauge already shows this pace.")
+                        }
                         Switch {
                             enabled: !!settingsApi && settingsApi.gaugeMode === 0
                             checked: settingsApi ? settingsApi.showArticulationRateTile : true
@@ -453,32 +511,48 @@ Page {
                             text: qsTr("Unavailable while on the gauge.")
                         }
 
-                        FieldLabel { text: qsTr("Show Fillers tile") }
+                        FieldLabel {
+                            text: qsTr("Show Fillers tile")
+                            help: qsTr("Shows or hides this card on Home. Display only: the value is the same either way. The switch is disabled when the gauge already shows this pace.")
+                        }
                         Switch {
                             checked: settingsApi ? settingsApi.showFillersTile : false
                             onToggled: if (settingsApi)
                                 settingsApi.showFillersTile = checked
                         }
-                        FieldLabel { text: qsTr("Show Pauses tile") }
+                        FieldLabel {
+                            text: qsTr("Show Pauses tile")
+                            help: qsTr("Shows or hides this card on Home. Display only: the value is the same either way. The switch is disabled when the gauge already shows this pace.")
+                        }
                         Switch {
                             checked: settingsApi ? settingsApi.showPausesTile : true
                             onToggled: if (settingsApi)
                                 settingsApi.showPausesTile = checked
                         }
-                        FieldLabel { text: qsTr("Show Speech tile") }
+                        FieldLabel {
+                            text: qsTr("Show Speech tile")
+                            help: qsTr("Shows or hides this card on Home. Display only: the value is the same either way. The switch is disabled when the gauge already shows this pace.")
+                        }
                         Switch {
                             checked: settingsApi ? settingsApi.showSpeechTile : true
                             onToggled: if (settingsApi)
                                 settingsApi.showSpeechTile = checked
                         }
-                        FieldLabel { text: qsTr("Show Whole recording tile") }
+                        FieldLabel {
+                            text: qsTr("Show Whole recording tile")
+                            help: qsTr("Shows or hides this card on Home. Display only: the value is the same either way. The switch is disabled when the gauge already shows this pace.")
+                        }
                         Switch {
                             checked: settingsApi ? settingsApi.showWholeRecordingTile : true
                             onToggled: if (settingsApi)
                                 settingsApi.showWholeRecordingTile = checked
                         }
 
-                        FieldLabel { text: qsTr("Slow (wpm)") }
+                        FieldLabel {
+                            text: qsTr("Slow (wpm)")
+                            help: qsTr("Lower end of the gauge scale, in words per minute. The arc is split evenly from Slow to Fast, and the marker is clamped to this range. The printed number is not clamped. Also used as the lower bound for articulation. Default 70.")
+                            formula: "marker = clamp(value, Slow, Fast)"
+                        }
                         SpinBox {
                             from: 0
                             to: 1000
@@ -492,7 +566,10 @@ Page {
                             text: qsTr("Slow end of the gauge. The arc splits evenly up to Fast.")
                         }
 
-                        FieldLabel { text: qsTr("Fast (wpm)") }
+                        FieldLabel {
+                            text: qsTr("Fast (wpm)")
+                            help: qsTr("Upper end of the gauge scale, in words per minute. See Slow. Also used as the upper bound for articulation. Default 210.")
+                        }
                         SpinBox {
                             from: 0
                             to: 1000
@@ -506,7 +583,11 @@ Page {
                             text: qsTr("The fast end of the gauge.")
                         }
 
-                        FieldLabel { text: qsTr("Gauge median") }
+                        FieldLabel {
+                            text: qsTr("Gauge median")
+                            help: qsTr("Each pace on the gauge shows the median of the last N live readings, which smooths out jitter. An odd N takes the middle value after sorting; an even N takes the mean of the two middle values. 1 shows the current reading. Speech rate and articulation keep separate windows, and Start clears them. Stored results are not affected: after Stop, the gauge shows the mean of the kept phrases. Range 1 to 30, default 3.")
+                            formula: "gauge value = median(last N live readings)"
+                        }
                         SpinBox {
                             from: 1
                             to: 30
@@ -595,7 +676,11 @@ Page {
                     description: qsTr("Phrase start and end. Auto-detect only.")
                     columns: root.singleColumnForm ? 1 : 2
 
-                    FieldLabel { text: qsTr("Detection method") }
+                    FieldLabel {
+                        text: qsTr("Detection method")
+                        help: qsTr("Which detector decides when speech starts and stops. Used only with Detect speech automatically. Energy: short-term change of amplitude (V). Autocorrelation: voicing, how strongly a frame repeats at a pitch period (U). Hybrid: speech only when both detectors agree.")
+                        formula: "Energy: speech when V > Energy threshold\nAutocorrelation: speech when U > Autocorrelation threshold\nHybrid: both conditions at once"
+                    }
                     ComboBox {
                         textRole: "name"
                         model: [
@@ -609,10 +694,15 @@ Page {
                         Layout.fillWidth: true
                     }
                     Hint {
-                        text: qsTr("Energy: loudness. Autocorrelation: pitch. Hybrid: both.")
+                        text: qsTr("Energy: amplitude change. Autocorrelation: voicing. Hybrid: both must agree.")
                     }
 
-                    FieldLabel { visible: root.usesEnergyVad; text: qsTr("Energy threshold") }
+                    FieldLabel {
+                        visible: root.usesEnergyVad
+                        text: qsTr("Energy threshold")
+                        help: qsTr("Level of the energy measure V above which a frame counts as speech. The state stays speech until V falls below 90 percent of this value, so the decision does not flicker. Calibrate sets it to 3 times the 95th percentile of V measured during the quiet pass. Default 10000.")
+                        formula: "A(n) = mean of abs(sample) over 128 samples, hop 64\nU(n) = mean of A over 31 frames\nV(n) = mean of abs(A - U) over 31 frames\nspeech on: V > T; speech off: V <= 0.9 × T\nafter Calibrate: T = 3 × P95(V in silence)"
+                    }
                     TextField {
                         visible: root.usesEnergyVad
                         text: settingsApi ? settingsApi.vadThreshold : ""
@@ -625,7 +715,12 @@ Page {
                         text: qsTr("Louder than this counts as speech. Calibrate sets it from the room.")
                     }
 
-                    FieldLabel { visible: root.usesAutocorrVad; text: qsTr("Autocorrelation threshold") }
+                    FieldLabel {
+                        visible: root.usesAutocorrVad
+                        text: qsTr("Autocorrelation threshold")
+                        help: qsTr("Voicing level U above which a frame counts as voiced. The state enters speech above this value and leaves it when U drops 0.1 below it, which keeps short dips from ending a phrase. Calibrate sets it to the average voicing of the room times the Threshold factor, clamped to 0.2 to 0.6. Default 0.3.")
+                        formula: "enter speech: U > T\nleave speech: U <= T - 0.1\nafter Calibrate: T = clamp(mean U(silence) × K, 0.2, 0.6)"
+                    }
                     TextField {
                         visible: root.usesAutocorrVad
                         text: settingsApi ? settingsApi.autoCorrThreshold : ""
@@ -637,7 +732,12 @@ Page {
                         visible: root.usesAutocorrVad
                         text: qsTr("How clearly a sound must repeat to count as voice.")
                     }
-                    FieldLabel { visible: root.usesAutocorrVad; text: qsTr("Threshold factor") }
+                    FieldLabel {
+                        visible: root.usesAutocorrVad
+                        text: qsTr("Threshold factor")
+                        help: qsTr("Used only by Calibrate for the autocorrelation method. Calibrate measures the average voicing of the background noise and multiplies it by this factor to get the threshold. Changing the factor has no effect until you press Calibrate again. Default 1.0.")
+                        formula: "T = clamp(mean U(silence) × K, 0.2, 0.6)"
+                    }
                     TextField {
                         visible: root.usesAutocorrVad
                         text: settingsApi ? settingsApi.autoCorrThresholdK : ""
@@ -649,7 +749,12 @@ Page {
                         visible: root.usesAutocorrVad
                         text: qsTr("Calibrate sets the threshold to the room average times this.")
                     }
-                    FieldLabel { visible: root.usesAutocorrVad; text: qsTr("Lowest pitch (Hz)") }
+                    FieldLabel {
+                        visible: root.usesAutocorrVad
+                        text: qsTr("Lowest pitch (Hz)")
+                        help: qsTr("Lowest pitch the autocorrelation searches. Pitch sets the lag range: a pitch period, in samples at 8000 Hz, is searched between the value for the highest and the lowest pitch. A lower value searches longer lags, so it fits deeper voices. Default 80 Hz.")
+                        formula: "lag range = [round(8000 / Highest pitch), round(8000 / Lowest pitch)] samples"
+                    }
                     TextField {
                         visible: root.usesAutocorrVad
                         text: settingsApi ? settingsApi.autoCorrMinF0 : ""
@@ -661,7 +766,11 @@ Page {
                         visible: root.usesAutocorrVad
                         text: qsTr("Lowest pitch to look for.")
                     }
-                    FieldLabel { visible: root.usesAutocorrVad; text: qsTr("Highest pitch (Hz)") }
+                    FieldLabel {
+                        visible: root.usesAutocorrVad
+                        text: qsTr("Highest pitch (Hz)")
+                        help: qsTr("Highest pitch the autocorrelation searches. It sets the shortest lag. Default 300 Hz.")
+                    }
                     TextField {
                         visible: root.usesAutocorrVad
                         text: settingsApi ? settingsApi.autoCorrMaxF0 : ""
@@ -692,7 +801,11 @@ Page {
                     description: qsTr("Loudness curve and a smoothed copy. Samples are at 8000 Hz.")
                     columns: root.singleColumnForm ? 1 : 2
 
-                    FieldLabel { text: qsTr("Frame") }
+                    FieldLabel {
+                        text: qsTr("Frame")
+                        help: qsTr("Length of each loudness window, in audio samples at 8000 Hz (240 samples is 30 ms). Each intensity value is the mean absolute amplitude of this many samples. A longer window is smoother and blurs short sounds.")
+                        formula: "I(j) = sum of abs(x) over the window / Frame"
+                    }
                     SpinBox {
                         from: 0
                         to: 1024
@@ -702,7 +815,11 @@ Page {
                         Layout.fillWidth: true
                     }
                     Hint { text: qsTr("Length of each loudness window.") }
-                    FieldLabel { text: qsTr("Shift") }
+                    FieldLabel {
+                        text: qsTr("Shift")
+                        help: qsTr("Step between neighbouring loudness windows, in samples at 8000 Hz. At 120 samples one intensity point is 15 ms. Every duration in the statistics is counted in these points, so this value sets the time resolution. Smaller is finer and slower.")
+                        formula: "point time (s) = Shift / 8000\nduration (s) = points × Shift / 8000"
+                    }
                     SpinBox {
                         from: 0
                         to: 512
@@ -712,7 +829,11 @@ Page {
                         Layout.fillWidth: true
                     }
                     Hint { text: qsTr("Step to the next window. Smaller is finer.") }
-                    FieldLabel { text: qsTr("Smooth window") }
+                    FieldLabel {
+                        text: qsTr("Smooth window")
+                        help: qsTr("Number of loudness points averaged into the smoothed curve S. Vowels are the parts that rise above S. Default 120 points, which is 1.8 s at the default shift. A longer window follows only slow changes in loudness, so it reacts more slowly.")
+                        formula: "S(i) = mean of I_norm over about Smooth points around i\nvowel sample: I_norm(i) - S(i) > 0.009"
+                    }
                     SpinBox {
                         from: 0
                         to: 1024
@@ -730,7 +851,11 @@ Page {
                     description: qsTr("Peaks above the smoothed loudness. Shorter ones are dropped.")
                     columns: root.singleColumnForm ? 1 : 2
 
-                    FieldLabel { text: qsTr("Shortest vowel (ms)") }
+                    FieldLabel {
+                        text: qsTr("Shortest vowel (ms)")
+                        help: qsTr("Vowel peaks shorter than this are ignored. The limit is converted to intensity points and truncated, so at the default 5 ms it removes only single-point blips. Each kept peak must also reach a speech gate: its raw intensity must be at least max(80, 3 × the quiet floor), where the floor is the 10th percentile of the buffer.")
+                        formula: "min points = trunc((8000 / Shift) / 1000 × ms)\nkeep a peak when its length > min points"
+                    }
                     SpinBox {
                         from: 0
                         to: 2000
@@ -748,7 +873,11 @@ Page {
                     description: qsTr("Averages the vowel and gap durations.")
                     columns: root.singleColumnForm ? 1 : 2
 
-                    FieldLabel { text: qsTr("Long-sound weight") }
+                    FieldLabel {
+                        text: qsTr("Long-sound weight")
+                        help: qsTr("Exponent of the power mean used for the average vowel and gap lengths. 1 gives the plain average, where every sound counts equally. Higher values give long sounds more weight. Default 3. It feeds the Filler score (vowel lengths) and the Legacy pause score (gap lengths) only. Speech rate and Direct articulation do not use it.")
+                        formula: "M_d(L) = (mean(L_k^d))^(1/d), then truncated to seconds"
+                    }
                     SpinBox {
                         from: 1
                         to: 20
@@ -767,7 +896,11 @@ Page {
                     columns: root.singleColumnForm ? 1 : 2
 
                     SubHeader { text: qsTr("Speech rate"); Layout.columnSpan: root.singleColumnForm ? 1 : 2 }
-                    FieldLabel { text: qsTr("Speech-rate scale") }
+                    FieldLabel {
+                        text: qsTr("Speech-rate scale")
+                        help: qsTr("Converts vowels per minute into words per minute. It is a fixed calibration constant, not measured at runtime. Raising it raises the speech rate and Direct articulation in the same proportion. Used by both speech-rate methods and by Direct articulation. Default 0.71.")
+                        formula: "Rs = K1 × Nv × 60 / T"
+                    }
                     DecimalSpinBox {
                         value: settingsApi ? Math.round(settingsApi.k1 * 100) : 71
                         onRealValueEdited: function(v) { if (settingsApi) settingsApi.k1 = v }
@@ -776,32 +909,48 @@ Page {
                     Hint { text: qsTr("Higher raises the speech-rate number.") }
 
                     SubHeader { text: qsTr("Articulation"); Layout.columnSpan: root.singleColumnForm ? 1 : 2 }
-                    FieldLabel { text: qsTr("Articulation scale") }
+                    FieldLabel {
+                        text: qsTr("Articulation scale")
+                        help: qsTr("Used only by the Legacy articulation method. It scales the gap term: consonants and silence between vowels are weighted by K2, so a higher value lowers the articulation rate. Ignored in Direct mode. Default 1.2.")
+                        formula: "Ra_legacy = Rs × T_s / (Tv + K2 × Tc_med × Nc)"
+                    }
                     DecimalSpinBox {
                         value: settingsApi ? Math.round(settingsApi.k2 * 100) : 120
                         onRealValueEdited: function(v) { if (settingsApi) settingsApi.k2 = v }
                         Layout.fillWidth: true
                     }
-                    Hint { text: qsTr("Higher usually lowers articulation.") }
+                    Hint { text: qsTr("Legacy articulation only. Higher lowers it.") }
 
                     SubHeader { text: qsTr("Pauses"); Layout.columnSpan: root.singleColumnForm ? 1 : 2 }
-                    FieldLabel { text: qsTr("Pause scale") }
+                    FieldLabel {
+                        text: qsTr("Pause scale")
+                        help: qsTr("Used only by the Legacy pause score. The score is the excess of the power-mean gap length over the median gap length, scaled by this value. A higher value raises the Pauses number in Legacy mode. Direct mode reports the measured mean pause and ignores this value. Default 0.30.")
+                        formula: "P = K3 × (Tc_mean − Tc_med) / Tc_med, or 0 when Tc_mean < Tc_med"
+                    }
                     DecimalSpinBox {
                         value: settingsApi ? Math.round(settingsApi.k3 * 100) : 30
                         onRealValueEdited: function(v) { if (settingsApi) settingsApi.k3 = v }
                         Layout.fillWidth: true
                     }
-                    Hint { text: qsTr("Higher raises the Pauses number.") }
+                    Hint { text: qsTr("Legacy pause score only. Higher raises it.") }
 
                     SubHeader { text: qsTr("Fillers"); Layout.columnSpan: root.singleColumnForm ? 1 : 2 }
-                    FieldLabel { text: qsTr("Filler scale") }
+                    FieldLabel {
+                        text: qsTr("Filler scale")
+                        help: qsTr("Scales the filler score. The score measures how much longer the average vowel is than the typical (median) vowel, so drawn-out sounds push it up. A higher value raises the score for the same vowels. The score is then turned into a percent between the Low and High filler scores. Default 100.")
+                        formula: "F = K4 × (Tv_mean − Tv_med) / Tv_med, or 0 when Tv_mean < Tv_med"
+                    }
                     DecimalSpinBox {
                         value: settingsApi ? Math.round(settingsApi.k4 * 100) : 10000
                         onRealValueEdited: function(v) { if (settingsApi) settingsApi.k4 = v }
                         Layout.fillWidth: true
                     }
                     Hint { text: qsTr("Higher raises the filler score.") }
-                    FieldLabel { text: qsTr("Low filler score") }
+                    FieldLabel {
+                        text: qsTr("Low filler score")
+                        help: qsTr("Filler score at or below this value shows 0 percent. Default 120.")
+                        formula: "F_c = clamp(F, Low, High)\npercent = (F_c − Low) / (High − Low) × 100"
+                    }
                     SpinBox {
                         from: 0
                         to: 10000
@@ -811,7 +960,10 @@ Page {
                         Layout.fillWidth: true
                     }
                     Hint { text: qsTr("A score at or below this is shown as 0%.") }
-                    FieldLabel { text: qsTr("High filler score") }
+                    FieldLabel {
+                        text: qsTr("High filler score")
+                        help: qsTr("Filler score at or above this value shows 100 percent. Default 240.")
+                    }
                     SpinBox {
                         from: 0
                         to: 10000

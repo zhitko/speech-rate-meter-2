@@ -177,6 +177,7 @@ qt_add_qml_module(appspeech-rate-meter-2
         ui/pages/LicensesPage.qml
         ui/components/PlayButton.qml
         ui/components/ConfirmDialog.qml
+        ui/components/SettingHelpDialog.qml
         ui/components/SpeechRateGauge.qml
         ui/components/MetricChart.qml
         ui/components/MetricTile.qml
