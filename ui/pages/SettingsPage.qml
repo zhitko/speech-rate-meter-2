@@ -133,6 +133,52 @@ Page {
         font.pixelSize: AppScale.fs(12)
     }
 
+    // ComboBox resets currentIndex to 0 when its model is replaced. qsTr() in a
+    // JS model array rebuilds that model on retranslate, so without an explicit
+    // re-sync the closed label jumps to the first option (e.g. Gauge "Both" →
+    // "Темп речи") even though the stored setting is unchanged.
+    component SettingComboBox: ComboBox {
+        id: combo
+        // Not named currentValue: ComboBox already has that as a final property.
+        property var selectedValue
+        property string valueKey: "id"
+
+        textRole: "name"
+        Layout.fillWidth: true
+        displayText: {
+            // Depend on language so the closed label updates after retranslate.
+            void (root.settingsApi ? root.settingsApi.language : "")
+            if (currentIndex < 0 || !model || currentIndex >= model.length)
+                return ""
+            return model[currentIndex].name
+        }
+
+        function syncFromValue() {
+            if (!model || model.length === 0)
+                return
+            const key = valueKey
+            const v = selectedValue
+            let next = 0
+            for (let i = 0; i < model.length; ++i) {
+                if (model[i][key] === v) {
+                    next = i
+                    break
+                }
+            }
+            if (currentIndex !== next)
+                currentIndex = next
+        }
+
+        Component.onCompleted: syncFromValue()
+        onSelectedValueChanged: syncFromValue()
+        onCountChanged: Qt.callLater(syncFromValue)
+
+        Connections {
+            target: root.settingsApi
+            function onLanguageChanged() { Qt.callLater(combo.syncFromValue) }
+        }
+    }
+
     function parseDoubleValue(text) {
         return parseFloat(String(text).replace(",", "."));
     }
@@ -197,51 +243,31 @@ Page {
                         Layout.fillWidth: true
 
                         FieldLabel { text: qsTr("Language") }
-                        ComboBox {
-                            textRole: "name"
+                        SettingComboBox {
+                            selectedValue: settingsApi ? settingsApi.language : "en"
                             model: [
                                 { name: qsTr("English"), id: "en" },
                                 { name: qsTr("Russian"), id: "ru" }
                             ]
-                            currentIndex: {
-                                if (!settingsApi)
-                                    return 0
-                                for (var i = 0; i < model.length; ++i) {
-                                    if (model[i].id === settingsApi.language)
-                                        return i
-                                }
-                                return 0
-                            }
                             onActivated: if (settingsApi)
                                 settingsApi.language = model[index].id
-                            Layout.fillWidth: true
                         }
 
                         FieldLabel { text: qsTr("Theme") }
-                        ComboBox {
-                            textRole: "name"
+                        SettingComboBox {
+                            selectedValue: settingsApi ? settingsApi.theme : "system"
                             model: [
                                 { name: qsTr("Light"), id: "light" },
                                 { name: qsTr("Dark"), id: "dark" },
                                 { name: qsTr("System"), id: "system" }
                             ]
-                            currentIndex: {
-                                if (!settingsApi)
-                                    return 0;
-                                for (var i = 0; i < model.length; i++) {
-                                    if (model[i].id === settingsApi.theme)
-                                        return i;
-                                }
-                                return 0;
-                            }
                             onActivated: if (settingsApi)
                                 settingsApi.theme = model[index].id
-                            Layout.fillWidth: true
                         }
 
                         FieldLabel { text: qsTr("Primary Color") }
-                        ComboBox {
-                            textRole: "name"
+                        SettingComboBox {
+                            selectedValue: settingsApi ? settingsApi.primaryColor : "blue"
                             model: [
                                 { name: qsTr("Blue"), id: "blue" },
                                 { name: qsTr("Green"), id: "green" },
@@ -249,18 +275,8 @@ Page {
                                 { name: qsTr("Orange"), id: "orange" },
                                 { name: qsTr("Red"), id: "red" }
                             ]
-                            currentIndex: {
-                                if (!settingsApi)
-                                    return 0;
-                                for (var i = 0; i < model.length; i++) {
-                                    if (model[i].id === settingsApi.primaryColor)
-                                        return i;
-                                }
-                                return 0;
-                            }
                             onActivated: if (settingsApi)
                                 settingsApi.primaryColor = model[index].id
-                            Layout.fillWidth: true
                         }
 
                         FieldLabel { text: qsTr("Show Navigation Menu") }
@@ -274,26 +290,25 @@ Page {
                         }
 
                         FieldLabel { text: qsTr("Font Size") }
-                        ComboBox {
-                            textRole: "name"
+                        SettingComboBox {
+                            valueKey: "value"
+                            selectedValue: {
+                                if (!settingsApi)
+                                    return 1.0
+                                const val = settingsApi.fontSizeMultiplier
+                                if (Math.abs(val - 1.3) < 0.1)
+                                    return 1.3
+                                if (Math.abs(val - 1.6) < 0.1)
+                                    return 1.6
+                                return 1.0
+                            }
                             model: [
                                 { name: qsTr("Normal"), value: 1.0 },
                                 { name: qsTr("Large"), value: 1.3 },
                                 { name: qsTr("Extra large"), value: 1.6 }
                             ]
-                            currentIndex: {
-                                if (!settingsApi)
-                                    return 0;
-                                let val = settingsApi.fontSizeMultiplier;
-                                if (Math.abs(val - 1.3) < 0.1)
-                                    return 1;
-                                if (Math.abs(val - 1.6) < 0.1)
-                                    return 2;
-                                return 0;
-                            }
                             onActivated: if (settingsApi)
                                 settingsApi.fontSizeMultiplier = model[index].value
-                            Layout.fillWidth: true
                         }
                     }
 
@@ -400,16 +415,14 @@ Page {
                             text: qsTr("While recording")
                             help: qsTr("What Home shows while a session is recording. Tempo chart: the live line chart. Arcs: the gauge arcs. After Stop, and after Open File, Home can show the chart and the arcs together when there is a result.")
                         }
-                        ComboBox {
-                            textRole: "name"
+                        SettingComboBox {
+                            selectedValue: settingsApi ? settingsApi.recordingView : 0
                             model: [
                                 { name: qsTr("Tempo chart"), id: 0 },
                                 { name: qsTr("Arcs"), id: 1 }
                             ]
-                            currentIndex: settingsApi ? Math.max(0, Math.min(1, settingsApi.recordingView)) : 0
                             onActivated: if (settingsApi)
                                 settingsApi.recordingView = model[index].id
-                            Layout.fillWidth: true
                         }
                         Hint {
                             text: qsTr("Tempo chart or arcs on Home while you record.")
@@ -456,16 +469,14 @@ Page {
                             help: qsTr("Which speech-rate formula is shown. Both are always computed, and the Whole recording card shows both. Direct (default) divides by the span from the first to the last speech frame, so silence before the first word and after the last one is not counted, while pauses between words are. Legacy divides by the whole buffer, including leading and trailing silence.")
                             formula: "Direct: Rs = K1 × Nv × 60 / T_span\nLegacy: Rs = K1 × Nv × 60 / T_s\nNv = vowel nuclei, T_s = buffer length in seconds"
                         }
-                        ComboBox {
-                            textRole: "name"
+                        SettingComboBox {
+                            selectedValue: settingsApi ? settingsApi.speechRateMethod : 0
                             model: [
                                 { name: qsTr("Direct"), id: 0 },
                                 { name: qsTr("Legacy"), id: 1 }
                             ]
-                            currentIndex: settingsApi ? Math.max(0, Math.min(1, settingsApi.speechRateMethod)) : 0
                             onActivated: if (settingsApi)
                                 settingsApi.speechRateMethod = model[index].id
-                            Layout.fillWidth: true
                         }
                         Hint {
                             text: qsTr("Direct leaves out silence before the first sound and after the last. Legacy uses the whole buffer.")
@@ -476,16 +487,14 @@ Page {
                             help: qsTr("Which articulation-rate formula is shown. Both are always computed. Direct (default) removes the measured pause time from the span, so the denominator is speaking time only. Legacy estimates speaking time from the vowel and gap lengths and uses Articulation scale (K2). The published articulation is never lower than the published speech rate.")
                             formula: "Direct: Ra = K1 × Nv × 60 / (T_span − ΣTp)\nLegacy: Ra = Rs × T_s / (Tv + K2 × Tc_med × Nc)"
                         }
-                        ComboBox {
-                            textRole: "name"
+                        SettingComboBox {
+                            selectedValue: settingsApi ? settingsApi.articulationMethod : 0
                             model: [
                                 { name: qsTr("Direct"), id: 0 },
                                 { name: qsTr("Legacy"), id: 1 }
                             ]
-                            currentIndex: settingsApi ? Math.max(0, Math.min(1, settingsApi.articulationMethod)) : 0
                             onActivated: if (settingsApi)
                                 settingsApi.articulationMethod = model[index].id
-                            Layout.fillWidth: true
                         }
                         Hint {
                             text: qsTr("Direct measures pauses in the signal. Legacy keeps the older estimate.")
@@ -508,17 +517,15 @@ Page {
                             text: qsTr("Gauge")
                             help: qsTr("Which pace the gauge shows. Speech rate: one arc. Articulation rate: one arc. Both: articulation on the outer arc and speech rate on the inner arc. This changes only the display; the values are the same. Each arc position is the median set by Gauge median, placed on the scale from Slow to Fast.")
                         }
-                        ComboBox {
-                            textRole: "name"
+                        SettingComboBox {
+                            selectedValue: settingsApi ? settingsApi.gaugeMode : 0
                             model: [
                                 { name: qsTr("Speech rate"), id: 0 },
                                 { name: qsTr("Articulation rate"), id: 1 },
                                 { name: qsTr("Both"), id: 2 }
                             ]
-                            currentIndex: settingsApi ? Math.max(0, Math.min(2, settingsApi.gaugeMode)) : 0
                             onActivated: if (settingsApi)
                                 settingsApi.gaugeMode = model[index].id
-                            Layout.fillWidth: true
                         }
                         Hint {
                             text: qsTr("One pace, or both: articulation outside, speech rate inside.")
@@ -637,22 +644,16 @@ Page {
                         Hint {
                             text: qsTr("Middle of this many latest readings. 1 is the current value.")
                         }
-                    }
 
-                    CheckBox {
-                        text: qsTr("Advanced")
-                        checked: settingsApi ? settingsApi.advanced : false
-                        onToggled: if (settingsApi)
-                            settingsApi.advanced = checked
-                        Layout.fillWidth: true
-                    }
-
-                    Label {
-                        Layout.fillWidth: true
-                        wrapMode: Text.Wrap
-                        text: qsTr("Detection, loudness, and formula coefficients. Turns off when you leave.")
-                        color: Theme.onSurfaceVariant(Material.theme)
-                        font.pixelSize: AppScale.fs(12)
+                        FieldLabel { text: qsTr("Advanced") }
+                        Switch {
+                            checked: settingsApi ? settingsApi.advanced : false
+                            onToggled: if (settingsApi)
+                                settingsApi.advanced = checked
+                        }
+                        Hint {
+                            text: qsTr("Detection, loudness, and formula coefficients. Turns off when you leave.")
+                        }
                     }
                 }
             }
@@ -718,17 +719,15 @@ Page {
                         help: qsTr("Which detector decides when speech starts and stops. Used only with Detect speech automatically. Energy: short-term change of amplitude (V). Autocorrelation: voicing, how strongly a frame repeats at a pitch period (U). Hybrid: speech only when both detectors agree.")
                         formula: "Energy: speech when V > Energy threshold\nAutocorrelation: speech when U > Autocorrelation threshold\nHybrid: both conditions at once"
                     }
-                    ComboBox {
-                        textRole: "name"
+                    SettingComboBox {
+                        selectedValue: settingsApi ? settingsApi.vadMethod : 0
                         model: [
                             { name: qsTr("Energy"), id: 0 },
                             { name: qsTr("Autocorrelation"), id: 1 },
                             { name: qsTr("Hybrid"), id: 2 }
                         ]
-                        currentIndex: settingsApi ? settingsApi.vadMethod : 0
                         onActivated: if (settingsApi)
                             settingsApi.vadMethod = model[index].id
-                        Layout.fillWidth: true
                     }
                     Hint {
                         text: qsTr("Energy: amplitude change. Autocorrelation: voicing. Hybrid: both must agree.")
