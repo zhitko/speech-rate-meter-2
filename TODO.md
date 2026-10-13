@@ -9,6 +9,7 @@ Feedback from Boris Lobanov, Oct 10, 2026.
 - [x] Put Pauses in the Fillers tile's former place, and Speech rate in the Pauses tile's former place.
 - [x] Remove all long explanatory texts (the line under the gauge, the metric-tile hints, and the settings hints).
 - [x] Add a "Listen to test" button next to the "Open File" button.
+- [ ] Tempo dynamics chart (Boris, Oct 13, 2026): jittering arcs do not show tempo dynamics well. Make the arcs smaller and keep them for averaged values only. Add a time chart of tempo above the arcs, like the one in the SIA assistant, updated every 10 s and showing a sliding 300 s (5 min) window.
 
 ## Measurements
 - [x] Improve measurement methods; current measurements are fairly approximate. Explore alternative approaches on top of the new UI.
