@@ -24,6 +24,30 @@ Page {
     readonly property real fastWpm: settingsApi ? settingsApi.fastWpm : 210
     // 0 speech rate, 1 articulation rate, 2 both on the gauge.
     readonly property int gaugeMode: settingsApi ? settingsApi.gaugeMode : 0
+    readonly property var tempoPoints: sessionApi && sessionApi.tempoPoints ? sessionApi.tempoPoints : []
+    readonly property int tempoWindowSec: settingsApi ? settingsApi.tempoChartWindowSec : 300
+    // Same publish cadence as the arcs: 60 / Updates per minute seconds.
+    readonly property real tempoSampleSec: 60.0 / Math.max(1, settingsApi ? settingsApi.updatesPerMinute : 60)
+    // Same numbers the arcs would show, including rest at zero.
+    readonly property real tempoTipSpeech: !sessionApi || gaugeAtRest ? 0 : sessionApi.speechRate
+    readonly property real tempoTipArticulation: !sessionApi || gaugeAtRest ? 0
+                                                : sessionApi.gaugeArticulationRate
+    readonly property bool tempoTipActive: active && (hasResult || phase() === SessionApi.Measuring)
+    // 0 tempo chart, 1 arcs — what Home shows while recording.
+    readonly property int recordingView: settingsApi ? settingsApi.recordingView : 0
+    readonly property bool liveUsesChart: recordingView === 0
+    // Session clock for the scrolling chart. tempoFreeze keeps the right edge
+    // still after Stop so the line does not jump back to the last point.
+    property real tempoNow: 0
+    property real tempoFreeze: 0
+    readonly property bool finishedTake: !active && (hasResult || tempoPoints.length > 0)
+    // While recording: chart or arcs from the setting. After a take: both.
+    // Idle with no result: the same view as While recording.
+    readonly property bool showTempoChart: active ? liveUsesChart
+                                                 : (finishedTake || liveUsesChart)
+    readonly property bool showGaugeArcs: active ? !liveUsesChart
+                                                : (finishedTake || !liveUsesChart)
+    readonly property bool chartAndGauge: showTempoChart && showGaugeArcs
     // A pace on the gauge is not repeated as a tile. Fillers stays off until chosen.
     readonly property bool showSpeechRateTile: gaugeMode === 1
                                                 && (settingsApi ? settingsApi.showSpeechRateTile : true)
@@ -62,8 +86,13 @@ Page {
     // Card margins (16 + 16), column spacing (8), hint bottom margin (4), and the
     // gauge top margin (28 minus the chip band the arc now fills).
     readonly property real gaugeSurround: 72 - chipBand + (gaugeHint.implicitHeight > 0 ? gaugeHint.implicitHeight : 0)
-    // Below this the arc ends collide with the center label.
-    readonly property real gaugeFloor: 200
+    // Below this the arc ends collide with the center label. With the chart
+    // above them the arcs can sit lower; the chart has taken the top of the card.
+    readonly property real gaugeFloor: chartAndGauge ? 156 : 200
+    // Fixed slice of the card for the chart once the arcs are back.
+    readonly property real finishedChartHeight: chartAndGauge
+                                                 ? Math.max(148, Math.min(210, viewportHeight * 0.28))
+                                                 : 0
     readonly property real gaugeRoom: viewportHeight - AppScale.pagePadding * 2 - 4 - gaugeSurround
     // The legacy caps were measured with the arc below the chip. gaugeRoom
     // already includes the reclaimed band, so it is not added a second time.
@@ -79,6 +108,15 @@ Page {
     }
     readonly property real phoneGaugeHeight: gaugeContentHeight(layoutWidth - 32
                                                                 + 2 * (AppScale.pagePadding + 10))
+    // While recording the chart uses the space the arcs had. After Stop the
+    // arcs keep what is left under the chart.
+    readonly property real liveChartHeight: Math.max(150,
+                                                      (wideLayout ? fittedGaugeHeight : phoneGaugeHeight) - 24)
+    readonly property real pairedGaugeHeight: chartAndGauge
+                                               ? Math.max(gaugeFloor,
+                                                          (wideLayout ? fittedGaugeHeight : phoneGaugeHeight)
+                                                          - finishedChartHeight)
+                                               : 0
     // Wider windows give the gauge more of the row, up to 74%, and leave the
     // tiles about 300 px so their labels still fit.
     readonly property real gaugeWeight: {
@@ -184,6 +222,32 @@ Page {
         id: listenAudio
     }
 
+    // The trace is redrawn often enough that a five-minute window still
+    // reads as a slow drift, not a jump when the next point arrives.
+    Timer {
+        interval: 32
+        repeat: true
+        running: root.active && !!sessionApi
+        triggeredOnStart: true
+        onTriggered: root.tempoNow = sessionApi.sessionElapsedSec()
+    }
+
+    onActiveChanged: {
+        if (active) {
+            tempoNow = 0
+            tempoFreeze = 0
+        } else if (sessionApi) {
+            tempoFreeze = sessionApi.sessionElapsedSec()
+            tempoNow = tempoFreeze
+        }
+    }
+
+    onTempoPointsChanged: {
+        // A new file, or a cleared take, must not keep the previous clock.
+        if (!active)
+            tempoFreeze = 0
+    }
+
     Connections {
         target: sessionApi
         function onListenFilesChanged() {
@@ -220,9 +284,13 @@ Page {
         if (!sessionApi)
             return
         if (sessionApi.sessionActive) {
+            tempoFreeze = sessionApi.sessionElapsedSec()
+            tempoNow = tempoFreeze
             sessionApi.stopSession()
             return
         }
+        tempoNow = 0
+        tempoFreeze = 0
         listenAudio.stopPlayback()
         if (settingsApi && settingsApi.autoCalibrate)
             startCalibrationDialog.open()
@@ -611,21 +679,53 @@ Page {
                         id: gaugeColumn
                         anchors.fill: parent
                         anchors.margins: 16
-                        spacing: 0
+                        spacing: root.chartAndGauge ? 8 : 0
+
+                        TempoChart {
+                            visible: root.showTempoChart
+                            Layout.fillWidth: true
+                            Layout.topMargin: 36
+                            Layout.fillHeight: root.wideLayout && root.showTempoChart && !root.showGaugeArcs
+                            Layout.preferredHeight: !root.showTempoChart ? 0
+                                                   : (root.chartAndGauge ? root.finishedChartHeight : root.liveChartHeight)
+                            Layout.minimumHeight: !root.showTempoChart ? 0
+                                                   : (root.chartAndGauge ? root.finishedChartHeight : 140)
+                            Layout.maximumHeight: !root.showTempoChart ? 0
+                                                   : (root.wideLayout && !root.showGaugeArcs
+                                                      ? 10000
+                                                      : Layout.preferredHeight)
+                            points: root.tempoPoints
+                            windowSec: root.tempoWindowSec
+                            sampleInterval: root.tempoSampleSec
+                            minimum: root.slowWpm
+                            maximum: root.fastWpm
+                            gaugeMode: root.gaugeMode
+                            live: root.active
+                            nowSec: root.active ? root.tempoNow : root.tempoFreeze
+                            tipActive: root.tempoTipActive
+                            tipSpeech: root.tempoTipSpeech
+                            tipArticulation: root.tempoTipArticulation
+                            caption: root.showGaugeArcs ? "" : root.hintText()
+                        }
 
                         // The slot is the gauge's vertical budget. On a wide window
                         // that budget is often taller than the circle, so the arc and
                         // the hint are centered in it instead of sitting on the floor.
                         Item {
                             id: gaugeSlot
+                            visible: root.showGaugeArcs
                             Layout.fillWidth: true
                             Layout.fillHeight: root.wideLayout
-                            Layout.topMargin: 28 - root.chipBand
+                            Layout.topMargin: root.chartAndGauge ? 0 : (28 - root.chipBand)
                             readonly property real hintBlock: 8 + gaugeHint.implicitHeight + 4
-                            Layout.preferredHeight: (root.wideLayout ? root.fittedGaugeHeight
-                                                                      : root.phoneGaugeHeight)
-                                                     + hintBlock
-                            Layout.minimumHeight: Layout.preferredHeight
+                            readonly property real gaugeBudget: root.chartAndGauge
+                                                                ? root.pairedGaugeHeight
+                                                                : (root.wideLayout ? root.fittedGaugeHeight
+                                                                                   : root.phoneGaugeHeight)
+                            Layout.preferredHeight: gaugeBudget + hintBlock
+                            Layout.minimumHeight: (root.wideLayout && root.chartAndGauge)
+                                                   ? root.gaugeFloor + hintBlock
+                                                   : Layout.preferredHeight
                             Layout.maximumHeight: root.wideLayout ? 10000 : Layout.preferredHeight
 
                             SpeechRateGauge {
@@ -634,7 +734,12 @@ Page {
                                                                      : AppScale.pagePadding + 10
                                 x: -sideBleed
                                 width: parent.width + sideBleed * 2
-                                height: root.gaugeContentHeight(width)
+                                height: {
+                                    if (!root.chartAndGauge)
+                                        return root.gaugeContentHeight(width)
+                                    var room = Math.max(root.gaugeFloor, parent.height - parent.hintBlock)
+                                    return Math.min(root.gaugeContentHeight(width), room)
+                                }
                                 // Center the arc and the hint together. A phone slot is
                                 // already the circle's height, so this stays at the top.
                                 y: {

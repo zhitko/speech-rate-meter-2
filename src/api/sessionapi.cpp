@@ -64,6 +64,99 @@ int roundHalfAway(double value)
     return static_cast<int>(std::ceil(value - 0.5));
 }
 
+QString clockOf(double totalSeconds)
+{
+    const int seconds = std::max(0, static_cast<int>(std::floor(totalSeconds + 1e-6)));
+    const int minutes = seconds / 60;
+    const int remain = seconds % 60;
+    return QStringLiteral("%1:%2")
+        .arg(minutes, 2, 10, QLatin1Char('0'))
+        .arg(remain, 2, 10, QLatin1Char('0'));
+}
+
+QVariantMap tempoPoint(double seconds, double speechRate, double articulationRate)
+{
+    QVariantMap point;
+    point.insert(QStringLiteral("seconds"), seconds);
+    point.insert(QStringLiteral("clock"), clockOf(seconds));
+    point.insert(QStringLiteral("speechRate"), speechRate);
+    point.insert(QStringLiteral("articulationRate"), articulationRate);
+    return point;
+}
+
+// Same middle-value rule as the gauge: odd count is the middle after sorting,
+// even count is the mean of the two central values. Fewer than `count`
+// readings use the ones already collected.
+double rollingMedian(std::deque<double>& window, double rate, int count)
+{
+    const int keep = std::clamp(count, 1, 30);
+    window.push_back(rate);
+    while (static_cast<int>(window.size()) > keep)
+        window.pop_front();
+
+    std::vector<double> samples(window.begin(), window.end());
+    std::sort(samples.begin(), samples.end());
+    const std::size_t mid = samples.size() / 2;
+    if (samples.size() % 2 == 1)
+        return samples[mid];
+    return (samples[mid - 1] + samples[mid]) / 2.0;
+}
+
+// Non-overlapping analysis windows over the last chartWindowSec of a file.
+// Each point is the gauge median of the last few windows, stamped at the window's end.
+QVariantList tempoSeries(const std::vector<float>& samples,
+    const speechrate::Config& cfg,
+    int windowSec,
+    int chartWindowSec,
+    int gaugeAverageCount)
+{
+    QVariantList points;
+    const qint64 total = static_cast<qint64>(samples.size());
+    if (total < kMinWindowSamples)
+        return points;
+
+    const int stepSec = std::clamp(windowSec, 3, 30);
+    const int historySec = std::clamp(chartWindowSec, 30, 1800);
+    const qint64 step = static_cast<qint64>(stepSec) * kSampleRate;
+    const qint64 regionStart = std::max<qint64>(
+        0, total - static_cast<qint64>(historySec) * kSampleRate);
+    std::deque<double> speechWindow;
+    std::deque<double> articulationWindow;
+
+    const auto push = [&](qint64 start, qint64 end) {
+        if (end <= start || end - start < kMinWindowSamples || end < regionStart)
+            return;
+        const speechrate::Measurement measured = speechrate::measure(
+            std::vector<float>(samples.begin() + static_cast<std::ptrdiff_t>(start),
+                samples.begin() + static_cast<std::ptrdiff_t>(end)),
+            cfg);
+        if (!measured.metrics.valid)
+            return;
+        points.append(tempoPoint(static_cast<double>(end) / kSampleRate,
+            rollingMedian(speechWindow, measured.metrics.speechRate, gaugeAverageCount),
+            rollingMedian(articulationWindow, measured.metrics.articulationRate, gaugeAverageCount)));
+    };
+
+    if (total <= step) {
+        push(0, total);
+        return points;
+    }
+
+    qint64 start = 0;
+    if (regionStart > 0)
+        start = (regionStart / step) * step;
+    while (start < total) {
+        const qint64 end = std::min(total, start + step);
+        if (end - start < kMinWindowSamples)
+            break;
+        push(start, end);
+        if (end == total)
+            break;
+        start = end;
+    }
+    return points;
+}
+
 speechrate::Config configFrom(const AppSettings& settings)
 {
     speechrate::Config config;
@@ -438,6 +531,18 @@ protected:
                     SessionStore::insertMeasurement(map, measured.parts, job.config, job.fillerMin, job.fillerMax);
                     m_cache.insert(key, map);
                 }
+                const AppSettings chartSettings = Settings::loadSettings();
+                QVariantList series = tempoSeries(loaded.samples,
+                    job.config,
+                    chartSettings.analysisWindowSec,
+                    chartSettings.tempoChartWindowSec,
+                    chartSettings.gaugeAverageCount);
+                if (series.isEmpty() && map.value(QStringLiteral("valid")).toBool()) {
+                    series.append(tempoPoint(static_cast<double>(loaded.samples.size()) / kSampleRate,
+                        map.value(QStringLiteral("speechRate")).toDouble(),
+                        map.value(QStringLiteral("articulationRate")).toDouble()));
+                }
+                map.insert(QStringLiteral("tempoPoints"), series);
                 stampJob(map);
             } else {
                 const speechrate::Measurement measured = speechrate::measure(job.samples, job.config);
@@ -1173,6 +1278,13 @@ bool SessionApi::openFileAvailable() const
 #endif
 }
 
+double SessionApi::sessionElapsedSec() const
+{
+    if (m_sessionStartedMs <= 0)
+        return 0;
+    return std::max(0.0, (QDateTime::currentMSecsSinceEpoch() - m_sessionStartedMs) / 1000.0);
+}
+
 void SessionApi::startSession()
 {
     if (m_sessionActive || m_startPending || m_stopPending || m_openFileBusy || m_clearPending || !m_alive.load())
@@ -1251,6 +1363,7 @@ void SessionApi::beginCapture()
     clearListenFiles();
     *m_accumulator = {};
     resetResultState();
+    m_sessionStartedMs = QDateTime::currentMSecsSinceEpoch();
     m_shownSessionId.clear();
     m_shownSessionStartedAt.clear();
     m_lastShownKey.clear();
@@ -1282,6 +1395,14 @@ void SessionApi::resetResultState()
     m_fillerScore = 0;
     m_details.clear();
     clearRecordingSummary();
+    if (!m_tempoPoints.isEmpty()) {
+        m_tempoPoints.clear();
+        m_lastTempoSeconds = -1;
+        emit tempoPointsChanged();
+    } else {
+        m_lastTempoSeconds = -1;
+    }
+    m_sessionStartedMs = 0;
     if (hadResult)
         emit hasResultChanged();
     emit metricsChanged();
@@ -1432,6 +1553,7 @@ void SessionApi::applyMetrics(const QVariantMap& metrics)
         m_shownSessionStartedAt.clear();
         setShowingMean(false);
         storeRecordingSummary(metrics.value(QStringLiteral("recordingSummary")).toMap());
+        replaceTempoPoints(metrics.value(QStringLiteral("tempoPoints")).toList());
         showMetrics(metrics, metrics.value(QStringLiteral("speechDuration")).toDouble());
         return;
     }
@@ -1584,18 +1706,7 @@ double SessionApi::medianOf(std::deque<double>& window, double rate, bool live)
         window.clear();
         return rate;
     }
-
-    const int count = std::clamp(Settings::loadSettings().gaugeAverageCount, 1, 30);
-    window.push_back(rate);
-    while (static_cast<int>(window.size()) > count)
-        window.pop_front();
-
-    std::vector<double> samples(window.begin(), window.end());
-    std::sort(samples.begin(), samples.end());
-    const std::size_t mid = samples.size() / 2;
-    if (samples.size() % 2 == 1)
-        return samples[mid];
-    return (samples[mid - 1] + samples[mid]) / 2.0;
+    return rollingMedian(window, rate, Settings::loadSettings().gaugeAverageCount);
 }
 
 void SessionApi::showMetrics(const QVariantMap& shown, double speechSeconds)
@@ -1613,11 +1724,47 @@ void SessionApi::showMetrics(const QVariantMap& shown, double speechSeconds)
         emit hasResultChanged();
     }
     emit metricsChanged();
+    noteTempoPoint(shown);
     rememberShown(shown, speechSeconds);
     if (!m_sessionActive && m_phase == IdleEmpty) {
         m_phase = IdleReady;
         emit phaseChanged();
     }
+}
+
+void SessionApi::noteTempoPoint(const QVariantMap& shown)
+{
+    // Same moments and same numbers as the arcs: each live publish, with the
+    // gauge median already applied in showMetrics.
+    if (!shown.value(QStringLiteral("live")).toBool()
+        || !shown.value(QStringLiteral("valid"), true).toBool()
+        || m_sessionStartedMs <= 0)
+        return;
+
+    const double elapsed = std::max(0.0,
+        (QDateTime::currentMSecsSinceEpoch() - m_sessionStartedMs) / 1000.0);
+    m_tempoPoints.append(tempoPoint(elapsed, m_speechRate, m_gaugeArticulationRate));
+    m_lastTempoSeconds = elapsed;
+
+    // Keep half an hour so raising Chart window during a take can show more.
+    constexpr double kTempoKeepSec = 1800.0;
+    const double oldest = elapsed - kTempoKeepSec;
+    int drop = 0;
+    while (drop < m_tempoPoints.size()
+        && m_tempoPoints.at(drop).toMap().value(QStringLiteral("seconds")).toDouble() < oldest)
+        ++drop;
+    if (drop > 0)
+        m_tempoPoints.remove(0, drop);
+    emit tempoPointsChanged();
+}
+
+void SessionApi::replaceTempoPoints(const QVariantList& points)
+{
+    m_tempoPoints = points;
+    m_lastTempoSeconds = points.isEmpty()
+        ? -1.0
+        : points.last().toMap().value(QStringLiteral("seconds")).toDouble();
+    emit tempoPointsChanged();
 }
 
 void SessionApi::rememberShown(const QVariantMap& shown, double speechSeconds)

@@ -379,6 +379,43 @@ Page {
                         }
 
                         FieldLabel {
+                            text: qsTr("Chart window (s)")
+                            help: qsTr("How many seconds of tempo the chart on Home keeps. Each live Home update adds a point, using the same gauge median the arcs use, and the tip rests at zero when the arcs would. Older points slide off the left. When While recording is Tempo chart, Home shows this chart during a session. After Stop, and after Open File, the chart can appear with the arcs when there is a result. Range 30 to 1800 s, default 300 s (5 min).")
+                        }
+                        SpinBox {
+                            from: 30
+                            to: 1800
+                            stepSize: 30
+                            editable: true
+                            value: settingsApi ? settingsApi.tempoChartWindowSec : 300
+                            onValueModified: if (settingsApi)
+                                settingsApi.tempoChartWindowSec = value
+                            Layout.fillWidth: true
+                        }
+                        Hint {
+                            text: qsTr("How much tempo the chart keeps. Older points slide off.")
+                        }
+
+                        FieldLabel {
+                            text: qsTr("While recording")
+                            help: qsTr("What Home shows while a session is recording. Tempo chart: the live line chart. Arcs: the gauge arcs. After Stop, and after Open File, Home can show the chart and the arcs together when there is a result.")
+                        }
+                        ComboBox {
+                            textRole: "name"
+                            model: [
+                                { name: qsTr("Tempo chart"), id: 0 },
+                                { name: qsTr("Arcs"), id: 1 }
+                            ]
+                            currentIndex: settingsApi ? Math.max(0, Math.min(1, settingsApi.recordingView)) : 0
+                            onActivated: if (settingsApi)
+                                settingsApi.recordingView = model[index].id
+                            Layout.fillWidth: true
+                        }
+                        Hint {
+                            text: qsTr("Tempo chart or arcs on Home while you record.")
+                        }
+
+                        FieldLabel {
                             text: qsTr("Pause (s)")
                             help: qsTr("Silence that closes a phrase while Detect speech automatically is on. The phrase is saved at that pause. A phrase shorter than 1 s is dropped. A phrase longer than 15 s is cut at the next pause, or at 15 s. Stored as General/autoStopSilenceDuration in milliseconds, default 2 s.")
                         }
@@ -585,7 +622,7 @@ Page {
 
                         FieldLabel {
                             text: qsTr("Gauge median")
-                            help: qsTr("Each pace on the gauge shows the median of the last N live readings, which smooths out jitter. An odd N takes the middle value after sorting; an even N takes the mean of the two middle values. 1 shows the current reading. Speech rate and articulation keep separate windows, and Start clears them. Stored results are not affected: after Stop, the gauge shows the mean of the kept phrases. Range 1 to 30, default 3.")
+                            help: qsTr("Each pace on the gauge shows the median of the last N live readings, which smooths out jitter. The tempo chart plots that same median. An odd N takes the middle value after sorting; an even N takes the mean of the two middle values. 1 shows the current reading. Speech rate and articulation keep separate windows, and Start clears them. Stored results are not affected: after Stop, the gauge shows the mean of the kept phrases. Range 1 to 30, default 3.")
                             formula: "gauge value = median(last N live readings)"
                         }
                         SpinBox {

@@ -28,6 +28,9 @@ class JobQueue;
  * statistics, and it keeps both the direct and legacy pause estimates.
  * That pass does not replace the phrase means already shown. Live direct
  * pauses use the analysis window, not the whole take.
+ * The tempo chart stores one pace sample per analysis window, using the
+ * same gauge median the arcs draw. Home draws the last Chart window
+ * seconds of that series.
  */
 class SessionApi : public QObject {
     Q_OBJECT
@@ -47,6 +50,7 @@ class SessionApi : public QObject {
     Q_PROPERTY(bool hasRecordingSummary READ hasRecordingSummary NOTIFY recordingSummaryChanged)
     Q_PROPERTY(bool recordingSummaryPending READ recordingSummaryPending NOTIFY recordingSummaryChanged)
     Q_PROPERTY(QVariantMap recordingSummary READ recordingSummary NOTIFY recordingSummaryChanged)
+    Q_PROPERTY(QVariantList tempoPoints READ tempoPoints NOTIFY tempoPointsChanged)
     Q_PROPERTY(bool openFileAvailable READ openFileAvailable CONSTANT)
     Q_PROPERTY(bool openFileBusy READ openFileBusy NOTIFY openFileBusyChanged)
     Q_PROPERTY(QString openFileError READ openFileError NOTIFY openFileErrorChanged)
@@ -87,6 +91,7 @@ public:
     bool hasRecordingSummary() const { return m_hasRecordingSummary; }
     bool recordingSummaryPending() const { return m_recordingSummaryPending; }
     QVariantMap recordingSummary() const { return m_recordingSummary; }
+    QVariantList tempoPoints() const { return m_tempoPoints; }
     bool openFileAvailable() const;
     bool openFileBusy() const { return m_openFileBusy; }
     QString openFileError() const { return m_openFileError; }
@@ -95,6 +100,7 @@ public:
     QStringList listenFiles() const { return m_listenFiles; }
     bool openedPlayback() const { return m_openedPlayback; }
 
+    Q_INVOKABLE double sessionElapsedSec() const;
     Q_INVOKABLE void startSession();
     Q_INVOKABLE void stopSession();
     Q_INVOKABLE void openWavFile(const QUrl& url);
@@ -113,6 +119,7 @@ signals:
     void showingMeanChanged();
     void metricsChanged();
     void recordingSummaryChanged();
+    void tempoPointsChanged();
     void sessionsChanged();
     void openFileBusyChanged();
     void openFileErrorChanged();
@@ -149,6 +156,8 @@ private:
     void storeRecordingSummary(const QVariantMap& summary);
     void clearRecordingSummary();
     void rememberShown(const QVariantMap& shown, double speechSeconds);
+    void noteTempoPoint(const QVariantMap& shown);
+    void replaceTempoPoints(const QVariantList& points);
     void clearListenFiles();
     double medianOf(std::deque<double>& window, double rate, bool live);
 
@@ -182,6 +191,9 @@ private:
     bool m_hasRecordingSummary = false;
     bool m_recordingSummaryPending = false;
     QVariantMap m_recordingSummary;
+    QVariantList m_tempoPoints;
+    double m_lastTempoSeconds = -1;
+    qint64 m_sessionStartedMs = 0;
     QStringList m_listenFiles;
     bool m_openedPlayback = false;
     quint64 m_listenGeneration = 0;

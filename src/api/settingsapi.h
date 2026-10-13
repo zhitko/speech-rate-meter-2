@@ -32,6 +32,8 @@ class SettingsApi : public QObject {
     Q_PROPERTY(bool keepRecordingFiles READ keepRecordingFiles WRITE setKeepRecordingFiles NOTIFY keepRecordingFilesChanged)
     Q_PROPERTY(int analysisWindowSec READ analysisWindowSec WRITE setAnalysisWindowSec NOTIFY analysisWindowSecChanged)
     Q_PROPERTY(int updatesPerMinute READ updatesPerMinute WRITE setUpdatesPerMinute NOTIFY updatesPerMinuteChanged)
+    Q_PROPERTY(int tempoChartWindowSec READ tempoChartWindowSec WRITE setTempoChartWindowSec NOTIFY tempoChartWindowSecChanged)
+    Q_PROPERTY(int recordingView READ recordingView WRITE setRecordingView NOTIFY recordingViewChanged)
     Q_PROPERTY(int gaugeAverageCount READ gaugeAverageCount WRITE setGaugeAverageCount NOTIFY gaugeAverageCountChanged)
     Q_PROPERTY(int gaugeMode READ gaugeMode WRITE setGaugeMode NOTIFY gaugeModeChanged)
     Q_PROPERTY(bool showSpeechRateTile READ showSpeechRateTile WRITE setShowSpeechRateTile NOTIFY showSpeechRateTileChanged)
@@ -122,6 +124,10 @@ public:
     void setAnalysisWindowSec(int seconds);
     int updatesPerMinute() const;
     void setUpdatesPerMinute(int count);
+    int tempoChartWindowSec() const;
+    void setTempoChartWindowSec(int seconds);
+    int recordingView() const;
+    void setRecordingView(int view);
     int gaugeAverageCount() const;
     void setGaugeAverageCount(int count);
     int gaugeMode() const;
@@ -199,6 +205,8 @@ signals:
     void keepRecordingFilesChanged();
     void analysisWindowSecChanged();
     void updatesPerMinuteChanged();
+    void tempoChartWindowSecChanged();
+    void recordingViewChanged();
     void gaugeAverageCountChanged();
     void gaugeModeChanged();
     void showSpeechRateTileChanged();

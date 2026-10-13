@@ -32,6 +32,11 @@ struct AppSettings {
     int speechRateMethod = 0;
     int analysisWindowSec = 10; // live metrics cover this much recent speech, 3…30
     int updatesPerMinute = 60; // live recalculations per minute, 6…240
+    // Tempo chart on Home. A point is stored once per analysis window.
+    // The chart draws the last this many seconds. 30…1800.
+    int tempoChartWindowSec = 300;
+    // While recording on Home: 0 tempo chart, 1 arcs. After Stop both can show.
+    int recordingView = 0;
     int gaugeAverageCount = 3; // each pace on the gauge shows the median of this many latest readings, 1…30
     int gaugeMode = 0; // 0: speech rate, 1: articulation rate, 2: both
     // Tiles beside the gauge. A pace already drawn on the gauge is not shown again.

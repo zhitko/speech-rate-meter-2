@@ -15,9 +15,9 @@ While you are recording, speech rate, articulation, fillers, and pauses use the 
 ## Record
 
 1. Open **Home**.
-2. Press **Start** and speak naturally. The microphone stays open. A meter inside the gauge follows the microphone: if you are speaking and the bar stays empty, the microphone is not being heard. With **Detect speech automatically** on, stay quiet while background noise is measured, then speak. With it off, measuring starts when you press **Start**.
+2. Press **Start** and speak naturally. The microphone stays open. Home already shows an empty tempo chart; while you record, that chart replaces the arcs. The line grows from the left; when it reaches the right edge, older points slide off. A halo around **Stop** follows the microphone: if you are speaking and the halo stays still, the microphone is not being heard. With **Detect speech automatically** on, stay quiet while background noise is measured, then speak. With it off, measuring starts when you press **Start**. The chart adds a point on each live update, at the same median pace the arcs use, and keeps the last **Chart window** (5 minutes by default). Older points slide off.
 3. With **Detect speech automatically** on, a pause ends the phrase; it is saved, and the next one starts when you speak again. With it off, a pause does not end the phrase, and the recording is saved in 15-second parts.
-4. Press **Stop** when the session is finished. Home then shows the averages, with the chip **Mean values**. History shows the same averages.
+4. Press **Stop** when the session is finished. Home then shows the averages on the arcs, with the chip **Mean values**, and keeps the tempo chart above them. History shows the same averages.
 
 On a computer, **Open File** sits to the right of **Start**. It measures one existing WAV recording and does not save a session. PCM and 32-bit float files are accepted, including other sample rates, stereo, and files with extra header data. The app converts them to 8000 Hz mono before measuring. **Listen to test** then plays that recording. If a file cannot be read, the page says why. Android does not show this button.
 
@@ -36,12 +36,14 @@ Opening **Settings** stops an active recording first. An open phrase shorter tha
 Under **Measurement**:
 
 - **Analysis window** is how many recent seconds of speech Home uses while recording. Shorter reacts faster but jumps more.
-- **Updates per minute** is how often the numbers are recalculated.
+- **Updates per minute** is how often the numbers are recalculated. The tempo chart adds a point on each of those updates.
+- **Chart window** is how many seconds of the tempo chart stay on screen. The default is 300 seconds (5 minutes). Older points slide off. The values match the arcs: the gauge median while measuring, and zero at rest.
+- **While recording** chooses Tempo chart or Arcs on Home during a session. After Stop, Home can show both when there is a result.
 - **Gauge** chooses the pace on the arc. **Speech rate** draws that pace. **Articulation rate** draws articulation. **Both** draws articulation on the outer arc and speech rate on the inner arc. A pace already on the gauge is not also a card.
 - **Show Speech rate tile** and **Show Articulation rate tile** turn those cards on. Each switch cannot be changed, and the card stays hidden, while that pace is already on the gauge.
 - **Show Fillers tile** is off until you turn it on.
 - **Show Pauses tile**, **Show Speech tile**, and **Show Whole recording tile** are on by default. Whole recording is the summary after Stop or Open File.
-- **Gauge median** is how many latest readings of each pace on the gauge it takes the middle of. The default is 3. Set it to 1 to show the current reading.
+- **Gauge median** is how many latest readings of each pace on the gauge it takes the middle of. The tempo chart uses that same middle value for each point. The default is 3. Set it to 1 to show the current reading.
 - **Pause** is how much silence ends a phrase and saves it. This is used only when **Detect speech automatically** is on.
 - **Phrasal pause** is the shortest silent, unvoiced gap that counts as a pause. The default is 200 ms.
 - **Speech rate method** chooses Direct or Legacy. Direct leaves out silence before the first sound and after the last. Legacy uses the whole buffer. The Whole recording card shows both.

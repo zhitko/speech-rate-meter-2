@@ -321,6 +321,32 @@ void SettingsApi::setUpdatesPerMinute(int count)
     emit updatesPerMinuteChanged();
 }
 
+int SettingsApi::tempoChartWindowSec() const
+{
+    return m_settings.tempoChartWindowSec;
+}
+
+void SettingsApi::setTempoChartWindowSec(int seconds)
+{
+    if (!assignIfChanged(m_settings.tempoChartWindowSec, std::clamp(seconds, 30, 1800)))
+        return;
+    save();
+    emit tempoChartWindowSecChanged();
+}
+
+int SettingsApi::recordingView() const
+{
+    return m_settings.recordingView;
+}
+
+void SettingsApi::setRecordingView(int view)
+{
+    if (!assignIfChanged(m_settings.recordingView, std::clamp(view, 0, 1)))
+        return;
+    save();
+    emit recordingViewChanged();
+}
+
 int SettingsApi::gaugeAverageCount() const
 {
     return m_settings.gaugeAverageCount;
@@ -637,6 +663,8 @@ void SettingsApi::load()
     emit autoCorrEnergyThresholdChanged();
     emit analysisWindowSecChanged();
     emit updatesPerMinuteChanged();
+    emit tempoChartWindowSecChanged();
+    emit recordingViewChanged();
     emit gaugeAverageCountChanged();
     emit gaugeModeChanged();
     emit showSpeechRateTileChanged();

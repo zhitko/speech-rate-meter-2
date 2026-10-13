@@ -9,7 +9,8 @@ Feedback from Boris Lobanov, Oct 10, 2026.
 - [x] Put Pauses in the Fillers tile's former place, and Speech rate in the Pauses tile's former place.
 - [x] Remove all long explanatory texts (the line under the gauge, the metric-tile hints, and the settings hints).
 - [x] Add a "Listen to test" button next to the "Open File" button.
-- [ ] Tempo dynamics chart (Boris, Oct 13, 2026): jittering arcs do not show tempo dynamics well. Make the arcs smaller and keep them for averaged values only. Add a time chart of tempo above the arcs, like the one in the SIA assistant, updated every 10 s and showing a sliding 300 s (5 min) window.
+- [x] Tempo dynamics chart (Boris, Oct 13, 2026): jittering arcs do not show tempo dynamics well. Make the arcs smaller and keep them for averaged values only. Add a time chart of tempo above the arcs, like the one in the SIA assistant, updated every 10 s and showing a sliding 300 s (5 min) window.
+      Settings → Measurement → While recording chooses Tempo chart or Arcs for the live view. After Stop, and after Open File, Home can show the chart and the arcs together. Each live update adds a chart point at the same gauge median the arcs use; the tip rests at zero when the arcs would. Chart window is the sliding window (default 300 s). The arcs stay the averaged pace.
 
 ## Measurements
 - [x] Improve measurement methods; current measurements are fairly approximate. Explore alternative approaches on top of the new UI.
@@ -25,7 +26,4 @@ Feedback from Boris Lobanov, Oct 10, 2026.
   - Settings → Measurement → Articulation method: Direct (default) or Legacy. Legacy keeps Ra = Rs * Ts / (Tv + k2 * Tc_med * Nc) and the pause score P = k3 * (Tc_mean − Tc_med) / Tc_med. The card's Compare block shows both rates and both pause values.
   - Settings → Measurement → Speech rate method: Direct (default) or Legacy. Direct is Rs = k1 * 60 * Nv / T_span, where T_span runs from the first non-silent frame through the last (interior pauses stay in; leading and trailing silence stay out). Legacy keeps Rs = k1 * 60 * Nv / Ts. Direct articulation uses that same span minus ΣTp, so the two direct rates match when there is no pause. The card's Compare block shows both speech rates. A segment saved without a span is read as Ts.
   - Live direct Tp and Ra use the current analysis window (the same audio as Rs), not a total since Start. After Stop the tiles are the duration-weighted mean of the kept phrases. The card is the full take, including silence between phrases.
-
-## Waiting on Boris
-- [ ] Speech samples with slow, medium, and fast tempo for testing "Open File". The 23 WAVs are in `data/tests/`. Direct-pause numbers, filename ground truth, and calibration notes are in `docs/eval-tests.md`. Open File plays them through the WAV loader on main.
-- [ ] Recommended default settings (Boris is continuing to tune them). The pause minimum default is now 200 ms. k1 stays 0.71. The −25 dB silence rule stays as it is. The filename word counts imply a k1 near 0.73.
+  
