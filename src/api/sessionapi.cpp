@@ -1203,31 +1203,46 @@ struct SessionApi::SessionAccumulator {
     double fillerMax = 240;
     bool ready = false;
     bool pooled = true;
-    double weight = 0;
-    double speechRateSum = 0;
-    double articulationSum = 0;
-    double pausesSum = 0;
-    double fillerSum = 0;
+    struct Phrase {
+        double weight = 1;
+        double speechRate = 0;
+        double articulationRate = 0;
+        double phrasePauses = 0;
+        double fillerScore = 0;
+    };
+    std::vector<Phrase> phrases;
 
     void addPhrase(const speechrate::Metrics& phrase)
     {
-        const double used = phrase.speechDuration > 0 ? phrase.speechDuration : 1.0;
-        weight += used;
-        speechRateSum += phrase.speechRate * used;
-        articulationSum += phrase.articulationRate * used;
-        pausesSum += phrase.phrasePauses * used;
-        fillerSum += phrase.fillerScore * used;
+        Phrase sample;
+        sample.weight = phrase.speechDuration > 0 ? phrase.speechDuration : 1.0;
+        sample.speechRate = phrase.speechRate;
+        sample.articulationRate = phrase.articulationRate;
+        sample.phrasePauses = phrase.phrasePauses;
+        sample.fillerScore = phrase.fillerScore;
+        phrases.push_back(sample);
     }
 
-    speechrate::Metrics meanHeadlines() const
+    speechrate::Metrics meanHeadlines(speechrate::SummaryMethod method) const
     {
         speechrate::Metrics out = metrics;
-        if (!(weight > 0))
+        if (phrases.empty())
             return out;
-        out.speechRate = speechRateSum / weight;
-        out.articulationRate = articulationSum / weight;
-        out.phrasePauses = pausesSum / weight;
-        out.fillerScore = fillerSum / weight;
+        const auto reduce = [&](double Phrase::* field) {
+            std::vector<speechrate::WeightedSample> samples;
+            samples.reserve(phrases.size());
+            for (const Phrase& phrase : phrases) {
+                speechrate::WeightedSample sample;
+                sample.value = phrase.*field;
+                sample.weight = phrase.weight;
+                samples.push_back(sample);
+            }
+            return speechrate::summarizeSamples(samples, method);
+        };
+        out.speechRate = reduce(&Phrase::speechRate);
+        out.articulationRate = reduce(&Phrase::articulationRate);
+        out.phrasePauses = reduce(&Phrase::phrasePauses);
+        out.fillerScore = reduce(&Phrase::fillerScore);
         return out;
     }
 };
@@ -1646,14 +1661,22 @@ void SessionApi::showSessionMean()
     const SessionAccumulator& acc = *m_accumulator;
     if (!acc.ready)
         return;
-    // Headlines are the duration-weighted mean of kept phrases. Speech duration
-    // stays the sum. Vowel and gap statistics stay those of the joined collection.
-    const speechrate::Metrics mean = acc.meanHeadlines();
+    // Headlines follow Session summary. Speech duration stays the sum.
+    // Vowel and gap statistics stay those of the joined collection.
+    const speechrate::Metrics mean = acc.meanHeadlines(
+        speechrate::summaryMethodOf(Settings::loadSettings().summaryMethod));
     QVariantMap shown = metricsToMap(mean, acc.fillerMin, acc.fillerMax, false, 0, true);
     shown.insert(QStringLiteral("speechDuration"), acc.metrics.speechDuration);
     m_shownSessionId.clear();
     showMetrics(shown, acc.metrics.speechDuration);
-    setShowingMean(acc.weight > 0);
+    setShowingMean(!acc.phrases.empty());
+}
+
+void SessionApi::refreshSummary()
+{
+    if (!m_alive.load() || m_sessionActive || !m_showingMean)
+        return;
+    showSessionMean();
 }
 
 void SessionApi::setShowingMean(bool showing)

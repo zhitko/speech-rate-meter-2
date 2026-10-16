@@ -46,6 +46,7 @@ class SettingsApi : public QObject {
     Q_PROPERTY(int phrasalPauseMs READ phrasalPauseMs WRITE setPhrasalPauseMs NOTIFY phrasalPauseMsChanged)
     Q_PROPERTY(int articulationMethod READ articulationMethod WRITE setArticulationMethod NOTIFY articulationMethodChanged)
     Q_PROPERTY(int speechRateMethod READ speechRateMethod WRITE setSpeechRateMethod NOTIFY speechRateMethodChanged)
+    Q_PROPERTY(int summaryMethod READ summaryMethod WRITE setSummaryMethod NOTIFY summaryMethodChanged)
     Q_PROPERTY(double slowWpm READ slowWpm WRITE setSlowWpm NOTIFY slowWpmChanged)
     Q_PROPERTY(double fastWpm READ fastWpm WRITE setFastWpm NOTIFY fastWpmChanged)
     Q_PROPERTY(int meanValueDegry READ meanValueDegry WRITE setMeanValueDegry NOTIFY meanValueDegryChanged)
@@ -152,6 +153,8 @@ public:
     void setArticulationMethod(int method);
     int speechRateMethod() const;
     void setSpeechRateMethod(int method);
+    int summaryMethod() const;
+    void setSummaryMethod(int method);
     double slowWpm() const;
     void setSlowWpm(double wpm);
     double fastWpm() const;
@@ -219,6 +222,7 @@ signals:
     void phrasalPauseMsChanged();
     void articulationMethodChanged();
     void speechRateMethodChanged();
+    void summaryMethodChanged();
     void slowWpmChanged();
     void fastWpmChanged();
     void meanValueDegryChanged();

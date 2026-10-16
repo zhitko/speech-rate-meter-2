@@ -8,9 +8,11 @@
 #include <QSettings>
 #include <QTemporaryDir>
 
+#include <algorithm>
 #include <cmath>
 #include <cstdlib>
 #include <iostream>
+#include <vector>
 
 namespace {
 
@@ -83,6 +85,10 @@ void testRoundTripAndClear()
 
 void testDurationWeightedSessionMean()
 {
+    AppSettings settings = Settings::getDefaultSettings();
+    settings.summaryMethod = static_cast<int>(speechrate::SummaryMethod::WeightedMean);
+    Settings::saveSettings(settings);
+
     const QString id = QStringLiteral("20261006-230100-000");
     const QString started = QStringLiteral("2026-10-06T23:01:00.000");
     QVariantMap first = measuredSegment();
@@ -212,6 +218,8 @@ void testPhrasalPauseDefaultMigration()
         "settings pause default matches the analysis default");
     expect(Settings::getDefaultSettings().phrasalPauseMs == 200, "in-code pause default is 200 ms");
     expect(Settings::getDefaultSettings().speechRateMethod == 0, "speech rate method defaults to direct");
+    expect(Settings::getDefaultSettings().summaryMethod == static_cast<int>(speechrate::SummaryMethod::Median),
+        "session summary defaults to the median");
 
     const QString path = Settings::getAppDataDir() + QStringLiteral("/settings.ini");
     auto rewritePause = [&path](int milliseconds, bool clearMigrationFlag) {
@@ -253,6 +261,90 @@ void testPhrasalPauseDefaultMigration()
     expect(Settings::loadSettings().phrasalPauseMs == 200, "a missing pause minimum uses 200");
 }
 
+void testSummaryMethodChangesHistory()
+{
+    AppSettings settings = Settings::getDefaultSettings();
+    settings.summaryMethod = static_cast<int>(speechrate::SummaryMethod::Median);
+    Settings::saveSettings(settings);
+
+    const QString id = QStringLiteral("20261016-210000-000");
+    const QString started = QStringLiteral("2026-10-16T21:00:00.000");
+    QVariantMap first = measuredSegment();
+    QVariantMap second = measuredSegment();
+    second.insert(QStringLiteral("endedAt"), QStringLiteral("2026-10-16T21:00:08.000"));
+    second.insert(QStringLiteral("speechDuration"), 4.0);
+    second.insert(QStringLiteral("speechRate"), 180.0);
+    second.insert(QStringLiteral("articulationRate"), 210.0);
+    second.insert(QStringLiteral("phrasePauses"), 0.40);
+    second.insert(QStringLiteral("fillerPercent"), 30);
+    QVariantMap third = measuredSegment();
+    third.insert(QStringLiteral("endedAt"), QStringLiteral("2026-10-16T21:00:12.000"));
+    third.insert(QStringLiteral("speechDuration"), 2.0);
+    third.insert(QStringLiteral("speechRate"), 90.0);
+    third.insert(QStringLiteral("articulationRate"), 100.0);
+    third.insert(QStringLiteral("phrasePauses"), 0.10);
+    third.insert(QStringLiteral("fillerPercent"), 0);
+
+    expect(SessionStore::appendSegment(id, started, first), "append first summary phrase");
+    expect(SessionStore::appendSegment(id, started, second), "append second summary phrase");
+    expect(SessionStore::appendSegment(id, started, third), "append third summary phrase");
+
+    const QVariantMap loaded = SessionStore::loadSession(id);
+    const auto near = [](double left, double right) {
+        return std::fabs(left - right) < 1e-6;
+    };
+    const double firstRate = first.value(QStringLiteral("speechRate")).toDouble();
+    expect(near(loaded.value(QStringLiteral("speechRate")).toDouble(), 90.0),
+        "history speech rate follows the median setting");
+    expect(firstRate < 90.0, "the first phrase sits below the median");
+    std::vector<double> articulation {
+        first.value(QStringLiteral("articulationRate")).toDouble(), 210.0, 100.0
+    };
+    std::sort(articulation.begin(), articulation.end());
+    expect(near(loaded.value(QStringLiteral("articulationRate")).toDouble(), articulation[1]),
+        "history articulation follows the median setting");
+    expect(near(loaded.value(QStringLiteral("phrasePauses")).toDouble(), 0.10),
+        "history pauses follow the median setting");
+    expect(near(loaded.value(QStringLiteral("fillerPercent")).toDouble(), 12.0),
+        "history fillers follow the median setting");
+    expect(near(loaded.value(QStringLiteral("speechDuration")).toDouble(), 8.0),
+        "speech duration stays the sum");
+
+    const QString path = Settings::getAppDataDir() + QStringLiteral("/settings.ini");
+    {
+        QSettings stored(path, QSettings::IniFormat);
+        stored.beginGroup(QStringLiteral("General"));
+        stored.setValue(QStringLiteral("summaryMethod"), 99);
+        stored.endGroup();
+        stored.sync();
+    }
+    expect(Settings::loadSettings().summaryMethod == speechrate::kSummaryMethodCount - 1,
+        "a stored summary past the last choice clamps to the last choice");
+
+    {
+        QSettings stored(path, QSettings::IniFormat);
+        stored.beginGroup(QStringLiteral("General"));
+        stored.setValue(QStringLiteral("summaryMethod"), static_cast<int>(speechrate::SummaryMethod::WeightedMean));
+        stored.setValue(QStringLiteral("summaryMethodMedianDefault"), false);
+        stored.endGroup();
+        stored.sync();
+    }
+    expect(Settings::loadSettings().summaryMethod == static_cast<int>(speechrate::SummaryMethod::Median),
+        "a stored weighted mean from before the median default moves to median");
+    expect(Settings::loadSettings().summaryMethod == static_cast<int>(speechrate::SummaryMethod::Median),
+        "the migrated median stays on the next load");
+
+    settings = Settings::loadSettings();
+    settings.summaryMethod = static_cast<int>(speechrate::SummaryMethod::WeightedMean);
+    Settings::saveSettings(settings);
+    expect(Settings::loadSettings().summaryMethod == static_cast<int>(speechrate::SummaryMethod::WeightedMean),
+        "an explicit weighted mean stays after the default has moved");
+
+    settings.summaryMethod = static_cast<int>(speechrate::SummaryMethod::Median);
+    Settings::saveSettings(settings);
+    SessionStore::clearAll();
+}
+
 void testMalformedJsonIsQuarantined()
 {
     QDir().mkpath(SessionStore::sessionsDir());
@@ -285,6 +377,7 @@ int main(int argc, char** argv)
     testDiscardSkipsUnsavedWav();
     testMalformedJsonIsQuarantined();
     testPhrasalPauseDefaultMigration();
+    testSummaryMethodChangesHistory();
 
     Settings::clearAppDataDirForTests();
     if (failures != 0) {

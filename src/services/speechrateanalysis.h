@@ -376,6 +376,40 @@ RecordingSummary summarizeRecording(const std::vector<float>& samples,
     const Config& cfg,
     int pauseThresholdMs = kDefaultPhrasalPauseMs);
 
+/**
+ * How several phrase headlines become the session summary after Stop.
+ * Weighted mean and weighted median use each sample's weight (phrase
+ * duration). The others count each phrase once. Harmonic and geometric
+ * means are 0 when any value is not positive. A trimmed mean drops the
+ * lowest and highest quarter, and with fewer than 4 values it is the mean.
+ */
+enum class SummaryMethod {
+    WeightedMean = 0,
+    Mean = 1,
+    Median = 2,
+    WeightedMedian = 3,
+    HarmonicMean = 4,
+    GeometricMean = 5,
+    TrimmedMean = 6,
+    QuadraticMean = 7,
+};
+
+constexpr int kSummaryMethodCount = 8;
+
+struct WeightedSample {
+    double value = 0;
+    double weight = 1;
+};
+
+/** Values outside 0 … kSummaryMethodCount − 1 become Median, the default. */
+SummaryMethod summaryMethodOf(int method);
+
+/**
+ * Combine phrase headlines. An empty list, and a list of only non-finite
+ * values, returns 0. A non-positive or non-finite weight is treated as 1.
+ */
+double summarizeSamples(const std::vector<WeightedSample>& samples, SummaryMethod method);
+
 } // namespace speechrate
 
 #endif

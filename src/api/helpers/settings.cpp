@@ -157,6 +157,19 @@ Settings::loadSettings()
     }
     settings.articulationMethod = std::clamp(qsettings.value("articulationMethod", 0).toInt(), 0, 1);
     settings.speechRateMethod = std::clamp(qsettings.value("speechRateMethod", 0).toInt(), 0, 1);
+    settings.summaryMethod = std::clamp(
+        qsettings.value(QStringLiteral("summaryMethod"), static_cast<int>(speechrate::SummaryMethod::Median)).toInt(),
+        0,
+        speechrate::kSummaryMethodCount - 1);
+    // A stored 0 is the previous default, not a custom choice, until this flag is set.
+    if (!qsettings.value(QStringLiteral("summaryMethodMedianDefault"), false).toBool()) {
+        if (!qsettings.contains(QStringLiteral("summaryMethod"))
+            || settings.summaryMethod == static_cast<int>(speechrate::SummaryMethod::WeightedMean)) {
+            settings.summaryMethod = static_cast<int>(speechrate::SummaryMethod::Median);
+        }
+        qsettings.setValue(QStringLiteral("summaryMethod"), settings.summaryMethod);
+        qsettings.setValue(QStringLiteral("summaryMethodMedianDefault"), true);
+    }
     settings.analysisWindowSec = std::clamp(qsettings.value("analysisWindowSec", 10).toInt(), 3, 30);
     settings.updatesPerMinute = std::clamp(qsettings.value("updatesPerMinute", 60).toInt(), 6, 240);
     settings.tempoChartWindowSec = std::clamp(qsettings.value("tempoChartWindowSec", 300).toInt(), 30, 1800);
@@ -242,6 +255,9 @@ void Settings::saveSettings(const AppSettings& settings)
     qsettings.setValue(QStringLiteral("phrasalPauseMsMigrated200"), true);
     qsettings.setValue("articulationMethod", settings.articulationMethod);
     qsettings.setValue("speechRateMethod", settings.speechRateMethod);
+    qsettings.setValue(QStringLiteral("summaryMethod"),
+        std::clamp(settings.summaryMethod, 0, speechrate::kSummaryMethodCount - 1));
+    qsettings.setValue(QStringLiteral("summaryMethodMedianDefault"), true);
     qsettings.setValue("analysisWindowSec", settings.analysisWindowSec);
     qsettings.setValue("updatesPerMinute", settings.updatesPerMinute);
     qsettings.setValue("tempoChartWindowSec", settings.tempoChartWindowSec);

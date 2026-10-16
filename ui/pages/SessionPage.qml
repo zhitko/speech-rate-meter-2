@@ -45,6 +45,10 @@ Page {
         target: sessionApi
         function onSessionsChanged() { root.reload() }
     }
+    Connections {
+        target: settingsApi
+        function onSummaryMethodChanged() { root.reload() }
+    }
 
     ColumnLayout {
         anchors.centerIn: parent
@@ -103,7 +107,7 @@ Page {
                         Layout.fillWidth: true
                         Layout.columnSpan: root.wideLayout ? 2 : 1
                         visible: Number(sessionData.phraseCount) > 0
-                        text: qsTr("Mean values")
+                        text: PhraseSummary.title(settingsApi ? settingsApi.summaryMethod : PhraseSummary.defaultId)
                         font.pixelSize: AppScale.fs(13)
                         font.weight: Font.DemiBold
                         color: Theme.primary(Material.theme)

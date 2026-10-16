@@ -3,6 +3,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <iostream>
+#include <limits>
 #include <random>
 #include <string>
 
@@ -567,6 +568,83 @@ void testDirectPausesFromSignal()
     expect(voiced.phrasalPauseCount == 0, "a quiet voiced stretch is not a pause");
 }
 
+speechrate::WeightedSample sample(double value, double weight)
+{
+    speechrate::WeightedSample item;
+    item.value = value;
+    item.weight = weight;
+    return item;
+}
+
+void testSessionSummary()
+{
+    expect(speechrate::summaryMethodOf(-1) == speechrate::SummaryMethod::Median,
+        "an unknown summary falls back to the median");
+    expect(speechrate::summaryMethodOf(99) == speechrate::SummaryMethod::Median,
+        "a summary past the last choice falls back to the median");
+    expect(speechrate::summaryMethodOf(2) == speechrate::SummaryMethod::Median, "median id is kept");
+
+    const std::vector<speechrate::WeightedSample> empty;
+    expectNear(speechrate::summarizeSamples(empty, speechrate::SummaryMethod::Mean), 0, "empty mean");
+    expectNear(speechrate::summarizeSamples(empty, speechrate::SummaryMethod::Median), 0, "empty median");
+
+    const std::vector<speechrate::WeightedSample> one { sample(4, 2) };
+    expectNear(speechrate::summarizeSamples(one, speechrate::SummaryMethod::WeightedMean), 4, "one weighted mean");
+    expectNear(speechrate::summarizeSamples(one, speechrate::SummaryMethod::QuadraticMean), 4, "one quadratic mean");
+
+    const std::vector<speechrate::WeightedSample> phrases {
+        sample(10, 1), sample(20, 1), sample(30, 1), sample(100, 1)
+    };
+    expectNear(speechrate::summarizeSamples(phrases, speechrate::SummaryMethod::WeightedMean), 40, "equal weights are the mean");
+    expectNear(speechrate::summarizeSamples(phrases, speechrate::SummaryMethod::Mean), 40, "arithmetic mean");
+    expectNear(speechrate::summarizeSamples(phrases, speechrate::SummaryMethod::Median), 25, "even median averages the center");
+    expectNear(speechrate::summarizeSamples(phrases, speechrate::SummaryMethod::WeightedMedian), 25,
+        "equal weights make the weighted median the median");
+    expectNear(speechrate::summarizeSamples(phrases, speechrate::SummaryMethod::HarmonicMean),
+        4.0 / (0.1 + 0.05 + 1.0 / 30.0 + 0.01), "harmonic mean");
+    expectNear(speechrate::summarizeSamples(phrases, speechrate::SummaryMethod::GeometricMean),
+        std::pow(10.0 * 20.0 * 30.0 * 100.0, 0.25), "geometric mean");
+    expectNear(speechrate::summarizeSamples(phrases, speechrate::SummaryMethod::TrimmedMean), 25,
+        "four phrases drop one from each end");
+    expectNear(speechrate::summarizeSamples(phrases, speechrate::SummaryMethod::QuadraticMean),
+        std::sqrt((100.0 + 400.0 + 900.0 + 10000.0) / 4.0), "quadratic mean");
+
+    const std::vector<speechrate::WeightedSample> weighted { sample(100, 2), sample(180, 4) };
+    expectNear(speechrate::summarizeSamples(weighted, speechrate::SummaryMethod::WeightedMean),
+        (100.0 * 2.0 + 180.0 * 4.0) / 6.0, "longer phrase pulls the weighted mean");
+    expectNear(speechrate::summarizeSamples(weighted, speechrate::SummaryMethod::Mean), 140, "unweighted mean");
+    expectNear(speechrate::summarizeSamples(weighted, speechrate::SummaryMethod::Median), 140, "two-phrase median");
+    expectNear(speechrate::summarizeSamples(weighted, speechrate::SummaryMethod::WeightedMedian), 180,
+        "the longer phrase is the weighted median");
+    expectNear(speechrate::summarizeSamples(weighted, speechrate::SummaryMethod::HarmonicMean),
+        2.0 / (1.0 / 100.0 + 1.0 / 180.0), "two-phrase harmonic mean");
+    expectNear(speechrate::summarizeSamples(weighted, speechrate::SummaryMethod::TrimmedMean), 140,
+        "fewer than four phrases keeps the mean");
+
+    const std::vector<speechrate::WeightedSample> withZero { sample(10, 1), sample(0, 1), sample(30, 1) };
+    expectNear(speechrate::summarizeSamples(withZero, speechrate::SummaryMethod::HarmonicMean), 0,
+        "a zero phrase makes the harmonic mean zero");
+    expectNear(speechrate::summarizeSamples(withZero, speechrate::SummaryMethod::GeometricMean), 0,
+        "a zero phrase makes the geometric mean zero");
+    expectNear(speechrate::summarizeSamples(withZero, speechrate::SummaryMethod::Mean), 40.0 / 3.0,
+        "the arithmetic mean keeps a zero");
+    expectNear(speechrate::summarizeSamples(withZero, speechrate::SummaryMethod::Median), 10, "zero stays in the median");
+
+    const std::vector<speechrate::WeightedSample> five {
+        sample(1, 1), sample(2, 9), sample(3, 1), sample(4, 1), sample(100, 1)
+    };
+    expectNear(speechrate::summarizeSamples(five, speechrate::SummaryMethod::TrimmedMean), 3,
+        "trimmed mean drops the outer quarter");
+    expectNear(speechrate::summarizeSamples(five, speechrate::SummaryMethod::WeightedMedian), 2,
+        "a heavy middle phrase is the weighted median");
+
+    const std::vector<speechrate::WeightedSample> dirty {
+        sample(10, 0), sample(std::numeric_limits<double>::quiet_NaN(), 4), sample(30, -2)
+    };
+    expectNear(speechrate::summarizeSamples(dirty, speechrate::SummaryMethod::WeightedMean), 20,
+        "non-finite values are skipped and a bad weight counts as one");
+}
+
 } // namespace
 
 int main()
@@ -591,6 +669,7 @@ int main()
     testDirectArticulationFormula();
     testSilenceThresholdAdapts();
     testDirectPausesFromSignal();
+    testSessionSummary();
 
     if (g_failures != 0) {
         std::cerr << g_failures << " failure(s)\n";

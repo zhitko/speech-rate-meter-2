@@ -21,12 +21,13 @@ class JobQueue;
  * off the UI thread. While recording, Home reads metrics of the most recent
  * analysis window from here; each pace drawn on the gauge shows the median of
  * the last few of its own readings. After Stop, speech rate, articulation, fillers, and
- * pauses become the duration-weighted mean of every kept phrase. Speech stays
- * the total. Home labels that state Mean values. After Stop, and after Open
+ * pauses become the selected session summary of every kept phrase. The default
+ * is the median. Speech stays the total. Home names that state
+ * with the summary. History uses the same summary. After Stop, and after Open
  * File, a separate whole-recording summary counts vowel nuclei, phrasal
  * pauses (including their duration distribution), and vowel-duration
  * statistics, and it keeps both the direct and legacy pause estimates.
- * That pass does not replace the phrase means already shown. Live direct
+ * That pass does not replace the phrase summary already shown. Live direct
  * pauses use the analysis window, not the whole take.
  * The tempo chart stores one pace sample per analysis window, using the
  * same gauge median the arcs draw. Home draws the last Chart window
@@ -109,6 +110,8 @@ public:
     Q_INVOKABLE QUrl testsFolderUrl() const;
     Q_INVOKABLE QVariantList sessions() const;
     Q_INVOKABLE QVariantMap session(const QString& sessionId) const;
+    // Recompute the stopped summary from the kept phrases using the current setting.
+    Q_INVOKABLE void refreshSummary();
 
 signals:
     void sessionActiveChanged();

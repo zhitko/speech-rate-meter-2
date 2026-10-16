@@ -41,18 +41,19 @@ double sumOf(const QVariantList& segments, const QString& key)
     return sum;
 }
 
-double weightedMean(const QVariantList& segments, const QString& key)
+double summarizeColumn(const QVariantList& segments, const QString& key, int method)
 {
-    double weight = 0;
-    double acc = 0;
+    std::vector<speechrate::WeightedSample> samples;
+    samples.reserve(static_cast<std::size_t>(segments.size()));
     for (const QVariant& item : segments) {
         const QVariantMap row = item.toMap();
         const double duration = row.value(QStringLiteral("speechDuration")).toDouble();
-        const double used = duration > 0 ? duration : 1;
-        acc += row.value(key).toDouble() * used;
-        weight += used;
+        speechrate::WeightedSample sample;
+        sample.value = row.value(key).toDouble();
+        sample.weight = duration > 0 ? duration : 1;
+        samples.push_back(sample);
     }
-    return weight > 0 ? acc / weight : 0;
+    return speechrate::summarizeSamples(samples, speechrate::summaryMethodOf(method));
 }
 
 std::vector<int> intList(const QVariant& value)
@@ -413,11 +414,12 @@ QVariantMap SessionStore::summarize(const QVariantMap& root)
         return summary;
     }
 
-    summary.insert(QStringLiteral("speechRate"), weightedMean(segments, QStringLiteral("speechRate")));
-    summary.insert(QStringLiteral("articulationRate"), weightedMean(segments, QStringLiteral("articulationRate")));
-    summary.insert(QStringLiteral("phrasePauses"), weightedMean(segments, QStringLiteral("phrasePauses")));
+    const int method = Settings::loadSettings().summaryMethod;
+    summary.insert(QStringLiteral("speechRate"), summarizeColumn(segments, QStringLiteral("speechRate"), method));
+    summary.insert(QStringLiteral("articulationRate"), summarizeColumn(segments, QStringLiteral("articulationRate"), method));
+    summary.insert(QStringLiteral("phrasePauses"), summarizeColumn(segments, QStringLiteral("phrasePauses"), method));
     summary.insert(QStringLiteral("speechDuration"), sumOf(segments, QStringLiteral("speechDuration")));
-    summary.insert(QStringLiteral("fillerPercent"), weightedMean(segments, QStringLiteral("fillerPercent")));
+    summary.insert(QStringLiteral("fillerPercent"), summarizeColumn(segments, QStringLiteral("fillerPercent"), method));
     return summary;
 }
 

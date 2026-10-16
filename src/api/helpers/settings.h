@@ -30,6 +30,9 @@ struct AppSettings {
     int articulationMethod = 0;
     // 0: speech rate over the utterance span. 1: speech rate over the whole buffer.
     int speechRateMethod = 0;
+    // Session summary after Stop. Matches speechrate::SummaryMethod.
+    // 2 is the median.
+    int summaryMethod = 2;
     int analysisWindowSec = 10; // live metrics cover this much recent speech, 3…30
     int updatesPerMinute = 60; // live recalculations per minute, 6…240
     // Tempo chart on Home. A point is stored once per analysis window.

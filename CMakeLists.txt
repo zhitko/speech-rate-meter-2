@@ -157,6 +157,7 @@ set(qml_singletons
     ui/utils/AppScale.qml
     ui/utils/Icons.qml
     ui/utils/Logger.qml
+    ui/utils/PhraseSummary.qml
     ui/utils/Theme.qml
 )
 

@@ -501,6 +501,28 @@ Page {
                         }
 
                         FieldLabel {
+                            text: qsTr("Session summary")
+                            help: qsTr("How the kept phrases are combined after Stop, for speech rate, articulation, pauses, and fillers. Speech stays the total time. History uses the same choice. Changing it updates the stopped session and History. Median, the default, takes the middle phrase; an even count averages the two central phrases. Weighted mean weights each phrase by its length, so a longer phrase counts more. Weighted median does the same and then takes the middle. Mean, harmonic mean, geometric mean, trimmed mean, and quadratic mean count each phrase once. A harmonic or geometric mean is zero when any phrase is zero. A trimmed mean drops the lowest and highest quarter of the phrases, and with fewer than four phrases it is the plain mean. Quadratic mean is the root mean square, so a fast phrase pulls it up. One phrase, and an opened file, stay the same number for every choice.")
+                            formula: "Weighted mean = Σ(value × duration) / Σ(duration)\nMean = Σ(value) / N\nMedian = middle; an even N averages the two central values\nWeighted median = value where the running duration reaches half; a point that lands between two phrases averages them\nHarmonic mean = N / Σ(1/value)\nGeometric mean = exp(Σ ln(value) / N)\nTrimmed mean = mean after dropping the lowest and highest floor(N/4) phrases\nQuadratic mean = sqrt(Σ(value²) / N)"
+                        }
+                        SettingComboBox {
+                            selectedValue: settingsApi ? settingsApi.summaryMethod : PhraseSummary.defaultId
+                            model: {
+                                void (root.settingsApi ? root.settingsApi.language : "")
+                                const items = []
+                                const choices = PhraseSummary.choices
+                                for (let i = 0; i < choices.length; ++i)
+                                    items.push({ name: choices[i].name, id: choices[i].id })
+                                return items
+                            }
+                            onActivated: if (settingsApi)
+                                settingsApi.summaryMethod = model[index].id
+                        }
+                        Hint {
+                            text: qsTr("How the kept phrases are combined after Stop.")
+                        }
+
+                        FieldLabel {
                             text: qsTr("Detect speech automatically")
                             help: qsTr("On: recording waits for speech. A phrase starts at the first speech frame and ends at a pause of the Pause length. Off: recording starts at once and is cut into 15-second parts, with no speech detection. The detection method and thresholds are in the Speech detection stage, shown with Advanced on.")
                         }
@@ -629,7 +651,7 @@ Page {
 
                         FieldLabel {
                             text: qsTr("Gauge median")
-                            help: qsTr("Each pace on the gauge shows the median of the last N live readings, which smooths out jitter. The tempo chart plots that same median. An odd N takes the middle value after sorting; an even N takes the mean of the two middle values. 1 shows the current reading. Speech rate and articulation keep separate windows, and Start clears them. Stored results are not affected: after Stop, the gauge shows the mean of the kept phrases. Range 1 to 30, default 3.")
+                            help: qsTr("Each pace on the gauge shows the median of the last N live readings, which smooths out jitter. The tempo chart plots that same median. An odd N takes the middle value after sorting; an even N takes the mean of the two middle values. 1 shows the current reading. Speech rate and articulation keep separate windows, and Start clears them. After Stop, the gauge shows the Session summary of the kept phrases, not this median. Range 1 to 30, default 3.")
                             formula: "gauge value = median(last N live readings)"
                         }
                         SpinBox {

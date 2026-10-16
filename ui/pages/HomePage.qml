@@ -152,7 +152,7 @@ Page {
 
     function phaseTitle() {
         if (showingMean)
-            return qsTr("Mean values")
+            return PhraseSummary.title(settingsApi ? settingsApi.summaryMethod : PhraseSummary.defaultId)
         switch (phase()) {
         case SessionApi.Listening:
             return qsTr("Listening")
@@ -189,7 +189,7 @@ Page {
         switch (phase()) {
         case SessionApi.IdleReady:
             return showingMean
-                   ? qsTr("Session averages. Press Start again.")
+                   ? qsTr("Summary of the kept phrases. Press Start again.")
                    : qsTr("This recording. Press Start again.")
         case SessionApi.Listening:
             return qsTr("Speak when you are ready.")
@@ -246,6 +246,14 @@ Page {
         // A new file, or a cleared take, must not keep the previous clock.
         if (!active)
             tempoFreeze = 0
+    }
+
+    Connections {
+        target: settingsApi
+        function onSummaryMethodChanged() {
+            if (sessionApi)
+                sessionApi.refreshSummary()
+        }
     }
 
     Connections {

@@ -452,8 +452,8 @@
     </message>
     <message>
         <location filename="../ui/pages/HomePage.qml" line="192"/>
-        <source>Session averages. Press Start again.</source>
-        <translation>Средние за сеанс. Нажмите «Старт» снова.</translation>
+        <source>Summary of the kept phrases. Press Start again.</source>
+        <translation>Сводка по сохранённым фразам. Нажмите «Старт» снова.</translation>
     </message>
     <message>
         <location filename="../ui/pages/HomePage.qml" line="193"/>
@@ -1289,8 +1289,8 @@
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="625"/>
-        <source>Each pace on the gauge shows the median of the last N live readings, which smooths out jitter. The tempo chart plots that same median. An odd N takes the middle value after sorting; an even N takes the mean of the two middle values. 1 shows the current reading. Speech rate and articulation keep separate windows, and Start clears them. Stored results are not affected: after Stop, the gauge shows the mean of the kept phrases. Range 1 to 30, default 3.</source>
-        <translation>Каждый темп на шкале показывает медиану последних N живых значений, чтобы сгладить скачки. График темпа рисует ту же медиану. При нечётном N берётся средний элемент после сортировки; при чётном — среднее двух средних. 1 показывает текущее значение. У темпа речи и артикуляции отдельные окна; «Старт» очищает их. Сохранённые результаты не затрагиваются: после «Стоп» шкала показывает среднее сохранённых фраз. Диапазон 1–30, по умолчанию 3.</translation>
+        <source>Each pace on the gauge shows the median of the last N live readings, which smooths out jitter. The tempo chart plots that same median. An odd N takes the middle value after sorting; an even N takes the mean of the two middle values. 1 shows the current reading. Speech rate and articulation keep separate windows, and Start clears them. After Stop, the gauge shows the Session summary of the kept phrases, not this median. Range 1 to 30, default 3.</source>
+        <translation>Каждый темп на шкале показывает медиану последних N живых значений, чтобы сгладить скачки. График темпа рисует ту же медиану. При нечётном N берётся средний элемент после сортировки; при чётном — среднее двух средних. 1 показывает текущее значение. У темпа речи и артикуляции отдельные окна; «Старт» очищает их. После «Стоп» шкала показывает сводку сеанса по сохранённым фразам, а не эту медиану. Диапазон 1–30, по умолчанию 3.</translation>
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="638"/>
@@ -2121,6 +2121,64 @@
         <location filename="../ui/pages/SettingsPage.qml" line="826"/>
         <source>Calibrate</source>
         <translation>Калибровать</translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SettingsPage.qml" line="504"/>
+        <source>Session summary</source>
+        <translation>Сводка сеанса</translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SettingsPage.qml" line="505"/>
+        <source>How the kept phrases are combined after Stop, for speech rate, articulation, pauses, and fillers. Speech stays the total time. History uses the same choice. Changing it updates the stopped session and History. Median, the default, takes the middle phrase; an even count averages the two central phrases. Weighted mean weights each phrase by its length, so a longer phrase counts more. Weighted median does the same and then takes the middle. Mean, harmonic mean, geometric mean, trimmed mean, and quadratic mean count each phrase once. A harmonic or geometric mean is zero when any phrase is zero. A trimmed mean drops the lowest and highest quarter of the phrases, and with fewer than four phrases it is the plain mean. Quadratic mean is the root mean square, so a fast phrase pulls it up. One phrase, and an opened file, stay the same number for every choice.</source>
+        <translation>Как сохранённые фразы объединяются после «Стоп» для темпа речи, артикуляции, пауз и заполнителей. Речь остаётся суммарным временем. История использует тот же выбор. Изменение обновляет остановленный сеанс и историю. Медиана, выбор по умолчанию, берёт среднюю фразу; при чётном числе усредняются две центральные. Взвешенное среднее учитывает длину каждой фразы, поэтому длинная фраза весит больше. Взвешенная медиана делает то же и берёт середину. Среднее, гармоническое среднее, геометрическое среднее, усечённое среднее и квадратичное среднее считают каждую фразу один раз. Гармоническое и геометрическое средние равны нулю, если хотя бы одна фраза равна нулю. Усечённое среднее отбрасывает нижнюю и верхнюю четверть фраз, а при менее чем четырёх фразах это обычное среднее. Квадратичное среднее — это среднеквадратичное, поэтому быстрая фраза тянет его вверх. Одна фраза и открытый файл дают одно и то же число при любом выборе.</translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SettingsPage.qml" line="518"/>
+        <source>How the kept phrases are combined after Stop.</source>
+        <translation>Как сохранённые фразы объединяются после «Стоп».</translation>
+    </message>
+</context>
+<context>
+    <name>PhraseSummary</name>
+    <message>
+        <location filename="../ui/utils/PhraseSummary.qml" line="8"/>
+        <source>Weighted mean</source>
+        <translation>Взвешенное среднее</translation>
+    </message>
+    <message>
+        <location filename="../ui/utils/PhraseSummary.qml" line="9"/>
+        <source>Mean</source>
+        <translation>Среднее</translation>
+    </message>
+    <message>
+        <location filename="../ui/utils/PhraseSummary.qml" line="10"/>
+        <source>Median</source>
+        <translation>Медиана</translation>
+    </message>
+    <message>
+        <location filename="../ui/utils/PhraseSummary.qml" line="11"/>
+        <source>Weighted median</source>
+        <translation>Взвешенная медиана</translation>
+    </message>
+    <message>
+        <location filename="../ui/utils/PhraseSummary.qml" line="12"/>
+        <source>Harmonic mean</source>
+        <translation>Гармоническое среднее</translation>
+    </message>
+    <message>
+        <location filename="../ui/utils/PhraseSummary.qml" line="13"/>
+        <source>Geometric mean</source>
+        <translation>Геометрическое среднее</translation>
+    </message>
+    <message>
+        <location filename="../ui/utils/PhraseSummary.qml" line="14"/>
+        <source>Trimmed mean</source>
+        <translation>Усечённое среднее</translation>
+    </message>
+    <message>
+        <location filename="../ui/utils/PhraseSummary.qml" line="15"/>
+        <source>Quadratic mean</source>
+        <translation>Квадратичное среднее</translation>
     </message>
 </context>
 <context>

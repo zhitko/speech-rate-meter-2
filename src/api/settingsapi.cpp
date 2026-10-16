@@ -2,6 +2,7 @@
 
 #include "helpers/logger.h"
 #include "helpers/settings.h"
+#include "src/services/speechrateanalysis.h"
 
 #include <QCoreApplication>
 #include <QDir>
@@ -505,6 +506,19 @@ void SettingsApi::setSpeechRateMethod(int method)
     emit speechRateMethodChanged();
 }
 
+int SettingsApi::summaryMethod() const
+{
+    return m_settings.summaryMethod;
+}
+
+void SettingsApi::setSummaryMethod(int method)
+{
+    if (!assignIfChanged(m_settings.summaryMethod, std::clamp(method, 0, speechrate::kSummaryMethodCount - 1)))
+        return;
+    save();
+    emit summaryMethodChanged();
+}
+
 double SettingsApi::slowWpm() const
 {
     return m_settings.speechRateMin;
@@ -677,6 +691,7 @@ void SettingsApi::load()
     emit phrasalPauseMsChanged();
     emit articulationMethodChanged();
     emit speechRateMethodChanged();
+    emit summaryMethodChanged();
     emit slowWpmChanged();
     emit fastWpmChanged();
     emit meanValueDegryChanged();

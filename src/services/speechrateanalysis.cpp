@@ -895,4 +895,156 @@ RecordingSummary summarizeRecording(const std::vector<float>& samples,
     return summary;
 }
 
+namespace {
+
+bool closeTo(double left, double right)
+{
+    const double scale = std::max(1.0, std::max(std::fabs(left), std::fabs(right)));
+    return std::fabs(left - right) <= 1e-9 * scale;
+}
+
+std::vector<WeightedSample> finiteSamples(const std::vector<WeightedSample>& samples)
+{
+    std::vector<WeightedSample> kept;
+    kept.reserve(samples.size());
+    for (const WeightedSample& sample : samples) {
+        if (!std::isfinite(sample.value))
+            continue;
+        WeightedSample copy = sample;
+        if (!(copy.weight > 0.0) || !std::isfinite(copy.weight))
+            copy.weight = 1.0;
+        kept.push_back(copy);
+    }
+    return kept;
+}
+
+double arithmeticMean(const std::vector<double>& values)
+{
+    if (values.empty())
+        return 0;
+    double sum = 0;
+    for (double value : values)
+        sum += value;
+    return sum / static_cast<double>(values.size());
+}
+
+double medianOfSorted(const std::vector<double>& sorted)
+{
+    const std::size_t count = sorted.size();
+    if (count == 0)
+        return 0;
+    const std::size_t mid = count / 2;
+    if (count % 2 == 1)
+        return sorted[mid];
+    return (sorted[mid - 1] + sorted[mid]) / 2.0;
+}
+
+double weightedMedian(std::vector<WeightedSample> ordered)
+{
+    std::sort(ordered.begin(), ordered.end(), [](const WeightedSample& left, const WeightedSample& right) {
+        return left.value < right.value;
+    });
+    double total = 0;
+    for (const WeightedSample& sample : ordered)
+        total += sample.weight;
+    const double half = total * 0.5;
+    double below = 0;
+    for (std::size_t index = 0; index < ordered.size(); ++index) {
+        const double above = total - below - ordered[index].weight;
+        if (below <= half || closeTo(below, half)) {
+            if (above <= half || closeTo(above, half)) {
+                if (index + 1 < ordered.size()) {
+                    const double nextBelow = below + ordered[index].weight;
+                    const double nextAbove = total - nextBelow - ordered[index + 1].weight;
+                    const bool nextFits = (nextBelow <= half || closeTo(nextBelow, half))
+                        && (nextAbove <= half || closeTo(nextAbove, half));
+                    if (nextFits)
+                        return (ordered[index].value + ordered[index + 1].value) / 2.0;
+                }
+                return ordered[index].value;
+            }
+        }
+        below += ordered[index].weight;
+    }
+    return ordered.back().value;
+}
+
+} // namespace
+
+SummaryMethod summaryMethodOf(int method)
+{
+    if (method < 0 || method >= kSummaryMethodCount)
+        return SummaryMethod::Median;
+    return static_cast<SummaryMethod>(method);
+}
+
+double summarizeSamples(const std::vector<WeightedSample>& samples, SummaryMethod method)
+{
+    const std::vector<WeightedSample> kept = finiteSamples(samples);
+    if (kept.empty())
+        return 0;
+
+    std::vector<double> values;
+    values.reserve(kept.size());
+    for (const WeightedSample& sample : kept)
+        values.push_back(sample.value);
+
+    switch (method) {
+    case SummaryMethod::WeightedMean: {
+        double weight = 0;
+        double acc = 0;
+        for (const WeightedSample& sample : kept) {
+            acc += sample.value * sample.weight;
+            weight += sample.weight;
+        }
+        return weight > 0.0 ? acc / weight : 0.0;
+    }
+    case SummaryMethod::Mean:
+        return arithmeticMean(values);
+    case SummaryMethod::Median: {
+        std::sort(values.begin(), values.end());
+        return medianOfSorted(values);
+    }
+    case SummaryMethod::WeightedMedian:
+        return weightedMedian(kept);
+    case SummaryMethod::HarmonicMean: {
+        double inverse = 0;
+        for (double value : values) {
+            if (!(value > 0.0))
+                return 0;
+            inverse += 1.0 / value;
+        }
+        return static_cast<double>(values.size()) / inverse;
+    }
+    case SummaryMethod::GeometricMean: {
+        double logSum = 0;
+        for (double value : values) {
+            if (!(value > 0.0))
+                return 0;
+            logSum += std::log(value);
+        }
+        return std::exp(logSum / static_cast<double>(values.size()));
+    }
+    case SummaryMethod::TrimmedMean: {
+        std::sort(values.begin(), values.end());
+        const int count = static_cast<int>(values.size());
+        const int drop = count / 4;
+        if (drop < 1 || count - 2 * drop < 1)
+            return arithmeticMean(values);
+        double sum = 0;
+        const int end = count - drop;
+        for (int index = drop; index < end; ++index)
+            sum += values[static_cast<std::size_t>(index)];
+        return sum / static_cast<double>(end - drop);
+    }
+    case SummaryMethod::QuadraticMean: {
+        double square = 0;
+        for (double value : values)
+            square += value * value;
+        return std::sqrt(square / static_cast<double>(values.size()));
+    }
+    }
+    return 0;
+}
+
 } // namespace speechrate

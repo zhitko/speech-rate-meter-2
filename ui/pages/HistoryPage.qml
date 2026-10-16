@@ -30,6 +30,7 @@ Page {
     Connections {
         target: settingsApi
         function onUserDataCleared() { root.reload() }
+        function onSummaryMethodChanged() { root.reload() }
     }
 
     function sessionLine(session) {
