@@ -30,6 +30,9 @@ Item {
     readonly property real headerArticulation: tipActive ? tipArticulation
                                                          : (lastPoint ? Number(lastPoint.articulationRate) : NaN)
     readonly property bool hasHeader: tipActive || !!lastPoint
+    // After Stop the arcs show the averaged pace. The last chart point is a
+    // different number, so the header labels stay only while recording.
+    readonly property bool showHeaderValues: live && hasHeader
     readonly property int paintTheme: Material.theme
     // Same green / yellow as the Slow and Average gauge arcs.
     readonly property color articulationColor: Theme.zoneColor(0, paintTheme)
@@ -108,8 +111,8 @@ Item {
     Accessible.role: Accessible.Chart
     Accessible.name: qsTr("Tempo")
     Accessible.description: {
-        if (!hasHeader)
-            return qsTr("No tempo yet")
+        if (!showHeaderValues)
+            return plotted.length === 0 ? qsTr("No tempo yet") : ""
         var parts = []
         if (showArticulation)
             parts.push(qsTr("Articulation") + " " + paceText(headerArticulation))
@@ -175,11 +178,11 @@ Item {
         Row {
             id: headerValues
             spacing: 6
-            visible: root.hasHeader
+            visible: root.showHeaderValues
             Layout.maximumWidth: Math.max(120, header.width * 0.68)
 
             Text {
-                visible: root.showArticulation && root.hasHeader
+                visible: root.showArticulation && root.showHeaderValues
                 text: qsTr("Articulation") + " " + root.paceText(root.headerArticulation)
                 color: root.articulationColor
                 font.pixelSize: AppScale.fs(15)
@@ -188,7 +191,7 @@ Item {
             }
 
             Text {
-                visible: root.showArticulation && root.showSpeech && root.hasHeader
+                visible: root.showArticulation && root.showSpeech && root.showHeaderValues
                 text: "/"
                 color: Theme.onSurfaceVariant(Material.theme)
                 font.pixelSize: AppScale.fs(15)
@@ -196,7 +199,7 @@ Item {
             }
 
             Text {
-                visible: root.showSpeech && root.hasHeader
+                visible: root.showSpeech && root.showHeaderValues
                 text: qsTr("Speech rate") + " " + root.paceText(root.headerSpeech)
                 color: root.speechColor
                 font.pixelSize: AppScale.fs(15)

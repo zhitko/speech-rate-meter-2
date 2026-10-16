@@ -11,7 +11,7 @@ Feedback from Boris Lobanov, Oct 10, 2026.
 - [x] Add a "Listen to test" button next to the "Open File" button.
 - [x] Tempo dynamics chart (Boris, Oct 13, 2026): jittering arcs do not show tempo dynamics well. Make the arcs smaller and keep them for averaged values only. Add a time chart of tempo above the arcs, like the one in the SIA assistant, updated every 10 s and showing a sliding 300 s (5 min) window.
       Settings → Measurement → While recording chooses Tempo chart or Arcs for the live view. After Stop, and after Open File, Home can show the chart and the arcs together. Each live update adds a chart point at the same gauge median the arcs use; the tip rests at zero when the arcs would. Chart window is the sliding window (default 300 s). The arcs stay the averaged pace.
-- [ ] Consistent tempo values (Boris, Oct 16, 2026): the tempo values shown under the arcs differ from those shown above the time chart. Find out why (different windows or averaging?) and make them consistent, or clearly label what each shows.
+- [x] Consistent tempo values (Boris, Oct 16, 2026): the tempo values shown under the arcs differ from those shown above the time chart. Find out why (different windows or averaging?) and make them consistent, or clearly label what each shows. After Stop, and after Open File, the chart hides the Speech rate and Articulation labels so only the arcs show those averaged numbers. While recording, the chart header keeps the live values.
 
 ## Measurements
 - [x] Improve measurement methods; current measurements are fairly approximate. Explore alternative approaches on top of the new UI.
