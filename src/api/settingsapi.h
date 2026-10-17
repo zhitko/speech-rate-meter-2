@@ -54,6 +54,7 @@ class SettingsApi : public QObject {
     Q_PROPERTY(double k2 READ k2 WRITE setK2 NOTIFY k2Changed)
     Q_PROPERTY(double k3 READ k3 WRITE setK3 NOTIFY k3Changed)
     Q_PROPERTY(double k4 READ k4 WRITE setK4 NOTIFY k4Changed)
+    Q_PROPERTY(double k5 READ k5 WRITE setK5 NOTIFY k5Changed)
     Q_PROPERTY(int intensityFrame READ intensityFrame WRITE setIntensityFrame NOTIFY intensityFrameChanged)
     Q_PROPERTY(int intensityShift READ intensityShift WRITE setIntensityShift NOTIFY intensityShiftChanged)
     Q_PROPERTY(int intensitySmooth READ intensitySmooth WRITE setIntensitySmooth NOTIFY intensitySmoothChanged)
@@ -169,6 +170,8 @@ public:
     void setK3(double value);
     double k4() const;
     void setK4(double value);
+    double k5() const;
+    void setK5(double value);
     int intensityFrame() const;
     void setIntensityFrame(int value);
     int intensityShift() const;
@@ -230,6 +233,7 @@ signals:
     void k2Changed();
     void k3Changed();
     void k4Changed();
+    void k5Changed();
     void intensityFrameChanged();
     void intensityShiftChanged();
     void intensitySmoothChanged();

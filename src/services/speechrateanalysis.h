@@ -48,6 +48,15 @@
  * rate keeps the whole buffer as T_s. The legacy articulation formula and
  * the legacy pause score stay available.
  *
+ * Window articulation uses the analyzed buffer as T_window, not T_span:
+ *   R_a = K5 * N_v * 60 / (T_window - sum of pause durations)
+ * While recording, that buffer is the analysis window, or the shorter
+ * buffer at the start of a session. A phrase or a whole file uses its own
+ * length, so the vowel count and the pause sum stay on the same interval.
+ * Leading and trailing silence stay in T_window and are not pauses, so they
+ * count as articulation time. K5 defaults to 0.71, the same scale as K1.
+ * Unlike Direct and Legacy, this rate is not raised to the speech rate.
+ *
  * Live metrics use the current analysis window (the same audio as speech
  * rate), not a total since Start. The whole-recording summary is the
  * cumulative view: it includes silence between phrases and reports the
@@ -81,7 +90,18 @@ constexpr double kSilenceMaxFraction = 0.20;
 enum class ArticulationMethod {
     Direct = 0,
     Legacy = 1,
+    Window = 2,
 };
+
+/** Values other than Legacy and Window stay Direct, including a missing field. */
+inline ArticulationMethod articulationMethodOf(int method)
+{
+    if (method == static_cast<int>(ArticulationMethod::Legacy))
+        return ArticulationMethod::Legacy;
+    if (method == static_cast<int>(ArticulationMethod::Window))
+        return ArticulationMethod::Window;
+    return ArticulationMethod::Direct;
+}
 
 /** Which speech rate the tempo path publishes. */
 enum class SpeechMethod {
@@ -103,6 +123,8 @@ struct Config {
     double k2 = 1.2;
     double k3 = 0.30;
     double k4 = 100.0;
+    // Window articulation scale. 0.71 matches K1, so the two rates share a scale.
+    double k5 = 0.71;
     double peakMargin = 0.009;
     // Direct articulation subtracts interior pauses at least this long.
     int pauseThresholdMs = kDefaultPhrasalPauseMs;
@@ -135,12 +157,13 @@ struct Metrics {
     double speechDuration = 0; // T_s, the whole buffer
     double speechSpanSec = 0; // T_span used by the direct rate
     double speechRate = 0; // published R_s (direct or legacy)
-    double articulationRate = 0; // published R_a (direct or legacy)
+    double articulationRate = 0; // published R_a (direct, legacy, or window)
     double phrasePauses = 0; // published pause value (direct mean, or legacy P)
     double directSpeechRate = 0;
     double legacySpeechRate = 0;
     double directArticulationRate = 0;
     double legacyArticulationRate = 0;
+    double windowArticulationRate = 0;
     double legacyPauseScore = 0; // P from the indirect gap formula
     int pauseCount = 0; // N_p
     double pauseTotal = 0; // sum of interior pause durations, seconds
@@ -287,6 +310,7 @@ struct RecordingSummary {
     double legacySpeechRate = 0;
     double directArticulationRate = 0;
     double legacyArticulationRate = 0;
+    double windowArticulationRate = 0;
     double directPauseMeanSec = 0;
     double legacyPauseScore = 0;
     double silenceLevel = 0;
@@ -328,6 +352,19 @@ double directArticulationRate(int vowelCount,
     double k1);
 
 /**
+ * R_a = K5 * N_v * 60 / (T_window − Σ T_p). windowSec is the analyzed
+ * buffer, which is the analysis window while recording (or the shorter
+ * buffer at the start) and the phrase or file length otherwise. It is not
+ * T_span: leading and trailing silence stay in the denominator. When that
+ * speaking time is not positive, returns 0. The result is not raised to
+ * the speech rate.
+ */
+double windowArticulationRate(int vowelCount,
+    double windowSec,
+    double pauseTotalSec,
+    double k5);
+
+/**
  * Time from the first non-silent frame through the last, in seconds.
  * A frame is non-silent when silent[i] == 0. Duration is frame count times
  * shiftSamples / 8000. An empty mask, or a mask with no speech frame,
@@ -336,12 +373,12 @@ double directArticulationRate(int vowelCount,
 double speechSpanSec(const std::vector<std::uint8_t>& silent, int shiftSamples);
 
 /**
- * Copies the legacy headlines, fills the direct pause and speech-rate
- * fields, and publishes the selected speech rate, articulation rate, and
- * pause value. speechSpanSec is T_span for this buffer; 0 uses T_s, which
- * is how a segment stored before the span was recorded is read.
- * metricsFromLengths leaves the legacy speech rate and the legacy
- * articulation pair in the published fields.
+ * Copies the legacy headlines, fills the direct and window rates, and
+ * publishes the selected speech rate, articulation rate, and pause value.
+ * speechSpanSec is T_span for this buffer; 0 uses T_s, which is how a
+ * segment stored before the span was recorded is read. Window articulation
+ * uses T_s of this buffer as T_window. metricsFromLengths leaves the legacy
+ * speech rate and the legacy articulation pair in the published fields.
  */
 void applyPauseStats(Metrics& metrics,
     int pauseCount,

@@ -169,10 +169,9 @@ speechrate::Config configFrom(const AppSettings& settings)
     config.k2 = settings.articulationK2;
     config.k3 = settings.pausesK3;
     config.k4 = settings.fillerK4;
+    config.k5 = settings.windowK5;
     config.pauseThresholdMs = settings.phrasalPauseMs;
-    config.articulationMethod = settings.articulationMethod == 1
-        ? speechrate::ArticulationMethod::Legacy
-        : speechrate::ArticulationMethod::Direct;
+    config.articulationMethod = speechrate::articulationMethodOf(settings.articulationMethod);
     config.speechRateMethod = settings.speechRateMethod == 1
         ? speechrate::SpeechMethod::Legacy
         : speechrate::SpeechMethod::Direct;
@@ -266,6 +265,7 @@ QString analysisCacheKey(const QString& path,
         + number(cfg.k2) + QLatin1Char('|')
         + number(cfg.k3) + QLatin1Char('|')
         + number(cfg.k4) + QLatin1Char('|')
+        + number(cfg.k5) + QLatin1Char('|')
         + number(cfg.peakMargin) + QLatin1Char('|')
         + number(cfg.speechOverNoise) + QLatin1Char('|')
         + number(cfg.minSpeechLevel) + QLatin1Char('|')
@@ -333,6 +333,7 @@ QVariantMap summaryToMap(const speechrate::RecordingSummary& summary)
     map.insert(QStringLiteral("legacySpeechRate"), summary.legacySpeechRate);
     map.insert(QStringLiteral("directArticulationRate"), summary.directArticulationRate);
     map.insert(QStringLiteral("legacyArticulationRate"), summary.legacyArticulationRate);
+    map.insert(QStringLiteral("windowArticulationRate"), summary.windowArticulationRate);
     map.insert(QStringLiteral("directPauseMeanSec"), summary.directPauseMeanSec);
     map.insert(QStringLiteral("legacyPauseScore"), summary.legacyPauseScore);
     return map;

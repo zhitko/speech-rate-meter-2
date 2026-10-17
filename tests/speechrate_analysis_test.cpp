@@ -391,6 +391,8 @@ void testDirectSpeechRatePublishing()
         "pauses make direct articulation faster than direct speech rate");
     expect(metrics.articulationRate + 1e-9 >= metrics.speechRate,
         "published articulation stays at or above published speech rate");
+    expectNear(metrics.windowArticulationRate, 0.71 * 2.0 * 60.0 / 8.0,
+        "window articulation uses the buffer minus the pause sum");
 
     speechrate::Config legacy = cfg;
     legacy.speechRateMethod = speechrate::SpeechMethod::Legacy;
@@ -428,6 +430,58 @@ void testDirectArticulationFormula()
     expect(speechrate::directArticulationRate(4, 8.0, 1.0, 0.71)
             > speechrate::directArticulationRate(4, 8.0, 0.0, 0.71),
         "removing pauses raises articulation");
+}
+
+void testWindowArticulationFormula()
+{
+    expectNear(speechrate::windowArticulationRate(10, 10.0, 0.0, 0.71),
+        0.71 * 60.0 * 10.0 / 10.0, "no pauses uses the whole window");
+    expectNear(speechrate::windowArticulationRate(10, 10.0, 2.5, 0.71),
+        0.71 * 60.0 * 10.0 / 7.5, "interior pauses leave the window");
+    expectNear(speechrate::windowArticulationRate(4, 10.0, 1.0, 1.0),
+        240.0 / 9.0, "K5 scales the window rate");
+    expectNear(speechrate::windowArticulationRate(4, 10.0, 10.0, 0.71), 0.0,
+        "a window filled by pauses is a zero rate");
+    expectNear(speechrate::windowArticulationRate(4, 0.0, 0.0, 0.71), 0.0,
+        "a non-positive window is a zero rate");
+    expectNear(speechrate::windowArticulationRate(-1, 10.0, 1.0, 0.71), 0.0,
+        "a negative vowel count is a zero rate");
+
+    speechrate::Config cfg;
+    cfg.k5 = 0.71;
+    speechrate::Metrics metrics = speechrate::metricsFromLengths({ 4, 10, 6, 8 }, { 20 }, 10.0, cfg);
+    speechrate::applyPauseStats(metrics, 1, 1.0, 6.0, cfg);
+    const double windowRate = 0.71 * 4.0 * 60.0 / 9.0;
+    expectNear(metrics.windowArticulationRate, windowRate,
+        "the window uses the buffer, not the span");
+    expect(metrics.windowArticulationRate + 1e-9 < metrics.speechRate,
+        "end silence can put the window rate below speech rate");
+    expectNear(metrics.articulationRate, metrics.directArticulationRate,
+        "the default method still publishes the direct rate");
+
+    speechrate::Config window = cfg;
+    window.articulationMethod = speechrate::ArticulationMethod::Window;
+    speechrate::Metrics published = speechrate::metricsFromLengths({ 4, 10, 6, 8 }, { 20 }, 10.0, window);
+    speechrate::applyPauseStats(published, 1, 1.0, 6.0, window);
+    expectNear(published.articulationRate, windowRate,
+        "window method publishes the window rate even when it is below speech rate");
+    expectNear(published.phrasePauses, published.pauseMean,
+        "window method publishes the measured mean pause");
+    expectNear(published.directArticulationRate, metrics.directArticulationRate,
+        "the direct rate is still computed in window mode");
+
+    window.k5 = 1.42;
+    speechrate::Metrics scaled = speechrate::metricsFromLengths({ 4, 10, 6, 8 }, { 20 }, 10.0, window);
+    speechrate::applyPauseStats(scaled, 1, 1.0, 6.0, window);
+    expectNear(scaled.articulationRate, windowRate * 2.0, "doubling K5 doubles the window rate");
+
+    speechrate::Config legacy = cfg;
+    legacy.articulationMethod = speechrate::ArticulationMethod::Legacy;
+    legacy.speechRateMethod = speechrate::SpeechMethod::Legacy;
+    speechrate::Metrics legacyMetrics = speechrate::metricsFromLengths({ 4, 10 }, { 40 }, 10.0, legacy);
+    speechrate::applyPauseStats(legacyMetrics, 1, 2.0, 8.0, legacy);
+    expect(legacyMetrics.articulationRate + 1e-9 >= legacyMetrics.speechRate,
+        "legacy articulation is still held at or above speech rate");
 }
 
 void testSilenceThresholdAdapts()
@@ -489,6 +543,12 @@ void testDirectPausesFromSignal()
         "articulation is above speech rate when a pause was removed");
     expectNear(measured.metrics.articulationRate, measured.metrics.directArticulationRate,
         "the default articulation method publishes the direct rate");
+    expectNear(measured.metrics.windowArticulationRate,
+        direct.k1 * measured.metrics.vowelCount * 60.0
+            / (measured.metrics.speechDuration - measured.metrics.pauseTotal),
+        "window articulation uses the buffer, including leading and trailing silence");
+    expect(measured.metrics.windowArticulationRate < measured.metrics.directArticulationRate,
+        "keeping end silence makes the window rate lower than direct articulation");
     expectNear(measured.metrics.phrasePauses, measured.metrics.pauseMean,
         "the default pause tile is the direct mean");
 
@@ -536,6 +596,7 @@ void testDirectPausesFromSignal()
     expectNear(summary.speechRate, measured.metrics.speechRate, "summary publishes the selected speech rate");
     expectNear(summary.directArticulationRate, measured.metrics.directArticulationRate, "summary direct rate");
     expectNear(summary.legacyArticulationRate, measured.metrics.legacyArticulationRate, "summary legacy rate");
+    expectNear(summary.windowArticulationRate, measured.metrics.windowArticulationRate, "summary window rate");
     expectNear(summary.legacyPauseScore, measured.metrics.legacyPauseScore, "summary legacy pause score");
     expect(summary.pauseDurations.p25 <= summary.pauseDurations.median
             && summary.pauseDurations.median <= summary.pauseDurations.p75,
@@ -667,6 +728,7 @@ int main()
     testSpeechSpan();
     testDirectSpeechRatePublishing();
     testDirectArticulationFormula();
+    testWindowArticulationFormula();
     testSilenceThresholdAdapts();
     testDirectPausesFromSignal();
     testSessionSummary();

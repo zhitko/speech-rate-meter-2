@@ -291,6 +291,20 @@ double directArticulationRate(int vowelCount,
     return rate;
 }
 
+double windowArticulationRate(int vowelCount,
+    double windowSec,
+    double pauseTotalSec,
+    double k5)
+{
+    if (!(windowSec > 0.0) || vowelCount < 0 || !std::isfinite(k5) || !std::isfinite(pauseTotalSec))
+        return 0;
+    const double speaking = windowSec - std::max(0.0, pauseTotalSec);
+    if (!(speaking > 0.0))
+        return 0;
+    const double rate = k5 * static_cast<double>(vowelCount) * 60.0 / speaking;
+    return std::isfinite(rate) ? rate : 0;
+}
+
 void applyPauseStats(Metrics& metrics,
     int pauseCount,
     double pauseTotalSec,
@@ -314,19 +328,27 @@ void applyPauseStats(Metrics& metrics,
     metrics.directSpeechRate = directSpeechRate(metrics.vowelCount, span, cfg.k1);
     metrics.directArticulationRate = directArticulationRate(
         metrics.vowelCount, span, metrics.pauseTotal, cfg.k1);
+    metrics.windowArticulationRate = windowArticulationRate(
+        metrics.vowelCount, metrics.speechDuration, metrics.pauseTotal, cfg.k5);
     if (cfg.speechRateMethod == SpeechMethod::Direct)
         metrics.speechRate = metrics.directSpeechRate;
     if (cfg.articulationMethod == ArticulationMethod::Direct) {
         metrics.articulationRate = metrics.directArticulationRate;
         metrics.phrasePauses = metrics.pauseMean;
+    } else if (cfg.articulationMethod == ArticulationMethod::Window) {
+        metrics.articulationRate = metrics.windowArticulationRate;
+        metrics.phrasePauses = metrics.pauseMean;
     }
-    // The published articulation rate stays at or above the published speech rate.
-    if (metrics.speechRate > metrics.articulationRate)
+    // Direct and Legacy stay at or above the published speech rate.
+    // Window does not: end silence is meant to stay in its denominator.
+    if (cfg.articulationMethod != ArticulationMethod::Window
+        && metrics.speechRate > metrics.articulationRate)
         metrics.articulationRate = metrics.speechRate;
     metrics.valid = std::isfinite(metrics.speechRate) && std::isfinite(metrics.articulationRate)
         && std::isfinite(metrics.phrasePauses) && std::isfinite(metrics.fillerScore)
         && std::isfinite(metrics.directSpeechRate) && std::isfinite(metrics.legacySpeechRate)
-        && std::isfinite(metrics.directArticulationRate) && std::isfinite(metrics.legacyArticulationRate);
+        && std::isfinite(metrics.directArticulationRate) && std::isfinite(metrics.legacyArticulationRate)
+        && std::isfinite(metrics.windowArticulationRate);
 }
 
 std::vector<Run> gateNuclei(const std::vector<Run>& nuclei,
@@ -467,6 +489,7 @@ bool sameMeasurement(const Config& left, const Config& right)
         && left.k2 == right.k2
         && left.k3 == right.k3
         && left.k4 == right.k4
+        && left.k5 == right.k5
         && left.speechOverNoise == right.speechOverNoise
         && left.minSpeechLevel == right.minSpeechLevel
         && left.noiseFloorPercentile == right.noiseFloorPercentile
@@ -890,6 +913,7 @@ RecordingSummary summarizeRecording(const std::vector<float>& samples,
         summary.legacySpeechRate = tempo.metrics.legacySpeechRate;
         summary.directArticulationRate = tempo.metrics.directArticulationRate;
         summary.legacyArticulationRate = tempo.metrics.legacyArticulationRate;
+        summary.windowArticulationRate = tempo.metrics.windowArticulationRate;
         summary.legacyPauseScore = tempo.metrics.legacyPauseScore;
     }
     return summary;

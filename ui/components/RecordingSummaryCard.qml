@@ -302,6 +302,19 @@ Rectangle {
                 color: Theme.onSurface(Material.theme)
             }
             Label {
+                text: qsTr("Articulation, window")
+                font.pixelSize: AppScale.fs(13)
+                color: Theme.onSurfaceVariant(Material.theme)
+            }
+            Label {
+                Layout.fillWidth: true
+                horizontalAlignment: Text.AlignRight
+                text: root.wpm(root.summary ? root.summary.windowArticulationRate : 0)
+                font.pixelSize: AppScale.fs(13)
+                font.features: { "tnum": 1 }
+                color: Theme.onSurface(Material.theme)
+            }
+            Label {
                 text: qsTr("Mean pause, direct")
                 font.pixelSize: AppScale.fs(13)
                 color: Theme.onSurfaceVariant(Material.theme)

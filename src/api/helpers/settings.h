@@ -27,6 +27,7 @@ struct AppSettings {
     // Matches speechrate::kDefaultPhrasalPauseMs.
     int phrasalPauseMs = 200;
     // 0: direct pauses from the signal. 1: legacy gap-distribution estimate.
+    // 2: window articulation, T_window minus the same pauses.
     int articulationMethod = 0;
     // 0: speech rate over the utterance span. 1: speech rate over the whole buffer.
     int speechRateMethod = 0;
@@ -70,6 +71,8 @@ struct AppSettings {
     int intensitySmooth = 120;
     int segmentMinLengthMs = 5;
     double fillerK4 = 100;
+    // Window articulation scale. Matches K1 so the rates share a scale.
+    double windowK5 = 0.71;
     double fillerMin = 120;
     double fillerMax = 240;
 };

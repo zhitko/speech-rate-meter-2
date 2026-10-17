@@ -447,7 +447,7 @@ Page {
 
                         FieldLabel {
                             text: qsTr("Phrasal pause (ms)")
-                            help: qsTr("Shortest silent, unvoiced gap that counts as a pause. A frame is a pause frame when its loudness is below the silence level (25 dB under the 98th percentile of the intensity curve, with a noise-floor limit) and it is not voiced (autocorrelation below the voicing threshold). Consecutive pause frames form one pause only if they last at least this long, so short stop closures are not counted. Used by Direct articulation and by the Pauses value in Direct mode. Legacy does not use it. Range 50 to 2000 ms, default 200 ms.")
+                            help: qsTr("Shortest silent, unvoiced gap that counts as a pause. A frame is a pause frame when its loudness is below the silence level (25 dB under the 98th percentile of the intensity curve, with a noise-floor limit) and it is not voiced (autocorrelation below the voicing threshold). Consecutive pause frames form one pause only if they last at least this long, so short stop closures are not counted. Used by Direct and Window articulation, and by the Pauses value in those modes. Legacy does not use it. Range 50 to 2000 ms, default 200 ms.")
                             formula: "pause = run of silent, unvoiced frames with length >= Phrasal pause\nΣTp = sum of pause lengths, Np = number of pauses\nPauses value (Direct) = ΣTp / Np"
                         }
                         SpinBox {
@@ -484,20 +484,21 @@ Page {
 
                         FieldLabel {
                             text: qsTr("Articulation method")
-                            help: qsTr("Which articulation-rate formula is shown. Both are always computed. Direct (default) removes the measured pause time from the span, so the denominator is speaking time only. Legacy estimates speaking time from the vowel and gap lengths and uses Articulation scale (K2). The published articulation is never lower than the published speech rate.")
-                            formula: "Direct: Ra = K1 × Nv × 60 / (T_span − ΣTp)\nLegacy: Ra = Rs × T_s / (Tv + K2 × Tc_med × Nc)"
+                            help: qsTr("Which articulation-rate formula is shown. All three are always computed, and the Whole recording card shows them. Direct (default) removes the measured pause time from the span between the first and last speech frame, so the denominator is speaking time only. Window divides by the buffer being measured, after removing those same pauses: while recording that buffer is the analysis window, or the shorter audio collected so far; a saved phrase or an opened file uses that recording's length. Silence before the first sound and after the last stays in that time. It is not a pause, and it is not removed, unlike Direct. Window uses Window scale (K5). Legacy estimates speaking time from the vowel and gap lengths and uses Articulation scale (K2). Direct and Legacy are never shown below the speech rate. Window can sit below it, because that end silence stays in the denominator.")
+                            formula: "Direct: Ra = K1 × Nv × 60 / (T_span − ΣTp)\nWindow: Ra = K5 × Nv × 60 / (T_window − ΣTp)\nLegacy: Ra = Rs × T_s / (Tv + K2 × Tc_med × Nc)\nT_window is the analyzed buffer. Leading and trailing silence stay in it."
                         }
                         SettingComboBox {
                             selectedValue: settingsApi ? settingsApi.articulationMethod : 0
                             model: [
                                 { name: qsTr("Direct"), id: 0 },
-                                { name: qsTr("Legacy"), id: 1 }
+                                { name: qsTr("Legacy"), id: 1 },
+                                { name: qsTr("Window"), id: 2 }
                             ]
                             onActivated: if (settingsApi)
                                 settingsApi.articulationMethod = model[index].id
                         }
                         Hint {
-                            text: qsTr("Direct measures pauses in the signal. Legacy keeps the older estimate.")
+                            text: qsTr("Window keeps silence at the ends of the buffer. Direct removes it. Legacy keeps the older estimate.")
                         }
 
                         FieldLabel {
@@ -933,7 +934,7 @@ Page {
 
                     FieldLabel {
                         text: qsTr("Long-sound weight")
-                        help: qsTr("Exponent of the power mean used for the average vowel and gap lengths. 1 gives the plain average, where every sound counts equally. Higher values give long sounds more weight. Default 3. It feeds the Filler score (vowel lengths) and the Legacy pause score (gap lengths) only. Speech rate and Direct articulation do not use it.")
+                        help: qsTr("Exponent of the power mean used for the average vowel and gap lengths. 1 gives the plain average, where every sound counts equally. Higher values give long sounds more weight. Default 3. It feeds the Filler score (vowel lengths) and the Legacy pause score (gap lengths) only. Speech rate, Direct articulation, and Window articulation do not use it.")
                         formula: "M_d(L) = (mean(L_k^d))^(1/d), then truncated to seconds"
                     }
                     SpinBox {
@@ -956,7 +957,7 @@ Page {
                     SubHeader { text: qsTr("Speech rate"); Layout.columnSpan: root.singleColumnForm ? 1 : 2 }
                     FieldLabel {
                         text: qsTr("Speech-rate scale")
-                        help: qsTr("Converts vowels per minute into words per minute. It is a fixed calibration constant, not measured at runtime. Raising it raises the speech rate and Direct articulation in the same proportion. Used by both speech-rate methods and by Direct articulation. Default 0.71.")
+                        help: qsTr("Converts vowels per minute into words per minute. It is a fixed calibration constant, not measured at runtime. Raising it raises the speech rate and Direct articulation in the same proportion. Used by both speech-rate methods and by Direct articulation. Window articulation uses K5 instead. Default 0.71.")
                         formula: "Rs = K1 × Nv × 60 / T"
                     }
                     DecimalSpinBox {
@@ -969,7 +970,7 @@ Page {
                     SubHeader { text: qsTr("Articulation"); Layout.columnSpan: root.singleColumnForm ? 1 : 2 }
                     FieldLabel {
                         text: qsTr("Articulation scale")
-                        help: qsTr("Used only by the Legacy articulation method. It scales the gap term: consonants and silence between vowels are weighted by K2, so a higher value lowers the articulation rate. Ignored in Direct mode. Default 1.2.")
+                        help: qsTr("Used only by the Legacy articulation method. It scales the gap term: consonants and silence between vowels are weighted by K2, so a higher value lowers the articulation rate. Ignored by Direct and Window. Default 1.2.")
                         formula: "Ra_legacy = Rs × T_s / (Tv + K2 × Tc_med × Nc)"
                     }
                     DecimalSpinBox {
@@ -979,10 +980,22 @@ Page {
                     }
                     Hint { text: qsTr("Legacy articulation only. Higher lowers it.") }
 
+                    FieldLabel {
+                        text: qsTr("Window scale")
+                        help: qsTr("Scales the Window articulation rate. It converts vowels per minute into words per minute for that method, the same role K1 has for Direct. Default 0.71, matching K1, so the two rates share a scale. Raising it raises only the Window rate. K4 stays the filler scale.")
+                        formula: "Ra_window = K5 × Nv × 60 / (T_window − ΣTp)"
+                    }
+                    DecimalSpinBox {
+                        value: settingsApi ? Math.round(settingsApi.k5 * 100) : 71
+                        onRealValueEdited: function(v) { if (settingsApi) settingsApi.k5 = v }
+                        Layout.fillWidth: true
+                    }
+                    Hint { text: qsTr("Window articulation only. Higher raises it.") }
+
                     SubHeader { text: qsTr("Pauses"); Layout.columnSpan: root.singleColumnForm ? 1 : 2 }
                     FieldLabel {
                         text: qsTr("Pause scale")
-                        help: qsTr("Used only by the Legacy pause score. The score is the excess of the power-mean gap length over the median gap length, scaled by this value. A higher value raises the Pauses number in Legacy mode. Direct mode reports the measured mean pause and ignores this value. Default 0.30.")
+                        help: qsTr("Used only by the Legacy pause score. The score is the excess of the power-mean gap length over the median gap length, scaled by this value. A higher value raises the Pauses number in Legacy mode. Direct and Window report the measured mean pause and ignore this value. Default 0.30.")
                         formula: "P = K3 × (Tc_mean − Tc_med) / Tc_med, or 0 when Tc_mean < Tc_med"
                     }
                     DecimalSpinBox {

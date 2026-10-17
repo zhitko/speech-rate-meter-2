@@ -487,7 +487,7 @@ int SettingsApi::articulationMethod() const
 
 void SettingsApi::setArticulationMethod(int method)
 {
-    if (!assignIfChanged(m_settings.articulationMethod, std::clamp(method, 0, 1)))
+    if (!assignIfChanged(m_settings.articulationMethod, std::clamp(method, 0, 2)))
         return;
     save();
     emit articulationMethodChanged();
@@ -598,6 +598,15 @@ void SettingsApi::setK4(double value)
     emit k4Changed();
 }
 
+double SettingsApi::k5() const { return m_settings.windowK5; }
+void SettingsApi::setK5(double value)
+{
+    if (!assignIfChanged(m_settings.windowK5, value))
+        return;
+    save();
+    emit k5Changed();
+}
+
 int SettingsApi::intensityFrame() const { return m_settings.intensityFrame; }
 void SettingsApi::setIntensityFrame(int value)
 {
@@ -699,6 +708,7 @@ void SettingsApi::load()
     emit k2Changed();
     emit k3Changed();
     emit k4Changed();
+    emit k5Changed();
     emit intensityFrameChanged();
     emit intensityShiftChanged();
     emit intensitySmoothChanged();

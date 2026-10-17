@@ -187,6 +187,7 @@ One JSON file per session, under `data/sessions/` next to `data/records/` (execu
       "k2": 1.2,
       "k3": 0.3,
       "k4": 100,
+      "k5": 0.71,
       "fillerMin": 120,
       "fillerMax": 240
     }
@@ -215,7 +216,7 @@ Newest session first. A row is scannable without opening it:
 - Subtitle: phrase count and how many times the on-screen numbers changed, such as `8 phrases · numbers changed 46 times`. English uses `numbers changed 1 time` when the count is 1.
 - Third line: the other four session values, in the Home order, with the same rounding as the live labels.
 
-Those five values are the duration-weighted mean of the kept phrases’ headline numbers, except speech, which is the sum of their speech durations. A longer phrase therefore counts more than a shorter one. Each segment also stores `vowelLengths`, `gapLengths`, `vowelMaxFrames`, `gapMaxFrames`, `pauseCount`, `pauseTotalSec`, `speechSpanSec`, and the coefficients used (`frame`, `shift`, `smooth`, `minLengthMs`, `degree`, `k1`–`k4`, `pauseThresholdMs`, `articulationMethod`, `speechRateMethod`, `fillerMin`, `fillerMax`). A segment saved before `speechSpanSec` was stored is read as having no span, and the direct rate then uses `T_s`. The filler percent is the duration-weighted mean of the phrases’ filler percents. An empty list says `No sessions yet. Start on Home and speak.`
+Those five values are the duration-weighted mean of the kept phrases’ headline numbers, except speech, which is the sum of their speech durations. A longer phrase therefore counts more than a shorter one. Each segment also stores `vowelLengths`, `gapLengths`, `vowelMaxFrames`, `gapMaxFrames`, `pauseCount`, `pauseTotalSec`, `speechSpanSec`, and the coefficients used (`frame`, `shift`, `smooth`, `minLengthMs`, `degree`, `k1`–`k5`, `pauseThresholdMs`, `articulationMethod`, `speechRateMethod`, `fillerMin`, `fillerMax`). A segment saved before `k5` was stored is read with `k5` = 0.71. A segment saved before `speechSpanSec` was stored is read as having no span, and the direct rate then uses `T_s`. The filler percent is the duration-weighted mean of the phrases’ filler percents. An empty list says `No sessions yet. Start on Home and speak.`
 
 **Session charts**
 
@@ -503,13 +504,13 @@ K2 = 1.2           # default
 R_a = R_s_legacy * T_s / (T_v + K2 * T_c_med * N_c)
 ```
 
-If `R_s_legacy > R_a`, the function returns `R_s_legacy`. After the selected speech rate and articulation rate are chosen, the published articulation rate is raised to the published speech rate when it would otherwise be lower. Articulation is never shown below speech rate.
+If `R_s_legacy > R_a`, the function returns `R_s_legacy`. After the selected speech rate and articulation rate are chosen, Direct and Legacy articulation are raised to the published speech rate when they would otherwise be lower. Window articulation is not raised: silence at the ends of the buffer is meant to stay in its denominator, so that rate can sit below speech rate.
 
 If `N_c` is 0 the denominator is just `T_v`. If that is also 0 the current code divides by zero.
 
 The articulation value is printed as an integer. Gauge can put it on the arc (Articulation rate), on the outer arc (Both), or in a tile when Gauge is Speech rate and Show Articulation rate tile is on. The marker uses the same Min/Max RS range as speech rate. Legacy articulation min/max settings are still synchronized with Min/Max RS.
 
-`General/articulationMethod` chooses which rate is published. `0` (Direct, the default) uses section 6.3.1. `1` (Legacy) uses the formula above. Both values are always computed. The Whole recording card shows them side by side.
+`General/articulationMethod` chooses which rate is published. `0` (Direct, the default) uses section 6.3.1. `1` (Legacy) uses the formula above. `2` (Window) uses section 6.3.2. All three values are always computed. The Whole recording card shows them side by side.
 
 ### 6.3.1 Direct articulation rate
 
@@ -525,7 +526,19 @@ R_a = K1 * N_v * 60 / T_speak
 
 `T_span` is the utterance span from section 6.2.1. If `T_speak` is not positive, or this `R_a` would fall below `R_s_direct`, the result is `R_s_direct`. With no pauses the two direct rates are equal. `K1` keeps articulation on the same words-per-minute scale as speech rate.
 
-The published pause value in Direct mode is the mean pause duration (`ΣT_p / N_p`, or 0 when `N_p` is 0). Live mode measures `N_p`, `ΣT_p`, that mean, and `R_a` on the current analysis window only. After Stop the tiles are the duration-weighted mean of the kept phrases, each measured on its own audio. That mean is not recomputed by concatenating the phrases. The Whole recording card is the full take, including silence between phrases. It reports `N_p`, `ΣT_p`, the mean, the median, the 25th and 75th percentiles, a 50 ms histogram, the pause ratio `ΣT_p / T_s`, both speech rates, both articulation rates, and both pause values.
+The published pause value in Direct mode, and in Window mode, is the mean pause duration (`ΣT_p / N_p`, or 0 when `N_p` is 0). Live mode measures `N_p`, `ΣT_p`, that mean, and `R_a` on the current analysis window only. After Stop the tiles are the selected summary of the kept phrases, each measured on its own audio. That summary is not recomputed by concatenating the phrases. The Whole recording card is the full take, including silence between phrases. It reports `N_p`, `ΣT_p`, the mean, the median, the 25th and 75th percentiles, a 50 ms histogram, the pause ratio `ΣT_p / T_s`, both speech rates, all three articulation rates, and both pause values.
+
+### 6.3.2 Window articulation rate
+
+```
+K5 = 0.71          # default, the same scale as K1
+T_window = T_s of the buffer being analyzed
+R_a = K5 * N_v * 60 / (T_window - ΣT_p)
+```
+
+`T_window` is not `T_span`. While recording, the analyzed buffer is the analysis window (`General/analysisWindowSec`, default 10 s), or the shorter audio collected so far. A saved phrase and an opened file use that recording’s length, so the vowel count and the pause sum stay on the same interval. Silence before the first speech frame and after the last stays in `T_window`. It is not part of `ΣT_p`, so it counts as articulation time. `ΣT_p` and `N_v` are the same quantities Direct uses. `K5` is `articulationRate/K5`. `K4` is unchanged.
+
+If `T_window - ΣT_p` is not positive, the rate is 0. The published window rate is not raised to the speech rate. The live gauge, the tempo chart, and the session summary use this rate when Window is selected. The Whole recording Compare block always shows it.
 
 ### 6.4 Phrase pauses (legacy score)
 
@@ -622,7 +635,7 @@ Everyday labels use plain units. Silence Duration is edited in seconds and store
 | Pause | `General/autoStopSilenceDuration` | 2 s | Silence that ends and saves the phrase. Auto-detect only. |
 | Phrasal pause (ms) | `General/phrasalPauseMs` | 200 | Silent, unvoiced gaps at least this long count as pauses. Range 50…2000. A stored 150, the previous default, is rewritten to 200 on load and marked with `General/phrasalPauseMsMigrated200`. Any other stored value is kept, and a 150 chosen after that mark stays 150. |
 | Speech rate method | `General/speechRateMethod` | Direct (`0`) | Direct uses the utterance span (section 6.2.1). Legacy (`1`) uses the whole buffer, section 6.2. |
-| Articulation method | `General/articulationMethod` | Direct (`0`) | Direct measures pauses in the signal. Legacy (`1`) keeps section 6.3 and 6.4. |
+| Articulation method | `General/articulationMethod` | Direct (`0`) | Direct measures pauses in the signal. Legacy (`1`) keeps section 6.3 and 6.4. Window (`2`) uses section 6.3.2. |
 | Detect speech automatically | `General/autoCalibrate` | off | On: wait for speech; a pause ends the phrase. Off: start at once, in 15-second parts. |
 | Slow | Min RS | 70 wpm | Slow end of the gauge. The arc splits evenly up to Fast. Also copies to articulation min. |
 | Fast | Max RS | 210 wpm | The fast end of the gauge. Also copies to articulation max. |
@@ -639,7 +652,7 @@ With Advanced on, **Keep recording files** (`General/keepRecordingFiles`, defaul
 | 2 | Intensity | Frame, Shift, Smooth window (section 4). Frame and shift are audio samples at 8000 Hz. The smooth window counts points on the loudness curve. |
 | 3 | Vowel detection | Shortest vowel (ms) (section 5.1). Peaks shorter than this are ignored. |
 | 4 | Statistics | Long-sound weight (section 6.1). 1 treats every sound equally. A higher number makes long sounds count more. |
-| 5 | Metrics | Speech-rate scale, Articulation scale, Pause scale, Filler scale, Low filler score, High filler score (sections 6.2–6.5). |
+| 5 | Metrics | Speech-rate scale, Articulation scale, Window scale, Pause scale, Filler scale, Low filler score, High filler score (sections 6.2–6.5). |
 
 | UI label | Symbol | Default | INI key | Visible without Advanced |
 | --- | --- | --- | --- | --- |
@@ -648,6 +661,7 @@ With Advanced on, **Keep recording files** (`General/keepRecordingFiles`, defaul
 | Min RS | `MinRS` | 70 | `speechRate/Min` | yes, labeled Slow. Also copies to articulation min. |
 | Max RS | `MaxRS` | 210 | `speechRate/Max` | yes, labeled Fast. Also copies to articulation max. |
 | Articulation scale | `K2` | 1.2 | `articulationRate/K2` | no |
+| Window scale | `K5` | 0.71 | `articulationRate/K5` | no. Window articulation only. A missing stored value is read as 0.71. |
 | Pause scale | `K3` | 0.30 | `meanPauses/Max` | no |
 | Frame | `FRAME` | 240 | `intensity/frame` | no. Spin range 0…1024. |
 | Shift | `SHIFT` | 120 | `intensity/shift` | no. Spin range 0…512. |
@@ -787,7 +801,7 @@ Do not implement these for behavioral parity:
 6. Durations truncate fractional frame counts before multiplying by `SHIFT/8000`.
 7. Means on the details screen and in the formulas are power means of degree 3, not arithmetic means.
 8. Even-count medians use integer division.
-9. Published `R_s` follows `speechRateMethod` and published `R_a` follows `articulationMethod` (section 6, including the floor that keeps articulation at or above the published speech rate). `P` and `F` match section 6, including the filler remap onto 120…240 → 0…100%.
+9. Published `R_s` follows `speechRateMethod` and published `R_a` follows `articulationMethod` (section 6, including the floor that keeps Direct and Legacy articulation at or above the published speech rate; Window is not raised). `P` and `F` match section 6, including the filler remap onto 120…240 → 0…100%.
 10. The gauge clamps each marker to Min/Max RS; printed wpm and the pause do not. Gauge selects speech rate, articulation rate, or both arcs. Filler is clamped before percent conversion.
 11. Settings defaults and the Advanced visibility rules match section 9. Advanced itself is not persisted.
 12. Each recording session is a JSON file of its kept segments, without audio, plus each change Home showed from Start to Stop. History lists sessions with the five metrics recomputed on all kept phrases together. Opening a session shows those values and one chart per metric against the times the numbers changed.

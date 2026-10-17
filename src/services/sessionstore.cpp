@@ -442,6 +442,7 @@ void SessionStore::insertMeasurement(QVariantMap& target,
     target.insert(QStringLiteral("k2"), config.k2);
     target.insert(QStringLiteral("k3"), config.k3);
     target.insert(QStringLiteral("k4"), config.k4);
+    target.insert(QStringLiteral("k5"), config.k5);
     target.insert(QStringLiteral("pauseThresholdMs"), config.pauseThresholdMs);
     target.insert(QStringLiteral("articulationMethod"), static_cast<int>(config.articulationMethod));
     target.insert(QStringLiteral("speechRateMethod"), static_cast<int>(config.speechRateMethod));
@@ -480,12 +481,14 @@ bool SessionStore::takeMeasurement(const QVariantMap& source,
     config.k2 = source.value(QStringLiteral("k2")).toDouble();
     config.k3 = source.value(QStringLiteral("k3")).toDouble();
     config.k4 = source.value(QStringLiteral("k4")).toDouble();
+    config.k5 = source.contains(QStringLiteral("k5"))
+        ? source.value(QStringLiteral("k5")).toDouble()
+        : 0.71;
     if (source.contains(QStringLiteral("pauseThresholdMs")))
         config.pauseThresholdMs = source.value(QStringLiteral("pauseThresholdMs")).toInt();
     if (source.contains(QStringLiteral("articulationMethod"))) {
-        config.articulationMethod = source.value(QStringLiteral("articulationMethod")).toInt() == 1
-            ? speechrate::ArticulationMethod::Legacy
-            : speechrate::ArticulationMethod::Direct;
+        config.articulationMethod = speechrate::articulationMethodOf(
+            source.value(QStringLiteral("articulationMethod")).toInt());
     }
     if (source.contains(QStringLiteral("speechRateMethod"))) {
         config.speechRateMethod = source.value(QStringLiteral("speechRateMethod")).toInt() == 1

@@ -155,7 +155,7 @@ Settings::loadSettings()
         qsettings.setValue(QStringLiteral("phrasalPauseMs"), settings.phrasalPauseMs);
         qsettings.setValue(QStringLiteral("phrasalPauseMsMigrated200"), true);
     }
-    settings.articulationMethod = std::clamp(qsettings.value("articulationMethod", 0).toInt(), 0, 1);
+    settings.articulationMethod = std::clamp(qsettings.value("articulationMethod", 0).toInt(), 0, 2);
     settings.speechRateMethod = std::clamp(qsettings.value("speechRateMethod", 0).toInt(), 0, 1);
     settings.summaryMethod = std::clamp(
         qsettings.value(QStringLiteral("summaryMethod"), static_cast<int>(speechrate::SummaryMethod::Median)).toInt(),
@@ -200,6 +200,7 @@ Settings::loadSettings()
 
     qsettings.beginGroup("articulationRate");
     settings.articulationK2 = qsettings.value("K2", 1.2).toDouble();
+    settings.windowK5 = qsettings.value("K5", 0.71).toDouble();
     settings.articulationMin = qsettings.value("Min", settings.speechRateMin).toDouble();
     settings.articulationMax = qsettings.value("Max", settings.speechRateMax).toDouble();
     qsettings.endGroup();
@@ -288,6 +289,7 @@ void Settings::saveSettings(const AppSettings& settings)
 
     qsettings.beginGroup("articulationRate");
     qsettings.setValue("K2", settings.articulationK2);
+    qsettings.setValue("K5", settings.windowK5);
     qsettings.setValue("Min", settings.articulationMin);
     qsettings.setValue("Max", settings.articulationMax);
     qsettings.endGroup();
