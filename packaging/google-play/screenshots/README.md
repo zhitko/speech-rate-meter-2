@@ -8,7 +8,7 @@ Filenames are `N_screen_name.png` and match the phone listing order.
 
 | # | Screen | Phone `1080×2400` | 7-inch `1200×1920` | 10-inch `1600×2560` |
 |---|---|---|---|---|
-| 1 | Home (gauge, Start) | `phone/1_home.png` | `tablet7/1_home.png` | `tablet10/1_home.png` |
+| 1 | Home (tempo chart, Start) | `phone/1_home.png` | `tablet7/1_home.png` | `tablet10/1_home.png` |
 | 2 | History | `phone/2_history.png` | `tablet7/2_history.png` | `tablet10/2_history.png` |
 | 3 | Session (means and charts) | `phone/3_session.png` | `tablet7/3_session.png` | `tablet10/3_session.png` |
 | 4 | Settings | `phone/4_settings.png` | `tablet7/4_settings.png` | `tablet10/4_settings.png` |

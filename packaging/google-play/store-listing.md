@@ -122,10 +122,10 @@ Filenames: `screenshots/README.md`.
 | Asset | Alt text |
 |---|---|
 | App icon | Speech Rate Meter 2 mark: a white microphone and sound bars on a blue rounded square |
-| Feature graphic | Speech-rate gauge in the Average zone, with pace, fillers, and pauses measured on the device |
-| Phone screenshot 1 | Home screen with the speech-rate gauge, metric tiles, and the Start button |
+| Feature graphic | Session mean values: speech-rate gauge at 143 wpm, Average, with articulation, fillers, pauses, and speech tiles |
+| Phone screenshot 1 | Home screen with the tempo chart, metric tiles, and the Start button |
 | Phone screenshot 2 | History list of finished sessions with date, pace, and phrase counts |
-| Phone screenshot 3 | Session screen with mean values and charts of pace, articulation, fillers, and pauses |
+| Phone screenshot 3 | Session screen with the median speech rate, articulation, pauses, and speech |
 | Phone screenshot 4 | Settings for language, theme, and how speech rate is measured |
 | Phone screenshot 5 | User guide explaining the five measures and how to record |
 | Phone screenshot 6 | Privacy policy: microphone audio stays on the device and is not uploaded |
@@ -202,10 +202,10 @@ device remains **Speech Rate Meter 2**.
 | Asset | Alt text |
 |---|---|
 | Иконка | Знак «Измеритель темпа речи 2»: белый микрофон и полосы звука на синем скруглении |
-| Рекламный графический файл | Шкала темпа речи в зоне «Средне»: темп, заполнители и паузы считаются на устройстве |
-| Скриншот 1 | Главный экран со шкалой темпа, карточками показателей и кнопкой «Старт» |
+| Рекламный графический файл | Средние за сеанс: шкала темпа 143 сл/мин, «Средне», и карточки артикуляции, заполнителей, пауз и речи |
+| Скриншот 1 | Главный экран с графиком темпа, карточками показателей и кнопкой «Старт» |
 | Скриншот 2 | История сеансов с датой, темпом и числом фраз |
-| Скриншот 3 | Сеанс: средние значения и графики темпа, артикуляции, заполнителей и пауз |
+| Скриншот 3 | Сеанс: медиана темпа на шкале, артикуляция, паузы и речь |
 | Скриншот 4 | Настройки языка, темы и измерения темпа речи |
 | Скриншот 5 | Руководство: пять показателей и как записывать |
 | Скриншот 6 | Политика конфиденциальности: звук остаётся на устройстве и не отправляется |
