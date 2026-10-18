@@ -395,7 +395,7 @@ Page {
 
                         FieldLabel {
                             text: qsTr("Chart window (s)")
-                            help: qsTr("How many seconds of tempo the chart on Home keeps. Each live Home update adds a point, using the same gauge median the arcs use, and the tip rests at zero when the arcs would. Older points slide off the left. When While recording is Tempo chart, Home shows this chart during a session. After Stop, and after Open File, the chart can appear with the arcs when there is a result. Range 30 to 1800 s, default 300 s (5 min).")
+                            help: qsTr("How many seconds of tempo the chart on Home keeps. Each live Home update adds a point. With Use all readings on, that point is the median of every reading since Start. With it off, the point is the gauge median, and the tip rests at zero when the arcs would. Older points slide off the left. When While recording is Tempo chart, Home shows this chart during a session. After Stop, and after Open File, the chart can appear with the arcs when there is a result. Range 30 to 1800 s, default 300 s (5 min).")
                         }
                         SpinBox {
                             from: 30
@@ -651,11 +651,26 @@ Page {
                         }
 
                         FieldLabel {
+                            text: qsTr("Use all readings")
+                            help: qsTr("On: each tempo-chart point is the median of every live reading since Start. An odd count takes the middle value after sorting; an even count takes the mean of the two central values. Gauge median is not used for the chart, so that control is off. The arcs still use Gauge median. Off: each chart point is the Gauge median, and the live tip rests at zero when the arcs would. Speech rate and articulation keep separate readings, and Start clears them. Default on.")
+                            formula: "chart point = median(every live reading since Start)"
+                        }
+                        Switch {
+                            checked: settingsApi ? settingsApi.chartUseAllReadings : true
+                            onToggled: if (settingsApi)
+                                settingsApi.chartUseAllReadings = checked
+                        }
+                        Hint {
+                            text: qsTr("On: each chart point uses every reading since Start.")
+                        }
+
+                        FieldLabel {
                             text: qsTr("Gauge median")
-                            help: qsTr("Each pace on the gauge shows the median of the last N live readings, which smooths out jitter. The tempo chart plots that same median. An odd N takes the middle value after sorting; an even N takes the mean of the two middle values. 1 shows the current reading. Speech rate and articulation keep separate windows, and Start clears them. After Stop, the gauge shows the Session summary of the kept phrases, not this median. Range 1 to 30, default 3.")
+                            help: qsTr("Each pace on the gauge shows the median of the last N live readings, which smooths out jitter. The tempo chart uses this median only when Use all readings is off. An odd N takes the middle value after sorting; an even N takes the mean of the two middle values. 1 shows the current reading. Speech rate and articulation keep separate windows, and Start clears them. This control is off while Use all readings is on; the arcs still use the stored count. After Stop, the gauge shows the Session summary of the kept phrases, not this median. Range 1 to 30, default 3.")
                             formula: "gauge value = median(last N live readings)"
                         }
                         SpinBox {
+                            enabled: !!settingsApi && !settingsApi.chartUseAllReadings
                             from: 1
                             to: 30
                             editable: true
@@ -665,7 +680,9 @@ Page {
                             Layout.fillWidth: true
                         }
                         Hint {
-                            text: qsTr("Middle of this many latest readings. 1 is the current value.")
+                            text: settingsApi && settingsApi.chartUseAllReadings
+                                  ? qsTr("Unavailable while Use all readings is on. The arcs still use this count.")
+                                  : qsTr("Middle of this many latest readings. 1 is the current value.")
                         }
 
                         FieldLabel { text: qsTr("Advanced") }

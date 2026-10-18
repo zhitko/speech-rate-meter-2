@@ -348,6 +348,19 @@ void SettingsApi::setRecordingView(int view)
     emit recordingViewChanged();
 }
 
+bool SettingsApi::chartUseAllReadings() const
+{
+    return m_settings.chartUseAllReadings;
+}
+
+void SettingsApi::setChartUseAllReadings(bool useAll)
+{
+    if (!assignIfChanged(m_settings.chartUseAllReadings, useAll))
+        return;
+    save();
+    emit chartUseAllReadingsChanged();
+}
+
 int SettingsApi::gaugeAverageCount() const
 {
     return m_settings.gaugeAverageCount;
@@ -688,6 +701,7 @@ void SettingsApi::load()
     emit updatesPerMinuteChanged();
     emit tempoChartWindowSecChanged();
     emit recordingViewChanged();
+    emit chartUseAllReadingsChanged();
     emit gaugeAverageCountChanged();
     emit gaugeModeChanged();
     emit showSpeechRateTileChanged();

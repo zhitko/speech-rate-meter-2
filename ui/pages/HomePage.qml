@@ -26,12 +26,15 @@ Page {
     readonly property int gaugeMode: settingsApi ? settingsApi.gaugeMode : 0
     readonly property var tempoPoints: sessionApi && sessionApi.tempoPoints ? sessionApi.tempoPoints : []
     readonly property int tempoWindowSec: settingsApi ? settingsApi.tempoChartWindowSec : 300
+    readonly property bool chartUseAllReadings: settingsApi ? settingsApi.chartUseAllReadings : true
     // Same publish cadence as the arcs: 60 / Updates per minute seconds.
     readonly property real tempoSampleSec: 60.0 / Math.max(1, settingsApi ? settingsApi.updatesPerMinute : 60)
-    // Same numbers the arcs would show, including rest at zero.
-    readonly property real tempoTipSpeech: !sessionApi || gaugeAtRest ? 0 : sessionApi.speechRate
-    readonly property real tempoTipArticulation: !sessionApi || gaugeAtRest ? 0
-                                                : sessionApi.gaugeArticulationRate
+    // Use all readings: hold the last chart point, which is the median of every
+    // reading since Start. Otherwise the tip is the gauge median, and zero at rest.
+    readonly property real tempoTipSpeech: chartUseAllReadings ? lastTempoValue("speechRate")
+                                            : (!sessionApi || gaugeAtRest ? 0 : sessionApi.speechRate)
+    readonly property real tempoTipArticulation: chartUseAllReadings ? lastTempoValue("articulationRate")
+                                                    : (!sessionApi || gaugeAtRest ? 0 : sessionApi.gaugeArticulationRate)
     readonly property bool tempoTipActive: active && (hasResult || phase() === SessionApi.Measuring)
     // 0 tempo chart, 1 arcs — what Home shows while recording.
     readonly property int recordingView: settingsApi ? settingsApi.recordingView : 0
@@ -58,6 +61,14 @@ Page {
     readonly property bool showSpeechTile: settingsApi ? settingsApi.showSpeechTile : true
     readonly property bool showWholeRecordingTile: settingsApi ? settingsApi.showWholeRecordingTile : true
     readonly property bool gaugeAtRest: !sessionApi || (active && phase() !== SessionApi.Measuring)
+    function lastTempoValue(key) {
+        var pts = tempoPoints
+        if (!pts || pts.length === 0)
+            return 0
+        var value = Number(pts[pts.length - 1][key])
+        return isFinite(value) ? value : 0
+    }
+
     readonly property string fileError: {
         var opened = sessionApi && sessionApi.errorMessage ? sessionApi.errorMessage : ""
         if (opened.length > 0)

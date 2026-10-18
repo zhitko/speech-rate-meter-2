@@ -41,6 +41,9 @@ struct AppSettings {
     int tempoChartWindowSec = 300;
     // While recording on Home: 0 tempo chart, 1 arcs. After Stop both can show.
     int recordingView = 0;
+    // Tempo chart. True: each point is the median of every live reading since Start.
+    // False: each point is the gauge median. The arcs always use the gauge median.
+    bool chartUseAllReadings = true;
     int gaugeAverageCount = 3; // each pace on the gauge shows the median of this many latest readings, 1…30
     int gaugeMode = 0; // 0: speech rate, 1: articulation rate, 2: both
     // Tiles beside the gauge. A pace already drawn on the gauge is not shown again.

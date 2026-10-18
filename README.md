@@ -66,7 +66,7 @@ An **Advanced** checkbox at the bottom of Measurement is not saved and turns off
 | Section | What you control |
 | --- | --- |
 | **General (always visible)** | UI language (EN/RU), light/dark/system theme, accent color (Blue/Green/Purple/Orange/Red), navigation menu, font size, delete user data |
-| **Measurement (always visible)** | Analysis window, updates per minute, chart window, while recording (tempo chart or arcs), gauge (speech rate, articulation rate, or both), gauge median, pause length, phrasal-pause minimum, speech rate method (direct or legacy), articulation method (direct, legacy, or window), Detect speech automatically, Slow and Fast ends of the gauge |
+| **Measurement (always visible)** | Analysis window, updates per minute, chart window, while recording (tempo chart or arcs), gauge (speech rate, articulation rate, or both), use all readings, gauge median, pause length, phrasal-pause minimum, speech rate method (direct or legacy), articulation method (direct, legacy, or window), Detect speech automatically, Slow and Fast ends of the gauge |
 | **Advanced (hidden behind the checkbox)** | Keep recording files, voice-activity method and thresholds, calibration, intensity frame/shift/smooth, vowel-length limit, power-mean degree, coefficients K1–K5 and the filler range |
 
 **Detect speech automatically** measures background noise after Start, then waits for speech. A pause ends the phrase. When it is off, measuring starts when you press Start, a pause does not end the phrase, and the recording is saved in 15-second parts.

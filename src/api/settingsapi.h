@@ -34,6 +34,7 @@ class SettingsApi : public QObject {
     Q_PROPERTY(int updatesPerMinute READ updatesPerMinute WRITE setUpdatesPerMinute NOTIFY updatesPerMinuteChanged)
     Q_PROPERTY(int tempoChartWindowSec READ tempoChartWindowSec WRITE setTempoChartWindowSec NOTIFY tempoChartWindowSecChanged)
     Q_PROPERTY(int recordingView READ recordingView WRITE setRecordingView NOTIFY recordingViewChanged)
+    Q_PROPERTY(bool chartUseAllReadings READ chartUseAllReadings WRITE setChartUseAllReadings NOTIFY chartUseAllReadingsChanged)
     Q_PROPERTY(int gaugeAverageCount READ gaugeAverageCount WRITE setGaugeAverageCount NOTIFY gaugeAverageCountChanged)
     Q_PROPERTY(int gaugeMode READ gaugeMode WRITE setGaugeMode NOTIFY gaugeModeChanged)
     Q_PROPERTY(bool showSpeechRateTile READ showSpeechRateTile WRITE setShowSpeechRateTile NOTIFY showSpeechRateTileChanged)
@@ -130,6 +131,8 @@ public:
     void setTempoChartWindowSec(int seconds);
     int recordingView() const;
     void setRecordingView(int view);
+    bool chartUseAllReadings() const;
+    void setChartUseAllReadings(bool useAll);
     int gaugeAverageCount() const;
     void setGaugeAverageCount(int count);
     int gaugeMode() const;
@@ -213,6 +216,7 @@ signals:
     void updatesPerMinuteChanged();
     void tempoChartWindowSecChanged();
     void recordingViewChanged();
+    void chartUseAllReadingsChanged();
     void gaugeAverageCountChanged();
     void gaugeModeChanged();
     void showSpeechRateTileChanged();

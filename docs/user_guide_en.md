@@ -37,13 +37,14 @@ Under **Measurement**:
 
 - **Analysis window** is how many recent seconds of speech Home uses while recording. Shorter reacts faster but jumps more.
 - **Updates per minute** is how often the numbers are recalculated. The tempo chart adds a point on each of those updates.
-- **Chart window** is how many seconds of the tempo chart stay on screen. The default is 300 seconds (5 minutes). Older points slide off. The values match the arcs: the gauge median while measuring, and zero at rest.
+- **Chart window** is how many seconds of the tempo chart stay on screen. The default is 300 seconds (5 minutes). Older points slide off. With **Use all readings** on, each point is the median of every reading since Start. With it off, the values match the arcs: the gauge median while measuring, and zero at rest.
 - **While recording** chooses Tempo chart or Arcs on Home during a session. After Stop, Home can show both when there is a result.
 - **Gauge** chooses the pace on the arc. **Speech rate** draws that pace. **Articulation rate** draws articulation. **Both** draws articulation on the outer arc and speech rate on the inner arc. A pace already on the gauge is not also a card.
 - **Show Speech rate tile** and **Show Articulation rate tile** turn those cards on. Each switch cannot be changed, and the card stays hidden, while that pace is already on the gauge.
 - **Show Fillers tile** is off until you turn it on.
 - **Show Pauses tile**, **Show Speech tile**, and **Show Whole recording tile** are on by default. Whole recording is the summary after Stop or Open File.
-- **Gauge median** is how many latest readings of each pace on the gauge it takes the middle of. The tempo chart uses that same middle value for each point. The default is 3. Set it to 1 to show the current reading.
+- **Use all readings** is on by default. Each tempo-chart point is then the middle of every live reading since Start, and **Gauge median** cannot be changed. The arcs still use **Gauge median**. Turn it off and each chart point is that gauge median, with the tip at zero while the arcs are at rest.
+- **Gauge median** is how many latest readings of each pace on the gauge it takes the middle of. The tempo chart uses that same middle value only when **Use all readings** is off. The default is 3. Set it to 1 to show the current reading.
 - **Pause** is how much silence ends a phrase and saves it. This is used only when **Detect speech automatically** is on.
 - **Phrasal pause** is the shortest silent, unvoiced gap that counts as a pause. The default is 200 ms.
 - **Speech rate method** chooses Direct or Legacy. Direct leaves out silence before the first sound and after the last. Legacy uses the whole buffer. The Whole recording card shows both.

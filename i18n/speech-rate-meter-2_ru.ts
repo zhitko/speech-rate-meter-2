@@ -1201,8 +1201,8 @@
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="398"/>
-        <source>How many seconds of tempo the chart on Home keeps. Each live Home update adds a point, using the same gauge median the arcs use, and the tip rests at zero when the arcs would. Older points slide off the left. When While recording is Tempo chart, Home shows this chart during a session. After Stop, and after Open File, the chart can appear with the arcs when there is a result. Range 30 to 1800 s, default 300 s (5 min).</source>
-        <translation>Сколько секунд темпа хранит график на главной. Каждое живое обновление главной добавляет точку с той же медианой шкалы, что у дуг, а кончик становится нулём, когда дуги были бы в покое. Более старые точки уходят влево. Если «Во время записи» — «График темпа», главная показывает этот график во время сеанса. После «Стоп» и после «Открыть файл» при наличии результата график может появиться вместе с дугами. Диапазон 30–1800 с, по умолчанию 300 с (5 мин).</translation>
+        <source>How many seconds of tempo the chart on Home keeps. Each live Home update adds a point. With Use all readings on, that point is the median of every reading since Start. With it off, the point is the gauge median, and the tip rests at zero when the arcs would. Older points slide off the left. When While recording is Tempo chart, Home shows this chart during a session. After Stop, and after Open File, the chart can appear with the arcs when there is a result. Range 30 to 1800 s, default 300 s (5 min).</source>
+        <translation>Сколько секунд темпа хранит график на главной. Каждое живое обновление главной добавляет точку. При включённом «Все значения» эта точка — медиана всех значений с момента «Старт». Если выключено, точка равна медиане шкалы, а кончик становится нулём, когда дуги были бы в покое. Более старые точки уходят влево. Если «Во время записи» — «График темпа», главная показывает этот график во время сеанса. После «Стоп» и после «Открыть файл» при наличии результата график может появиться вместе с дугами. Диапазон 30–1800 с, по умолчанию 300 с (5 мин).</translation>
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="411"/>
@@ -1335,11 +1335,31 @@
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="655"/>
-        <source>Each pace on the gauge shows the median of the last N live readings, which smooths out jitter. The tempo chart plots that same median. An odd N takes the middle value after sorting; an even N takes the mean of the two middle values. 1 shows the current reading. Speech rate and articulation keep separate windows, and Start clears them. After Stop, the gauge shows the Session summary of the kept phrases, not this median. Range 1 to 30, default 3.</source>
-        <translation>Каждый темп на шкале показывает медиану последних N живых значений, чтобы сгладить скачки. График темпа рисует ту же медиану. При нечётном N берётся средний элемент после сортировки; при чётном — среднее двух средних. 1 показывает текущее значение. У темпа речи и артикуляции отдельные окна; «Старт» очищает их. После «Стоп» шкала показывает сводку сеанса по сохранённым фразам, а не эту медиану. Диапазон 1–30, по умолчанию 3.</translation>
+        <source>Each pace on the gauge shows the median of the last N live readings, which smooths out jitter. The tempo chart uses this median only when Use all readings is off. An odd N takes the middle value after sorting; an even N takes the mean of the two middle values. 1 shows the current reading. Speech rate and articulation keep separate windows, and Start clears them. This control is off while Use all readings is on; the arcs still use the stored count. After Stop, the gauge shows the Session summary of the kept phrases, not this median. Range 1 to 30, default 3.</source>
+        <translation>Каждый темп на шкале показывает медиану последних N живых значений, чтобы сгладить скачки. График темпа использует эту медиану, только когда «Все значения» выключено. При нечётном N берётся средний элемент после сортировки; при чётном — среднее двух средних. 1 показывает текущее значение. У темпа речи и артикуляции отдельные окна; «Старт» очищает их. Пока «Все значения» включено, этот параметр недоступен; дуги всё равно используют сохранённое число. После «Стоп» шкала показывает сводку сеанса по сохранённым фразам, а не эту медиану. Диапазон 1–30, по умолчанию 3.</translation>
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="668"/>
+        <source>Use all readings</source>
+        <translation>Все значения</translation>
+    </message>
+    <message>
+        <source>On: each tempo-chart point is the median of every live reading since Start. An odd count takes the middle value after sorting; an even count takes the mean of the two central values. Gauge median is not used for the chart, so that control is off. The arcs still use Gauge median. Off: each chart point is the Gauge median, and the live tip rests at zero when the arcs would. Speech rate and articulation keep separate readings, and Start clears them. Default on.</source>
+        <translation>Вкл.: каждая точка графика темпа — медиана всех живых значений с момента «Старт». При нечётном числе берётся средний элемент после сортировки; при чётном — среднее двух средних. Медиана шкалы для графика не используется, поэтому этот параметр выключен. Дуги по-прежнему используют медиану шкалы. Выкл.: каждая точка графика — медиана шкалы, а живой кончик в покое становится нулём. У темпа речи и артикуляции отдельные ряды значений; «Старт» очищает их. По умолчанию включено.</translation>
+    </message>
+    <message>
+        <source>chart point = median(every live reading since Start)</source>
+        <translation>точка графика = медиана(все живые значения с момента «Старт»)</translation>
+    </message>
+    <message>
+        <source>On: each chart point uses every reading since Start.</source>
+        <translation>Вкл.: каждая точка графика берёт все значения с момента «Старт».</translation>
+    </message>
+    <message>
+        <source>Unavailable while Use all readings is on. The arcs still use this count.</source>
+        <translation>Недоступно, пока включено «Все значения». Дуги всё равно используют это число.</translation>
+    </message>
+    <message>
         <source>Middle of this many latest readings. 1 is the current value.</source>
         <translation>Середина стольких последних значений. 1 — текущее.</translation>
     </message>

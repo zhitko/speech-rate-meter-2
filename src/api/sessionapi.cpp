@@ -84,16 +84,12 @@ QVariantMap tempoPoint(double seconds, double speechRate, double articulationRat
     return point;
 }
 
-// Same middle-value rule as the gauge: odd count is the middle after sorting,
-// even count is the mean of the two central values. Fewer than `count`
-// readings use the ones already collected.
-double rollingMedian(std::deque<double>& window, double rate, int count)
+// Odd count is the middle after sorting. Even count is the mean of the two
+// central values.
+double medianValue(const std::deque<double>& window)
 {
-    const int keep = std::clamp(count, 1, 30);
-    window.push_back(rate);
-    while (static_cast<int>(window.size()) > keep)
-        window.pop_front();
-
+    if (window.empty())
+        return 0;
     std::vector<double> samples(window.begin(), window.end());
     std::sort(samples.begin(), samples.end());
     const std::size_t mid = samples.size() / 2;
@@ -102,13 +98,29 @@ double rollingMedian(std::deque<double>& window, double rate, int count)
     return (samples[mid - 1] + samples[mid]) / 2.0;
 }
 
+// Same middle-value rule as the gauge. Fewer than `count` readings use the
+// ones already collected. keepAll leaves every reading in the window.
+double rollingMedian(std::deque<double>& window, double rate, int count, bool keepAll = false)
+{
+    window.push_back(rate);
+    if (!keepAll) {
+        const int keep = std::clamp(count, 1, 30);
+        while (static_cast<int>(window.size()) > keep)
+            window.pop_front();
+    }
+    return medianValue(window);
+}
+
 // Non-overlapping analysis windows over the last chartWindowSec of a file.
-// Each point is the gauge median of the last few windows, stamped at the window's end.
+// Each point is stamped at the window's end. With useAllReadings it is the
+// median of every window in that span. Otherwise it is the gauge median of
+// the last few windows.
 QVariantList tempoSeries(const std::vector<float>& samples,
     const speechrate::Config& cfg,
     int windowSec,
     int chartWindowSec,
-    int gaugeAverageCount)
+    int gaugeAverageCount,
+    bool useAllReadings)
 {
     QVariantList points;
     const qint64 total = static_cast<qint64>(samples.size());
@@ -133,8 +145,8 @@ QVariantList tempoSeries(const std::vector<float>& samples,
         if (!measured.metrics.valid)
             return;
         points.append(tempoPoint(static_cast<double>(end) / kSampleRate,
-            rollingMedian(speechWindow, measured.metrics.speechRate, gaugeAverageCount),
-            rollingMedian(articulationWindow, measured.metrics.articulationRate, gaugeAverageCount)));
+            rollingMedian(speechWindow, measured.metrics.speechRate, gaugeAverageCount, useAllReadings),
+            rollingMedian(articulationWindow, measured.metrics.articulationRate, gaugeAverageCount, useAllReadings)));
     };
 
     if (total <= step) {
@@ -537,7 +549,8 @@ protected:
                     job.config,
                     chartSettings.analysisWindowSec,
                     chartSettings.tempoChartWindowSec,
-                    chartSettings.gaugeAverageCount);
+                    chartSettings.gaugeAverageCount,
+                    chartSettings.chartUseAllReadings);
                 if (series.isEmpty() && map.value(QStringLiteral("valid")).toBool()) {
                     series.append(tempoPoint(static_cast<double>(loaded.samples.size()) / kSampleRate,
                         map.value(QStringLiteral("speechRate")).toDouble(),
@@ -1403,6 +1416,8 @@ void SessionApi::resetResultState()
     setShowingMean(false);
     m_speechRateWindow.clear();
     m_articulationWindow.clear();
+    m_chartSpeechWindow.clear();
+    m_chartArticulationWindow.clear();
     m_speechRate = 0;
     m_articulationRate = 0;
     m_gaugeArticulationRate = 0;
@@ -1758,16 +1773,28 @@ void SessionApi::showMetrics(const QVariantMap& shown, double speechSeconds)
 
 void SessionApi::noteTempoPoint(const QVariantMap& shown)
 {
-    // Same moments and same numbers as the arcs: each live publish, with the
-    // gauge median already applied in showMetrics.
+    // Each live publish. Use all readings: the median of every raw reading
+    // since Start. Otherwise the gauge median already applied in showMetrics.
     if (!shown.value(QStringLiteral("live")).toBool()
         || !shown.value(QStringLiteral("valid"), true).toBool()
         || m_sessionStartedMs <= 0)
         return;
 
+    const double rawSpeech = shown.value(QStringLiteral("speechRate")).toDouble();
+    const double rawArticulation = shown.value(QStringLiteral("articulationRate")).toDouble();
+    m_chartSpeechWindow.push_back(rawSpeech);
+    m_chartArticulationWindow.push_back(rawArticulation);
+
+    double speech = m_speechRate;
+    double articulation = m_gaugeArticulationRate;
+    if (Settings::loadSettings().chartUseAllReadings) {
+        speech = medianValue(m_chartSpeechWindow);
+        articulation = medianValue(m_chartArticulationWindow);
+    }
+
     const double elapsed = std::max(0.0,
         (QDateTime::currentMSecsSinceEpoch() - m_sessionStartedMs) / 1000.0);
-    m_tempoPoints.append(tempoPoint(elapsed, m_speechRate, m_gaugeArticulationRate));
+    m_tempoPoints.append(tempoPoint(elapsed, speech, articulation));
     m_lastTempoSeconds = elapsed;
 
     // Keep half an hour so raising Chart window during a take can show more.

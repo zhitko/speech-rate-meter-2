@@ -174,6 +174,7 @@ Settings::loadSettings()
     settings.updatesPerMinute = std::clamp(qsettings.value("updatesPerMinute", 60).toInt(), 6, 240);
     settings.tempoChartWindowSec = std::clamp(qsettings.value("tempoChartWindowSec", 300).toInt(), 30, 1800);
     settings.recordingView = std::clamp(qsettings.value("recordingView", 0).toInt(), 0, 1);
+    settings.chartUseAllReadings = qsettings.value("chartUseAllReadings", true).toBool();
     settings.gaugeAverageCount = std::clamp(qsettings.value("gaugeAverageCount", 3).toInt(), 1, 30);
     settings.gaugeMode = std::clamp(qsettings.value("gaugeMode", 0).toInt(), 0, 2);
     settings.showSpeechRateTile = qsettings.value("showSpeechRateTile", true).toBool();
@@ -263,6 +264,7 @@ void Settings::saveSettings(const AppSettings& settings)
     qsettings.setValue("updatesPerMinute", settings.updatesPerMinute);
     qsettings.setValue("tempoChartWindowSec", settings.tempoChartWindowSec);
     qsettings.setValue("recordingView", settings.recordingView);
+    qsettings.setValue("chartUseAllReadings", settings.chartUseAllReadings);
     qsettings.setValue("gaugeAverageCount", settings.gaugeAverageCount);
     qsettings.setValue("gaugeMode", settings.gaugeMode);
     qsettings.setValue("showSpeechRateTile", settings.showSpeechRateTile);

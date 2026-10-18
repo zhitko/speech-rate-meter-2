@@ -220,6 +220,7 @@ void testPhrasalPauseDefaultMigration()
     expect(Settings::getDefaultSettings().speechRateMethod == 0, "speech rate method defaults to direct");
     expect(Settings::getDefaultSettings().summaryMethod == static_cast<int>(speechrate::SummaryMethod::Median),
         "session summary defaults to the median");
+    expect(Settings::getDefaultSettings().chartUseAllReadings, "the tempo chart uses every reading by default");
 
     const QString path = Settings::getAppDataDir() + QStringLiteral("/settings.ini");
     auto rewritePause = [&path](int milliseconds, bool clearMigrationFlag) {

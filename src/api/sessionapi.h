@@ -29,9 +29,10 @@ class JobQueue;
  * statistics, and it keeps both the direct and legacy pause estimates.
  * That pass does not replace the phrase summary already shown. Live direct
  * pauses use the analysis window, not the whole take.
- * The tempo chart stores one pace sample per analysis window, using the
- * same gauge median the arcs draw. Home draws the last Chart window
- * seconds of that series.
+ * The tempo chart stores one pace sample per live update. With Use all
+ * readings on, that sample is the median of every live reading since Start.
+ * With it off, the sample is the same gauge median the arcs draw. Home
+ * draws the last Chart window seconds of that series.
  */
 class SessionApi : public QObject {
     Q_OBJECT
@@ -186,6 +187,9 @@ private:
     double m_articulationRate = 0;
     double m_gaugeArticulationRate = 0;
     std::deque<double> m_articulationWindow;
+    // Every live reading since Start, for the tempo chart when Use all readings is on.
+    std::deque<double> m_chartSpeechWindow;
+    std::deque<double> m_chartArticulationWindow;
     double m_phrasePauses = 0;
     double m_speechDuration = 0;
     double m_fillerScore = 0;
