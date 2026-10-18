@@ -128,14 +128,10 @@ Page {
                                                           (wideLayout ? fittedGaugeHeight : phoneGaugeHeight)
                                                           - finishedChartHeight)
                                                : 0
-    // Wider windows give the gauge more of the row, up to 74%, and leave the
-    // tiles about 300 px so their labels still fit.
-    readonly property real gaugeWeight: {
-        if (!wideLayout)
-            return 1
-        var share = (layoutWidth - 300) / Math.max(1, layoutWidth)
-        return Math.min(0.74, Math.max(6 / 11, share))
-    }
+    // Wide windows stack the value tiles in one column. The column stays only
+    // as wide as those tiles and the Start / Open File controls, and the
+    // tempo chart takes the rest of the row.
+    readonly property real metricColumnWidth: Math.max(280, sideColumn.implicitWidth)
     readonly property real fittedGaugeHeight: {
         if (!fitNavigation)
             return naturalGaugeHeight
@@ -628,7 +624,9 @@ Page {
                 Rectangle {
                     id: gaugeCard
                     Layout.fillWidth: true
-                    Layout.preferredWidth: root.wideLayout ? root.gaugeWeight : 1
+                    Layout.preferredWidth: root.wideLayout
+                                            ? Math.max(1, root.layoutWidth - root.metricColumnWidth)
+                                            : 1
                     Layout.fillHeight: root.wideLayout
                     Layout.alignment: Qt.AlignTop
                     implicitHeight: gaugeColumn.implicitHeight + 32
@@ -804,8 +802,9 @@ Page {
 
                 ColumnLayout {
                     id: sideColumn
-                    Layout.fillWidth: true
-                    Layout.preferredWidth: root.wideLayout ? (1 - root.gaugeWeight) : 1
+                    Layout.fillWidth: !root.wideLayout
+                    Layout.preferredWidth: root.wideLayout ? root.metricColumnWidth : 1
+                    Layout.maximumWidth: root.wideLayout ? root.metricColumnWidth : -1
                     Layout.alignment: Qt.AlignVCenter
                     Layout.fillHeight: false
                     spacing: AppScale.pageSpacing
@@ -850,7 +849,7 @@ Page {
                     GridLayout {
                         Layout.fillWidth: true
                         Layout.fillHeight: false
-                        columns: root.wideLayout || root.layoutWidth < 680 ? 2 : 4
+                        columns: root.wideLayout ? 1 : (root.layoutWidth < 680 ? 2 : 4)
                         columnSpacing: AppScale.isCompact ? 8 : 12
                         rowSpacing: AppScale.isCompact ? 8 : 12
 
