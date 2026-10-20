@@ -92,7 +92,7 @@ Settings take effect on the next phrase. The in-app [User Guide](docs/user_guide
 | Feature | Description |
 | --- | --- |
 | **Intensity nuclei** | Short-time mean absolute amplitude, normalized and smoothed. Vowel-like peaks are runs that rise above the smooth contour. Tempo is counted from those nuclei, not from recognized words. |
-| **Live analysis window** | While a session is open, four of the five numbers describe the last N seconds of kept speech (default 10 s, 3…30). Snapshots are published up to the configured updates per minute (default 60). |
+| **Live analysis window** | While a session is open, four of the five numbers describe the last N seconds of kept speech (default 10 s, at least 3 s, no upper limit). Snapshots are published at the configured updates per minute (default 60, at least 6, no upper limit). |
 | **Pause cutting** | With autodetection on, a silence of Silence Duration (default 2 s) closes a phrase. Speech longer than 15 s is cut and continued in the next phrase. Phrases under 1 s are dropped. |
 | **Voice activity detection** | Energy, autocorrelation, or hybrid (both). Optional calibration measures background noise before the session listens for speech. |
 | **Session file** | One JSON file per session under `data/sessions/`: every on-screen change and every kept phrase, including the vowel and gap lengths needed to recompute the joined result. No audio path. |

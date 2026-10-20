@@ -50,7 +50,6 @@ constexpr qint64 kMinPhraseSamples = kSampleRate;
 constexpr qint64 kMinWindowSamples = kSampleRate * 3 / 2;
 // Longer speech without a pause is stored as several segments.
 constexpr qint64 kMaxSegmentSamples = kSampleRate * 15;
-constexpr qint64 kMaxWindowSamples = kSampleRate * 30;
 
 QString stamp(const QDateTime& time)
 {
@@ -127,7 +126,7 @@ QVariantList tempoSeries(const std::vector<float>& samples,
     if (total < kMinWindowSamples)
         return points;
 
-    const int stepSec = std::clamp(windowSec, 3, 30);
+    const int stepSec = std::max(3, windowSec);
     const int historySec = std::clamp(chartWindowSec, 30, 1800);
     const qint64 step = static_cast<qint64>(stepSec) * kSampleRate;
     const qint64 regionStart = std::max<qint64>(
@@ -956,7 +955,7 @@ private:
 
     qint64 windowSamples() const
     {
-        return static_cast<qint64>(std::clamp(m_settings.analysisWindowSec, 3, 30)) * kSampleRate;
+        return static_cast<qint64>(std::max(3, m_settings.analysisWindowSec)) * kSampleRate;
     }
 
     bool windowReady() const
@@ -966,7 +965,9 @@ private:
 
     int liveIntervalMs() const
     {
-        return 60000 / std::clamp(m_settings.updatesPerMinute, 6, 240);
+        // Above 60000 the integer interval would be 0 and the timer would spin.
+        const int perMinute = std::max(6, m_settings.updatesPerMinute);
+        return std::max(1, 60000 / perMinute);
     }
 
     void bumpEpoch()
@@ -1116,8 +1117,9 @@ private:
         if (samples.empty())
             return;
         m_recent.insert(m_recent.end(), samples.begin(), samples.end());
-        if (m_recent.size() > static_cast<std::size_t>(kMaxWindowSamples))
-            m_recent.erase(m_recent.begin(), m_recent.end() - static_cast<std::ptrdiff_t>(kMaxWindowSamples));
+        const qint64 cap = windowSamples();
+        if (m_recent.size() > static_cast<std::size_t>(cap))
+            m_recent.erase(m_recent.begin(), m_recent.end() - static_cast<std::ptrdiff_t>(cap));
         Job job;
         job.kind = JobKind::Final;
         job.samples = samples;

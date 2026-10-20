@@ -170,8 +170,8 @@ Settings::loadSettings()
         qsettings.setValue(QStringLiteral("summaryMethod"), settings.summaryMethod);
         qsettings.setValue(QStringLiteral("summaryMethodMedianDefault"), true);
     }
-    settings.analysisWindowSec = std::clamp(qsettings.value("analysisWindowSec", 10).toInt(), 3, 30);
-    settings.updatesPerMinute = std::clamp(qsettings.value("updatesPerMinute", 60).toInt(), 6, 240);
+    settings.analysisWindowSec = std::max(3, qsettings.value("analysisWindowSec", 10).toInt());
+    settings.updatesPerMinute = std::max(6, qsettings.value("updatesPerMinute", 60).toInt());
     settings.tempoChartWindowSec = std::clamp(qsettings.value("tempoChartWindowSec", 300).toInt(), 30, 1800);
     settings.recordingView = std::clamp(qsettings.value("recordingView", 0).toInt(), 0, 1);
     settings.chartUseAllReadings = qsettings.value("chartUseAllReadings", true).toBool();

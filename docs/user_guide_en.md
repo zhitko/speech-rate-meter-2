@@ -35,8 +35,8 @@ Opening **Settings** stops an active recording first. An open phrase shorter tha
 
 Under **Measurement**:
 
-- **Analysis window** is how many recent seconds of speech Home uses while recording. Shorter reacts faster but jumps more.
-- **Updates per minute** is how often the numbers are recalculated. The tempo chart adds a point on each of those updates.
+- **Analysis window** is how many recent seconds of speech Home uses while recording. Shorter reacts faster but jumps more. The shortest value is 3 seconds. There is no upper limit.
+- **Updates per minute** is how often the numbers are recalculated. The shortest value is 6. There is no upper limit. The tempo chart adds a point on each of those updates.
 - **Chart window** is how many seconds of the tempo chart stay on screen. The default is 300 seconds (5 minutes). Older points slide off. With **Use all readings** on, each point is the median of every reading since Start. With it off, the values match the arcs: the gauge median while measuring, and zero at rest.
 - **While recording** chooses Tempo chart or Arcs on Home during a session. After Stop, Home can show both when there is a result.
 - **Gauge** chooses the pace on the arc. **Speech rate** draws that pace. **Articulation rate** draws articulation. **Both** draws articulation on the outer arc and speech rate on the inner arc. A pace already on the gauge is not also a card.

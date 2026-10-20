@@ -1030,7 +1030,7 @@
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="362"/>
-        <source>Length of the recent speech used for the live numbers on Home. The app joins the kept phrases of this session and the phrase in progress, keeps only the last N seconds, and runs the whole analysis on that buffer. The vowel count, speaking span and pauses all come from this buffer, so a shorter window reacts faster but has fewer vowels and noisier numbers. Range 3 to 30 s, default 10 s.</source>
+        <source>Length of the recent speech used for the live numbers on Home. The app joins the kept phrases of this session and the phrase in progress, keeps only the last N seconds, and runs the whole analysis on that buffer. The vowel count, speaking span and pauses all come from this buffer, so a shorter window reacts faster but has fewer vowels and noisier numbers. At least 3 s, default 10 s. No upper limit.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -1040,7 +1040,7 @@
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="380"/>
-        <source>How often the live numbers are recalculated while you speak. The interval is 60000 divided by this value, in milliseconds. Changing it changes only the refresh rate, not the values. If a new buffer is ready before the previous analysis finishes, the older run is dropped. With Detect speech automatically on, new snapshots start only on speech frames. Range 6 to 240 per minute, default 60 (one second).</source>
+        <source>How often the live numbers are recalculated while you speak. The interval is 60000 divided by this value, in milliseconds. Changing it changes only the refresh rate, not the values. If a new buffer is ready before the previous analysis finishes, the older run is dropped. With Detect speech automatically on, new snapshots start only on speech frames. At least 6 per minute, default 60 (one second). No upper limit.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
