@@ -15,7 +15,7 @@ While you are recording, speech rate, articulation, fillers, and pauses use the 
 ## Record
 
 1. Open **Home**.
-2. Press **Start** and speak naturally. The microphone stays open. Home already shows an empty tempo chart; while you record, that chart replaces the arcs. The line grows from the left; when it reaches the right edge, older points slide off. A halo around **Stop** follows the microphone: if you are speaking and the halo stays still, the microphone is not being heard. With **Detect speech automatically** on, stay quiet while background noise is measured, then speak. With it off, measuring starts when you press **Start**. The chart adds a point on each live update, at the same median pace the arcs use, and keeps the last **Chart window** (5 minutes by default). Older points slide off.
+2. Press **Start** and speak naturally. The microphone stays open. Home already shows an empty tempo chart; while you record, that chart replaces the arcs. Until the first point appears, the chart says that everything is working and that the tempo appears about 2 seconds after you start speaking. The line grows from the left; when it reaches the right edge, older points slide off. A halo around **Stop** follows the microphone: if you are speaking and the halo stays still, the microphone is not being heard. With **Detect speech automatically** on, stay quiet while background noise is measured, then speak. With it off, measuring starts when you press **Start**. The chart adds a point on each live update, at the same median pace the arcs use, and keeps the last **Chart window** (5 minutes by default). Older points slide off.
 3. With **Detect speech automatically** on, a pause ends the phrase; it is saved, and the next one starts when you speak again. With it off, a pause does not end the phrase, and the recording is saved in 15-second parts.
 4. Press **Stop** when the session is finished. Home then shows the averages on the arcs, with the chip **Mean values**, and keeps the tempo chart above them. History shows the same averages.
 
@@ -23,7 +23,7 @@ On a computer, **Open File** sits to the right of **Start**. It measures one exi
 
 Silence and background noise are not counted as speech. When the window holds no speech, the numbers stay and the chip reads **Listening**. A phrase shorter than one second is not saved; the chip then reads **Too short to save**. After **Stop**, **Listen** sits to the left of **Start** when a recording was saved, and plays that recording. Press it again to stop playback. The audio is deleted when you leave the app, unless **Keep recording files** is on.
 
-While a session is running, **Recording** stays in the toolbar on every page. Tap it to return to Home.
+While a session is running, Home outlines the gauge card in red and shows a red badge with a blinking dot and the time since **Start** (`mm:ss`). The timer does not reset between phrases. Other pages show a red **Recording** chip with the same time in the toolbar. Tap it to return to Home.
 
 ## History
 

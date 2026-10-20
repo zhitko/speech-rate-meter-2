@@ -13,8 +13,8 @@ Feedback from Boris Lobanov, Oct 10, 2026.
       Settings → Measurement → While recording chooses Tempo chart or Arcs for the live view. After Stop, and after Open File, Home can show the chart and the arcs together. Each live update adds a chart point at the same gauge median the arcs use; the tip rests at zero when the arcs would. Chart window is the sliding window (default 300 s). The arcs stay the averaged pace.
 - [x] Consistent tempo values (Boris, Oct 16, 2026): the tempo values shown under the arcs differ from those shown above the time chart. Find out why (different windows or averaging?) and make them consistent, or clearly label what each shows. After Stop, and after Open File, the chart hides the Speech rate and Articulation labels so only the arcs show those averaged numbers. While recording, the chart header keeps the live values.
 - [ ] Articulation-only tempo chart (Boris, Oct 17, 2026): Boris suggests the chart show only the articulation rate, without speech rate. This already works via Settings → Gauge → Articulation rate (chart and arc show only Ra); confirm it covers his case, including when the new window articulation method is selected, and mention it in the user guide.
-- [ ] Recording indicator (Boris, Oct 20, 2026): make it more obvious that recording is in progress.
-- [ ] Real-time counter (Boris, Oct 20, 2026): show a real-time counter (elapsed time) while recording.
+- [x] Recording indicator (Boris, Oct 20, 2026): make it more obvious that recording is in progress. While recording, the Home gauge card has a pulsing red outline and a solid red badge with a blinking dot. Other pages show a solid red Recording chip in the toolbar.
+- [x] Real-time counter (Boris, Oct 20, 2026): show a real-time counter (elapsed time) while recording. The badge on Home and the toolbar chip show the time since Start as `mm:ss`. It replaces the phrase timer and does not reset between phrases.
 
 ## Measurements
 - [x] Improve measurement methods; current measurements are fairly approximate. Explore alternative approaches on top of the new UI.

@@ -43,6 +43,15 @@ Page {
     // still after Stop so the line does not jump back to the last point.
     property real tempoNow: 0
     property real tempoFreeze: 0
+    // Shared beat for the recording badge dot and the card outline.
+    property real recordingBlink: 1
+    SequentialAnimation on recordingBlink {
+        running: root.active
+        loops: Animation.Infinite
+        alwaysRunToEnd: true
+        NumberAnimation { to: 0.25; duration: 700; easing.type: Easing.InOutSine }
+        NumberAnimation { to: 1; duration: 700; easing.type: Easing.InOutSine }
+    }
     readonly property bool finishedTake: !active && (hasResult || tempoPoints.length > 0)
     // While recording: chart or arcs from the setting. After a take: both.
     // Idle with no result: the same view as While recording.
@@ -632,6 +641,8 @@ Page {
                     implicitHeight: gaugeColumn.implicitHeight + 32
                     radius: Theme.shapeExtraLarge
                     color: Theme.surfaceContainerLow(Material.theme)
+                    border.width: root.active ? 3 : 0
+                    border.color: Qt.alpha(Theme.error(Material.theme), 0.35 + 0.65 * root.recordingBlink)
 
                     RowLayout {
                         anchors.left: parent.left
@@ -652,24 +663,6 @@ Page {
                                 anchors.centerIn: parent
                                 spacing: 8
 
-                                Rectangle {
-                                    id: phaseDot
-                                    visible: root.active
-                                    width: 8
-                                    height: 8
-                                    radius: 4
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    color: Theme.error(Material.theme)
-
-                                    SequentialAnimation on opacity {
-                                        running: phaseDot.visible
-                                        loops: Animation.Infinite
-                                        alwaysRunToEnd: true
-                                        NumberAnimation { to: 0.25; duration: 700; easing.type: Easing.InOutSine }
-                                        NumberAnimation { to: 1; duration: 700; easing.type: Easing.InOutSine }
-                                    }
-                                }
-
                                 Text {
                                     text: root.phaseTitle()
                                     font.pixelSize: AppScale.fs(13)
@@ -681,14 +674,39 @@ Page {
 
                         Item { Layout.fillWidth: true }
 
-                        Text {
+                        Rectangle {
                             visible: root.active
-                            text: root.clock(sessionApi ? sessionApi.phraseSeconds : 0)
-                            font.pixelSize: AppScale.fs(16)
-                            font.weight: Font.DemiBold
-                            font.features: { "tnum": 1 }
-                            color: Theme.onSurface(Material.theme)
-                            Accessible.name: qsTr("Phrase time %1").arg(text)
+                            implicitWidth: recordingRow.implicitWidth + 24
+                            implicitHeight: 32
+                            radius: height / 2
+                            color: Theme.error(Material.theme)
+                            Accessible.role: Accessible.StaticText
+                            Accessible.name: qsTr("Recording, elapsed time %1").arg(recordingClock.text)
+
+                            Row {
+                                id: recordingRow
+                                anchors.centerIn: parent
+                                spacing: 8
+
+                                Rectangle {
+                                    width: 10
+                                    height: 10
+                                    radius: 5
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    color: Theme.onError(Material.theme)
+                                    opacity: root.recordingBlink
+                                }
+
+                                Text {
+                                    id: recordingClock
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: root.clock(root.tempoNow)
+                                    font.pixelSize: AppScale.fs(18)
+                                    font.weight: Font.Bold
+                                    font.features: { "tnum": 1 }
+                                    color: Theme.onError(Material.theme)
+                                }
+                            }
                         }
                     }
 
@@ -722,7 +740,9 @@ Page {
                             tipActive: root.tempoTipActive
                             tipSpeech: root.tempoTipSpeech
                             tipArticulation: root.tempoTipArticulation
-                            caption: root.showGaugeArcs ? "" : root.hintText()
+                            firstReadingSec: sessionApi ? sessionApi.firstReadingSec : 0
+                            // The waiting message in the chart already says to keep speaking.
+                            caption: root.showGaugeArcs || waiting ? "" : root.hintText()
                         }
 
                         // The slot is the gauge's vertical budget. On a wide window

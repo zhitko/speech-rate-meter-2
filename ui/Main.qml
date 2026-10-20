@@ -78,6 +78,23 @@ ApplicationWindow {
         return stackView.currentItem && stackView.currentItem.pageId ? stackView.currentItem.pageId : ""
     }
 
+    property real recordingSec: 0
+    Timer {
+        interval: 250
+        repeat: true
+        running: sessionApi.sessionActive
+        triggeredOnStart: true
+        onTriggered: window.recordingSec = sessionApi.sessionElapsedSec()
+        onRunningChanged: if (running) window.recordingSec = 0
+    }
+
+    function clock(totalSeconds) {
+        var seconds = Math.max(0, Math.floor(totalSeconds))
+        var minutes = Math.floor(seconds / 60)
+        var remain = seconds % 60
+        return (minutes < 10 ? "0" : "") + minutes + ":" + (remain < 10 ? "0" : "") + remain
+    }
+
     // Material.System is resolved once, when it is assigned. On Linux that
     // often happens before the desktop color scheme arrives, so the window
     // stays light while pages opened later resolve to dark. Track the live
@@ -189,23 +206,22 @@ ApplicationWindow {
 
                 Button {
                     id: recordingChip
-                    visible: sessionApi.sessionActive
+                    // Home shows the same clock in the gauge card.
+                    visible: sessionApi.sessionActive && window.pageId() !== "home"
                     flat: true
                     padding: 0
                     implicitHeight: 32
                     implicitWidth: chipRow.implicitWidth + 20
                     focusPolicy: Qt.StrongFocus
                     Accessible.role: Accessible.Button
-                    Accessible.name: qsTr("Recording in progress. Return to Home")
+                    Accessible.name: qsTr("Recording in progress, %1. Return to Home").arg(chipClock.text)
                     onClicked: window.navigateTo("home", "pages/HomePage.qml")
 
                     background: Rectangle {
                         radius: height / 2
-                        color: recordingChip.activeFocus
-                               ? Theme.secondaryContainer(Material.theme)
-                               : Theme.errorContainer(Material.theme)
+                        color: Theme.error(Material.theme)
                         border.width: recordingChip.activeFocus ? 2 : 0
-                        border.color: Theme.primary(Material.theme)
+                        border.color: Theme.onSurface(Material.theme)
                     }
 
                     Row {
@@ -213,16 +229,34 @@ ApplicationWindow {
                         anchors.centerIn: parent
                         spacing: 6
                         Rectangle {
+                            id: chipDot
                             width: 8
                             height: 8
                             radius: 4
                             anchors.verticalCenter: parent.verticalCenter
-                            color: Theme.error(Material.theme)
+                            color: Theme.onError(Material.theme)
+
+                            SequentialAnimation on opacity {
+                                running: recordingChip.visible
+                                loops: Animation.Infinite
+                                alwaysRunToEnd: true
+                                NumberAnimation { to: 0.25; duration: 700; easing.type: Easing.InOutSine }
+                                NumberAnimation { to: 1; duration: 700; easing.type: Easing.InOutSine }
+                            }
                         }
                         Label {
                             text: qsTr("Recording")
                             font.pixelSize: AppScale.fs(13)
-                            color: Theme.onErrorContainer(Material.theme)
+                            font.weight: Font.DemiBold
+                            color: Theme.onError(Material.theme)
+                        }
+                        Label {
+                            id: chipClock
+                            text: window.clock(window.recordingSec)
+                            font.pixelSize: AppScale.fs(13)
+                            font.weight: Font.Bold
+                            font.features: { "tnum": 1 }
+                            color: Theme.onError(Material.theme)
                         }
                     }
                 }

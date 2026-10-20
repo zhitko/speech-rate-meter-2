@@ -22,6 +22,10 @@ Item {
     property int gaugeMode: 0
     property string unit: qsTr("wpm")
     property string caption: ""
+    // Speech needed before the first live point, for the waiting message.
+    property real firstReadingSec: 0
+    readonly property bool waiting: live && (!points || points.length === 0)
+    readonly property int firstReadingWholeSec: Math.max(1, Math.ceil(firstReadingSec))
 
     readonly property bool showSpeech: gaugeMode !== 1
     readonly property bool showArticulation: gaugeMode !== 0
@@ -111,6 +115,8 @@ Item {
     Accessible.role: Accessible.Chart
     Accessible.name: qsTr("Tempo")
     Accessible.description: {
+        if (waiting)
+            return waitingTitle.text + " " + waitingBody.text
         if (!showHeaderValues)
             return plotted.length === 0 ? qsTr("No tempo yet") : ""
         var parts = []
@@ -226,12 +232,52 @@ Item {
     Text {
         anchors.centerIn: canvas
         width: Math.max(0, canvas.width - 32)
-        visible: root.plotted.length === 0 && !root.tipActive
+        visible: !root.waiting && root.plotted.length === 0 && !root.tipActive
         text: qsTr("No tempo yet")
         horizontalAlignment: Text.AlignHCenter
         wrapMode: Text.Wrap
         color: Theme.onSurfaceVariant(Material.theme)
         font.pixelSize: AppScale.fs(14)
+    }
+
+    Column {
+        anchors.centerIn: canvas
+        width: Math.max(0, canvas.width - 32)
+        visible: root.waiting
+        spacing: 6
+        z: 1
+
+        Text {
+            width: parent.width
+            horizontalAlignment: Text.AlignHCenter
+            font.family: Icons.familySolid
+            font.weight: Font.Black
+            font.pixelSize: AppScale.fs(22)
+            text: Icons.faMicrophone
+            color: Theme.primary(Material.theme)
+        }
+
+        Text {
+            id: waitingTitle
+            width: parent.width
+            horizontalAlignment: Text.AlignHCenter
+            wrapMode: Text.Wrap
+            text: qsTr("Everything is working. Keep speaking.")
+            color: Theme.onSurface(Material.theme)
+            font.pixelSize: AppScale.fs(16)
+            font.weight: Font.DemiBold
+        }
+
+        Text {
+            id: waitingBody
+            width: parent.width
+            horizontalAlignment: Text.AlignHCenter
+            wrapMode: Text.Wrap
+            text: qsTr("The tempo appears about %n second(s) after you start speaking.", "",
+                       root.firstReadingWholeSec)
+            color: Theme.onSurfaceVariant(Material.theme)
+            font.pixelSize: AppScale.fs(14)
+        }
     }
 
     Canvas {

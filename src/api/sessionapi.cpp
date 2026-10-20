@@ -1309,6 +1309,11 @@ bool SessionApi::openFileAvailable() const
 #endif
 }
 
+double SessionApi::firstReadingSec() const
+{
+    return static_cast<double>(kMinWindowSamples) / kSampleRate;
+}
+
 double SessionApi::sessionElapsedSec() const
 {
     if (m_sessionStartedMs <= 0)
