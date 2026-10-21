@@ -62,9 +62,12 @@
  * cumulative view: it includes silence between phrases and reports the
  * pause-duration distribution plus both pause estimates.
  *
- * Limitations: hop quantization (15 ms at the default shift), the one-frame
- * short nucleus length, and the minimum-length rule can drop or shorten very
- * short vowels. A stop closure longer than the pause minimum is counted.
+ * Limitations: hop quantization (15 ms at the default shift) and the one-frame
+ * short nucleus length can drop or shorten very short vowels. The shortest-vowel
+ * setting compares that stored duration, in milliseconds, and keeps a run when
+ * it is at least that long. 0 ms also keeps a single intensity point. The
+ * default 5 ms still drops that point. A stop closure longer than the pause
+ * minimum is counted.
  * Leading and trailing silence stay in T_s (legacy speech rate, and the
  * Speech time) and out of T_span. They are not part of the pause sum.
  */
@@ -193,6 +196,8 @@ std::vector<double> smooth(const std::vector<double>& values, int smoothLength);
  * flushTail keeps a nucleus that is still open on the last frame.
  * The live tempo path leaves the tail unflushed; the whole-recording
  * summary flushes it.
+ * minFrames is an inclusive minimum stored length. 0 keeps a single
+ * intensity point (stored length 0).
  */
 std::vector<Run> vowelNuclei(const std::vector<double>& normalized,
     const std::vector<double>& smoothed,
@@ -208,6 +213,12 @@ double speechGateLevel(const std::vector<double>& contour, const Config& cfg);
 Moments sampleMoments(const std::vector<int>& lengths);
 
 double secondsFromFrames(double frameCount, int shift);
+/**
+ * Inclusive minimum stored length, in intensity frames, for a shortest-vowel
+ * setting. vowelNuclei keeps a run when `length >=` this value, which is the
+ * same as stored duration >= minLengthMs. 0 ms returns 0. At a 120-sample
+ * shift, 5 ms returns 1 (15 ms) and matches the old truncated gate.
+ */
 std::uint32_t minLengthFrames(int shift, int minLengthMs);
 
 /**

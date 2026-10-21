@@ -34,8 +34,8 @@ struct AppSettings {
     // Session summary after Stop. Matches speechrate::SummaryMethod.
     // 2 is the median.
     int summaryMethod = 2;
-    int analysisWindowSec = 10; // live metrics cover this much recent speech, at least 3
-    int updatesPerMinute = 60; // live recalculations per minute, at least 6
+    int analysisWindowSec = 10; // live metrics cover this much recent speech, at least 3, no upper limit
+    int updatesPerMinute = 60; // live recalculations per minute, at least 1, no upper limit
     // Tempo chart on Home. A point is stored once per analysis window.
     // The chart draws the last this many seconds. 30…1800.
     int tempoChartWindowSec = 300;
@@ -102,5 +102,26 @@ public:
 private:
     static QString getSettingsFilePath();
 };
+
+// Analysis window has no upper bound. Fewer than 3 s is raised to 3 s.
+inline int clampAnalysisWindowSec(int seconds)
+{
+    return seconds < 3 ? 3 : seconds;
+}
+
+// One update a minute is the slowest cadence. Zero would make the wait undefined.
+inline int clampUpdatesPerMinute(int count)
+{
+    return count < 1 ? 1 : count;
+}
+
+// Milliseconds between live publishes. Never 0, so the timer cannot spin.
+// 1 per minute waits 60 s. Above 60000 per minute the wait stays 1 ms.
+inline int liveUpdateIntervalMs(int updatesPerMinute)
+{
+    const int perMinute = clampUpdatesPerMinute(updatesPerMinute);
+    const int interval = 60000 / perMinute;
+    return interval < 1 ? 1 : interval;
+}
 
 #endif // SETTINGS_H

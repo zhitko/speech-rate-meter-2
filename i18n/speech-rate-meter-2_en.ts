@@ -1040,12 +1040,12 @@
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="380"/>
-        <source>How often the live numbers are recalculated while you speak. The interval is 60000 divided by this value, in milliseconds. Changing it changes only the refresh rate, not the values. If a new buffer is ready before the previous analysis finishes, the older run is dropped. With Detect speech automatically on, new snapshots start only on speech frames. At least 6 per minute, default 60 (one second). No upper limit.</source>
+        <source>How often the live numbers are recalculated while you speak. The interval is 60000 divided by this value, in milliseconds. Fewer updates make the tempo curve less jittery. Changing it changes only the refresh rate, not the values. If a new buffer is ready before the previous analysis finishes, the older run is dropped. With Detect speech automatically on, new snapshots start only on speech frames. At least 1 per minute (once a minute), default 60 (once a second). No upper limit. Above 60000 the wait stays 1 ms. Gauge median still smooths the last few readings, and the chart keeps one point from each update inside its window (default 300 s).</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="393"/>
-        <source>How often Home updates while you speak.</source>
+        <source>How often Home updates. Fewer updates jitter less.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -1287,7 +1287,7 @@
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="932"/>
-        <source>Vowel peaks shorter than this are ignored. The limit is converted to intensity points and truncated, so at the default 5 ms it removes only single-point blips. Each kept peak must also reach a speech gate: its raw intensity must be at least max(80, 3 × the quiet floor), where the floor is the 10th percentile of the buffer.</source>
+        <source>Vowel peaks shorter than this are ignored. Duration is the stored run, in steps of Shift/8000 (15 ms at the default shift). A peak is kept when that duration is at least this many milliseconds. 0 ms also keeps a single intensity point. The default 5 ms drops that point and keeps a run of 15 ms or longer, the same result as 15 ms. The step is one frame, 15 ms. Each kept peak must also reach a speech gate: its raw intensity must be at least max(80, 3 × the quiet floor), where the floor is the 10th percentile of the buffer. The same limit is used while recording and in the whole-recording summary.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>

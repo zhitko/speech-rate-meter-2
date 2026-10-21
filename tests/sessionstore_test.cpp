@@ -346,6 +346,74 @@ void testSummaryMethodChangesHistory()
     SessionStore::clearAll();
 }
 
+void testWindowUpdatesAndVowelMinimumLoad()
+{
+    expect(Settings::getDefaultSettings().analysisWindowSec == 10, "analysis window defaults to 10 s");
+    expect(Settings::getDefaultSettings().updatesPerMinute == 60, "updates per minute default to 60");
+    expect(Settings::getDefaultSettings().segmentMinLengthMs == 5, "shortest vowel defaults to 5 ms");
+    expect(clampAnalysisWindowSec(1) == 3, "analysis window stays at least 3 s");
+    expect(clampAnalysisWindowSec(7200) == 7200, "a long analysis window is kept");
+    expect(clampUpdatesPerMinute(0) == 1, "zero updates per minute becomes one");
+    expect(clampUpdatesPerMinute(1) == 1, "one update per minute is allowed");
+    expect(clampUpdatesPerMinute(60000) == 60000, "a fast update rate is kept");
+    expect(liveUpdateIntervalMs(1) == 60000, "one update per minute waits 60 s");
+    expect(liveUpdateIntervalMs(60) == 1000, "60 updates per minute wait 1 s");
+    expect(liveUpdateIntervalMs(6) == 10000, "a saved rate of 6 still waits 10 s");
+    expect(liveUpdateIntervalMs(60000) == 1, "60000 updates per minute wait 1 ms");
+    expect(liveUpdateIntervalMs(120000) == 1, "a faster rate still waits at least 1 ms");
+    expect(liveUpdateIntervalMs(0) == 60000, "a zero rate waits the one-per-minute interval");
+
+    AppSettings chosen = Settings::getDefaultSettings();
+    chosen.analysisWindowSec = 7200;
+    chosen.updatesPerMinute = 1;
+    chosen.segmentMinLengthMs = 0;
+    chosen.tempoChartWindowSec = 300;
+    chosen.gaugeAverageCount = 3;
+    Settings::saveSettings(chosen);
+    const AppSettings loaded = Settings::loadSettings();
+    expect(loaded.analysisWindowSec == 7200, "a long analysis window loads unchanged");
+    expect(loaded.updatesPerMinute == 1, "one update per minute loads unchanged");
+    expect(loaded.segmentMinLengthMs == 0, "a shortest vowel of 0 ms loads unchanged");
+    expect(loaded.tempoChartWindowSec == 300, "the 300 s chart window is unchanged");
+    expect(loaded.gaugeAverageCount == 3, "the gauge median of 3 is unchanged");
+
+    const QString path = Settings::getAppDataDir() + QStringLiteral("/settings.ini");
+    {
+        QSettings stored(path, QSettings::IniFormat);
+        stored.beginGroup(QStringLiteral("General"));
+        stored.setValue(QStringLiteral("analysisWindowSec"), 2);
+        stored.setValue(QStringLiteral("updatesPerMinute"), 0);
+        stored.endGroup();
+        stored.beginGroup(QStringLiteral("segmentsByIntensity"));
+        stored.setValue(QStringLiteral("minimumLength"), -5);
+        stored.endGroup();
+        stored.sync();
+    }
+    const AppSettings clamped = Settings::loadSettings();
+    expect(clamped.analysisWindowSec == 3, "a stored window under 3 s loads as 3 s");
+    expect(clamped.updatesPerMinute == 1, "a stored update rate under 1 loads as 1");
+    expect(clamped.segmentMinLengthMs == 0, "a negative shortest vowel loads as 0 ms");
+
+    {
+        QSettings stored(path, QSettings::IniFormat);
+        stored.beginGroup(QStringLiteral("General"));
+        stored.setValue(QStringLiteral("analysisWindowSec"), 100000);
+        stored.setValue(QStringLiteral("updatesPerMinute"), 90);
+        stored.endGroup();
+        stored.beginGroup(QStringLiteral("segmentsByIntensity"));
+        stored.setValue(QStringLiteral("minimumLength"), 2500);
+        stored.endGroup();
+        stored.sync();
+    }
+    const AppSettings wide = Settings::loadSettings();
+    expect(wide.analysisWindowSec == 100000, "an analysis window past the old 30 s cap is kept");
+    expect(wide.updatesPerMinute == 90, "a custom update rate is kept");
+    expect(wide.segmentMinLengthMs == 2000, "a shortest vowel above 2000 ms loads as 2000 ms");
+
+    AppSettings restored = Settings::getDefaultSettings();
+    Settings::saveSettings(restored);
+}
+
 void testMalformedJsonIsQuarantined()
 {
     QDir().mkpath(SessionStore::sessionsDir());
@@ -379,6 +447,7 @@ int main(int argc, char** argv)
     testMalformedJsonIsQuarantined();
     testPhrasalPauseDefaultMigration();
     testSummaryMethodChangesHistory();
+    testWindowUpdatesAndVowelMinimumLoad();
 
     Settings::clearAppDataDirForTests();
     if (failures != 0) {

@@ -112,7 +112,7 @@ The limits are fixed and are not settings.
 The analysis window is the audio of the kept segments of this session, joined end to end, followed by the open segment (speech so far, plus the leading 300 ms when it exists), cut to its last Analysis window seconds (`General/analysisWindowSec`, default 10, at least 3, no upper limit). Pauses that closed a segment are therefore not in the window; the 300 ms pads are. Section 6 runs once on that buffer.
 
 - Nothing is published until the window holds 1.5 s of audio. Until then the last result stays on screen. If there is none yet, the tiles show `– –`. While recording and until the first chart point arrives, the tempo chart shows `Everything is working. Keep speaking.` and `The tempo appears about N seconds after you start speaking.`, where N is that 1.5 s rounded up (2), and the caption under the chart is hidden. Idle with no points, the chart reads `No tempo yet`. The arcs are not on screen while recording.
-- After that, a new snapshot is started at most every `60000 / Updates per minute` ms (`General/updatesPerMinute`, default 60, at least 6, no upper limit). The wait is never shorter than 1 ms, so a value above 60000 still refreshes once a millisecond. With autodetection on, snapshots start only on speech frames. If a newer buffer is ready before the previous analysis finishes, the older run is abandoned.
+- After that, a new snapshot is started at most every `60000 / Updates per minute` ms (`General/updatesPerMinute`, default 60, at least 1, no upper limit). One per minute waits 60 s, which keeps the live curve from jittering. The wait is never shorter than 1 ms, so a value above 60000 still refreshes once a millisecond. With autodetection on, snapshots start only on speech frames. If a newer buffer is ready before the previous analysis finishes, the older run is abandoned. The gauge median is a count of those publishes (default 3), not a time span, so a slow cadence still smooths the last few readings. Each publish also adds one tempo-chart point. Home draws the last Chart window seconds of that series (default 300). A long analysis window changes how much audio each point describes; it does not change the 300 s axis.
 - Fillers, pauses, and speech are shown as computed. They are not joined with earlier phrases and not averaged with earlier snapshots. Each pace drawn on the gauge shows the median of the last Gauge median live readings of that pace (`General/gaugeAverageCount`, default 3, range 1…30). Speech rate and articulation keep separate windows. Fewer readings than that use the ones already collected. An odd count takes the middle value after sorting. An even count takes the arithmetic mean of the two central values. Start clears both windows. Articulation left in the tile is the raw snapshot. Speech rate is published only as that median, including when Gauge puts it in the tile. After Stop the gauge and the tiles show the duration-weighted mean of the kept phrases, not that median. Speech stays the total. The gauge chip is labeled Mean values. Details keeps the joined vowel and gap statistics.
 - The tempo chart stores one sample of speech rate and one of articulation on each live publish (the Updates per minute cadence). With Use all readings on (`General/chartUseAllReadings`, default on), each sample is the median of every live reading of that pace since Start, including readings that have already left the chart. With it off, each sample is the gauge median the arcs draw, and the live tip rests at zero while the gauge is at rest. Speech rate and articulation keep separate chart windows. Start clears them. The same middle-value rule applies. Home draws the last Chart window seconds (`General/tempoChartWindowSec`, default 300, range 30…1800). Samples older than 30 minutes are dropped. The chart is on screen from launch, empty, with the time axis fixed to `[0, Chart window]`. While recording, the arcs are hidden and the chart fills their place. With Use all readings on, the live tip stays on the latest chart point. With it off, the live tip is the same number the arcs would show, including zero while the gauge is at rest. It advances from the left. Once the tip reaches the right edge, the window scrolls so the right edge stays at the session clock. After Stop the clock freezes, the arcs return with the averages, and the chart stays above them. A gap longer than a few update intervals is a break in the line. The vertical scale is fixed to Slow–Fast; values outside that band are clipped. Gauge chooses speech rate, articulation, or both lines.
 - A snapshot with no measurable speech (section 5.4) is not shown. The numbers stay and the state chip reads Listening until a window with speech arrives.
@@ -353,23 +353,20 @@ State machine, `got = false`:
 | --- | --- |
 | `d[i] > 0` and not `got` | Start a nucleus at `i`. Store `start = i`, `length = 0`, `got = true`. |
 | `d[i] > 0` and `got` | `length += 1` |
-| `d[i] < 0` and `got` | End the nucleus. Keep it only if `length > min_length_frames`. `got = false`. |
+| `d[i] < 0` and `got` | End the nucleus. Keep it only if `length >= min_length_frames`. `got = false`. |
 | `d[i] == 0` | Do nothing. An open nucleus is not extended and not closed. |
 | Loop ends while `got` is still true | The trailing nucleus is dropped. There is no flush. |
 
-`min_length_frames` is not `MIN_LENGTH_MS` directly:
+`min_length_frames` is the smallest stored length whose duration is at least `MIN_LENGTH_MS`. The test is inclusive (`length >= min_length_frames`), which is the same as comparing the stored duration with the setting:
 
 ```
-min_length_frames = uint32( (SAMPLE_RATE / SHIFT) / 1000 * MIN_LENGTH_MS )
+duration_ms = length * SHIFT / SAMPLE_RATE * 1000
+min_length_frames = 0 when MIN_LENGTH_MS <= 0
+otherwise ceil(MIN_LENGTH_MS * SAMPLE_RATE / (SHIFT * 1000))
+keep when length >= min_length_frames
 ```
 
-`SAMPLE_RATE` here is the constant 8000, and the division is the intensity rate, not a per-sample rate. With the defaults:
-
-```
-(8000 / 120) / 1000 * 5 = 0.333…  →  truncated to 0
-```
-
-So the default test is `length > 0`. A nucleus of one intensity sample has `length == 0` and is discarded. A nucleus of two or more samples is kept.
+`SAMPLE_RATE` here is the constant 8000. At the default shift one stored frame is 15 ms. `0` ms returns 0 frames, so a single intensity point (stored length 0, duration 0 ms) is kept. The default 5 ms is `ceil(0.333…) = 1`, so that single point is dropped and a stored run of 15 ms is kept. That is the same gate the old truncation produced for the default (`uint32(0.333) = 0`, then `length > 0`). `15` ms is the same gate as 5 ms. `16` ms needs two stored frames (30 ms). `30` ms keeps a stored run of 30 ms; the old truncation asked for `length > 2`, which was 45 ms. `100` ms needs seven stored frames (105 ms), which is where the old `length > 6` gate already landed. The same conversion is used by the live measurement and by the whole-recording summary.
 
 The stored record is the pair `(start, length)`:
 
@@ -620,8 +617,8 @@ Everyday labels use plain units. Silence Duration is edited in seconds and store
 
 | On screen | Stored setting | Default | Hint |
 | --- | --- | --- | --- |
-| Analysis window (s) | `General/analysisWindowSec` | 10 s | Recent speech used on Home. Shorter reacts faster. At least 3 s. No upper limit. |
-| Updates per minute | `General/updatesPerMinute` | 60 | How often Home updates while you speak. At least 6. No upper limit. The wait is at least 1 ms. |
+| Analysis window (s) | `General/analysisWindowSec` | 10 s | Recent speech used on Home. Shorter reacts faster. At least 3 s. No upper limit. A stored value below 3 loads as 3. Any larger stored value is kept. |
+| Updates per minute | `General/updatesPerMinute` | 60 | How often Home updates while you speak. At least 1 (once a minute). No upper limit. The wait is at least 1 ms. A stored value below 1 loads as 1. |
 | Chart window (s) | `General/tempoChartWindowSec` | 300 s | How much of the tempo chart stays on screen. A point is added on each live update. Range 30…1800. |
 | While recording | `General/recordingView` | Tempo chart (`0`) | What Home shows while recording. Tempo chart is `0`, Arcs is `1`. After Stop both can appear when there is a result. |
 | Gauge | `General/gaugeMode` | Speech rate (`0`) | One pace, or both: articulation outside, speech rate inside. Articulation rate is `1`, Both is `2`. A pace on the gauge is not also a tile. |
@@ -667,7 +664,7 @@ With Advanced on, **Keep recording files** (`General/keepRecordingFiles`, defaul
 | Frame | `FRAME` | 240 | `intensity/frame` | no. Spin range 0…1024. |
 | Shift | `SHIFT` | 120 | `intensity/shift` | no. Spin range 0…512. |
 | Smooth window | `SMOOTH` | 120 | `intensity/smoothFrame` | no. Spin range 0…1024. |
-| Shortest vowel (ms) | `MIN_LENGTH_MS` | 5 | `segmentsByIntensity/minimumLength` | no. Spin range 0…2000. |
+| Shortest vowel (ms) | `MIN_LENGTH_MS` | 5 | `segmentsByIntensity/minimumLength` | no. Spin range 0…2000, step 15, editable. 0 ms keeps a one-point peak. Default 5 ms still drops it. A stored value outside 0…2000 is clamped on load. |
 | Filler scale | `K4` | 100 | `fillerSounds/K4` | no |
 | Low filler score | `F_min` | 120 | `fillerSounds/Min` | no |
 | High filler score | `F_max` | 240 | `fillerSounds/Max` | no |
@@ -700,7 +697,7 @@ function analyze(samples, cfg):
     I_norm = minmax_normalize(I, 0, 1)
     S = moving_average(I_norm, cfg.SMOOTH)          # section 4.3, including the k > 0 rule
 
-    min_frames = uint32( (8000 / cfg.SHIFT) / 1000 * cfg.MIN_LENGTH_MS )
+    min_frames = ceil_frames(cfg.MIN_LENGTH_MS, cfg.SHIFT)  # section 5.1, inclusive
     nuclei = peaks(I_norm, S, 0.009, min_frames)    # section 5.1, no trailing flush
     nuclei = gate(nuclei, I)                        # section 5.4
     if nuclei.length < 3:

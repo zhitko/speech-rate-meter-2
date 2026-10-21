@@ -99,6 +99,8 @@ double medianValue(const std::deque<double>& window)
 
 // Same middle-value rule as the gauge. Fewer than `count` readings use the
 // ones already collected. keepAll leaves every reading in the window.
+// The window counts publishes, not seconds, so one update a minute still
+// smooths the last `count` readings (the gauge default is 3).
 double rollingMedian(std::deque<double>& window, double rate, int count, bool keepAll = false)
 {
     window.push_back(rate);
@@ -126,7 +128,7 @@ QVariantList tempoSeries(const std::vector<float>& samples,
     if (total < kMinWindowSamples)
         return points;
 
-    const int stepSec = std::max(3, windowSec);
+    const int stepSec = clampAnalysisWindowSec(windowSec);
     const int historySec = std::clamp(chartWindowSec, 30, 1800);
     const qint64 step = static_cast<qint64>(stepSec) * kSampleRate;
     const qint64 regionStart = std::max<qint64>(
@@ -955,7 +957,7 @@ private:
 
     qint64 windowSamples() const
     {
-        return static_cast<qint64>(std::max(3, m_settings.analysisWindowSec)) * kSampleRate;
+        return static_cast<qint64>(clampAnalysisWindowSec(m_settings.analysisWindowSec)) * kSampleRate;
     }
 
     bool windowReady() const
@@ -965,9 +967,8 @@ private:
 
     int liveIntervalMs() const
     {
-        // Above 60000 the integer interval would be 0 and the timer would spin.
-        const int perMinute = std::max(6, m_settings.updatesPerMinute);
-        return std::max(1, 60000 / perMinute);
+        // 1 per minute waits 60 s. Above 60000 the wait stays 1 ms.
+        return liveUpdateIntervalMs(m_settings.updatesPerMinute);
     }
 
     void bumpEpoch()

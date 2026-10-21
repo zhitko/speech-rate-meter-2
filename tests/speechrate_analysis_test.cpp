@@ -60,7 +60,19 @@ void testIntegerMedian()
 
 void testMinLengthFrames()
 {
-    expect(speechrate::minLengthFrames(120, 5) == 0, "default minimum truncates to 0");
+    // Default shift is 120 samples, so one stored frame is 15 ms.
+    // 5 ms rounds up to that one frame. The old truncation returned 0 and
+    // then required length > 0, which is the same gate.
+    expect(speechrate::minLengthFrames(120, 5) == 1, "default 5 ms needs one stored frame");
+    expect(speechrate::minLengthFrames(120, 0) == 0, "0 ms keeps a single intensity point");
+    expect(speechrate::minLengthFrames(120, 1) == 1, "1 ms still needs a 15 ms run");
+    expect(speechrate::minLengthFrames(120, 15) == 1, "15 ms is exactly one stored frame");
+    expect(speechrate::minLengthFrames(120, 16) == 2, "16 ms needs two stored frames");
+    expect(speechrate::minLengthFrames(120, 30) == 2, "30 ms is two stored frames");
+    expect(speechrate::minLengthFrames(120, 60) == 4, "60 ms is four stored frames");
+    expect(speechrate::minLengthFrames(120, 100) == 7, "100 ms needs seven stored frames");
+    expect(speechrate::minLengthFrames(0, 30) == 0, "a bad shift does not invent a gate");
+    expect(speechrate::minLengthFrames(120, -4) == 0, "a negative setting keeps every nucleus");
 }
 
 void testSmoothEdgeRule()
@@ -76,13 +88,121 @@ void testShortNucleusDropped()
 {
     const std::vector<double> normalized { 1, 0 };
     const std::vector<double> smoothed { 0, 0 };
-    const std::vector<speechrate::Run> kept = speechrate::vowelNuclei(normalized, smoothed, 0.009, 0);
-    expect(kept.empty(), "a one-sample nucleus is dropped and an open tail is not flushed");
+    const std::vector<speechrate::Run> atZero = speechrate::vowelNuclei(normalized, smoothed, 0.009, 0);
+    expect(atZero.size() == 1 && atZero[0].length == 0, "0 ms keeps a one-sample nucleus");
+    const std::vector<speechrate::Run> atDefault = speechrate::vowelNuclei(normalized, smoothed, 0.009, 1);
+    expect(atDefault.empty(), "the default gate drops a one-sample nucleus");
+
+    const std::vector<double> openRun { 1, 1, 1 };
+    expect(speechrate::vowelNuclei(openRun, { 0, 0, 0 }, 0.009, 0).empty(),
+        "an open tail is not flushed on the live path");
+    const std::vector<speechrate::Run> flushed = speechrate::vowelNuclei(openRun, { 0, 0, 0 }, 0.009, 0, true);
+    expect(flushed.size() == 1 && flushed[0].length == 2, "the summary flushes an open tail");
 
     const std::vector<double> longer { 1, 1, 0 };
-    const std::vector<speechrate::Run> nuclei = speechrate::vowelNuclei(longer, { 0, 0, 0 }, 0.009, 0);
-    expect(nuclei.size() == 1, "two-sample nucleus is kept");
+    const std::vector<speechrate::Run> nuclei = speechrate::vowelNuclei(longer, { 0, 0, 0 }, 0.009, 1);
+    expect(nuclei.size() == 1, "two-sample nucleus passes the default gate");
     expect(nuclei[0].start == 0 && nuclei[0].length == 1, "stored length is run length minus one");
+}
+
+int nucleiAt(int minLengthMs)
+{
+    // Closed runs whose stored lengths are 0, 1, 2, 4, 6, and 7.
+    const int stored[] = { 0, 1, 2, 4, 6, 7 };
+    std::vector<double> values;
+    for (int length : stored) {
+        values.insert(values.end(), static_cast<std::size_t>(length + 1), 1.0);
+        values.push_back(0.0);
+    }
+    const std::vector<double> smoothed(values.size(), 0.0);
+    const auto frames = speechrate::minLengthFrames(120, minLengthMs);
+    return static_cast<int>(speechrate::vowelNuclei(values, smoothed, 0.009, frames).size());
+}
+
+void testMinLengthIsMonotonic()
+{
+    const int at0 = nucleiAt(0);
+    const int at5 = nucleiAt(5);
+    const int at15 = nucleiAt(15);
+    const int at30 = nucleiAt(30);
+    const int at60 = nucleiAt(60);
+    const int at100 = nucleiAt(100);
+    expect(at0 == 6, "0 ms keeps every crafted nucleus");
+    expect(at5 == 5, "5 ms drops only the single-point nucleus");
+    expect(at15 == at5, "5 ms and 15 ms share a gate at the default shift");
+    expect(at30 == 4, "30 ms drops runs shorter than two frames");
+    expect(at60 == 3, "60 ms keeps the three longest crafted runs");
+    expect(at100 == 1, "100 ms keeps only the 105 ms crafted run");
+    expect(at0 > at5 && at5 > at30 && at30 > at60 && at60 > at100,
+        "raising the shortest vowel never keeps more nuclei");
+}
+
+void addMixedBurst(std::vector<float>& samples, int start, int length, double amplitude)
+{
+    const int count = static_cast<int>(samples.size());
+    for (int index = 0; index < length && start + index < count; ++index) {
+        const double envelope = 0.5 - 0.5 * std::cos(2 * M_PI * index / std::max(1, length));
+        samples[start + index] += static_cast<float>(
+            amplitude * envelope * std::sin(2 * M_PI * 150.0 * index / 8000.0));
+    }
+}
+
+struct VowelCounts {
+    int live = 0;
+    int summary = 0;
+};
+
+VowelCounts mixedVowelCounts(int minLengthMs)
+{
+    const int lengths[] = { 40, 80, 160, 400, 900, 1600, 2800 };
+    const int gap = 1600;
+    int cursor = 2000;
+    std::vector<float> samples(static_cast<std::size_t>(8000 * 16), 0);
+    for (int index = 0; index < static_cast<int>(samples.size()); ++index)
+        samples[static_cast<std::size_t>(index)] = static_cast<float>(((index * 17) % 40) - 20);
+    for (int repeat = 0; repeat < 2; ++repeat) {
+        for (int length : lengths) {
+            addMixedBurst(samples, cursor, length, 5000);
+            cursor += length + gap;
+        }
+    }
+    speechrate::Config cfg;
+    cfg.minLengthMs = minLengthMs;
+    const speechrate::Measurement measured = speechrate::measure(samples, cfg);
+    const speechrate::RecordingSummary summary = speechrate::summarizeRecording(samples, cfg, 200);
+    VowelCounts counts;
+    counts.live = measured.metrics.vowelCount;
+    counts.summary = summary.vowelCount;
+    expect(measured.metrics.valid, "mixed syllables stay measurable");
+    expect(summary.paceVowelCount == measured.metrics.vowelCount,
+        "the summary pace count uses the same live gate");
+    return counts;
+}
+
+void testMinLengthReachesLiveAndSummary()
+{
+    const VowelCounts at0 = mixedVowelCounts(0);
+    const VowelCounts at5 = mixedVowelCounts(5);
+    const VowelCounts at15 = mixedVowelCounts(15);
+    const VowelCounts at16 = mixedVowelCounts(16);
+    const VowelCounts at30 = mixedVowelCounts(30);
+    const VowelCounts at60 = mixedVowelCounts(60);
+    const VowelCounts at100 = mixedVowelCounts(100);
+
+    expect(at0.live == 13 && at5.live == 12 && at15.live == 12, "0 ms keeps one live blip that 5 ms drops");
+    expect(at16.live == 9 && at30.live == 9 && at60.live == 6 && at100.live == 4,
+        "live vowel counts fall as the shortest vowel grows");
+    expect(at0.summary == 10 && at5.summary == 10 && at15.summary == 10,
+        "a one-point blip can still fail the summary voicing check");
+    expect(at16.summary == 9 && at30.summary == 9 && at60.summary == 6 && at100.summary == 4,
+        "the whole-recording summary uses the same duration gate");
+    expect(at5.live == at15.live && at5.summary == at15.summary && at16.live < at15.live
+            && at16.summary < at15.summary,
+        "15 ms and 16 ms differ, which truncation to whole frames could not do");
+    expect(at0.live > at30.live && at30.live > at60.live && at60.live > at100.live,
+        "0, 30, 60, and 100 ms change the live count");
+    expect(at0.summary > at30.summary && at30.summary > at60.summary && at60.summary > at100.summary,
+        "0, 30, 60, and 100 ms change the summary count");
 }
 
 void testGapsIgnoreTails()
@@ -715,6 +835,8 @@ int main()
     testMinLengthFrames();
     testSmoothEdgeRule();
     testShortNucleusDropped();
+    testMinLengthIsMonotonic();
+    testMinLengthReachesLiveAndSummary();
     testGapsIgnoreTails();
     testEmptyAndFlat();
     testCollectedPhrases();
