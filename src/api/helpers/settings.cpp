@@ -170,8 +170,8 @@ Settings::loadSettings()
         qsettings.setValue(QStringLiteral("summaryMethod"), settings.summaryMethod);
         qsettings.setValue(QStringLiteral("summaryMethodMedianDefault"), true);
     }
-    settings.analysisWindowSec = std::max(3, qsettings.value("analysisWindowSec", 10).toInt());
-    settings.updatesPerMinute = std::max(6, qsettings.value("updatesPerMinute", 60).toInt());
+    settings.analysisWindowSec = clampAnalysisWindowSec(qsettings.value("analysisWindowSec", 10).toInt());
+    settings.updatesPerMinute = clampUpdatesPerMinute(qsettings.value("updatesPerMinute", 60).toInt());
     settings.tempoChartWindowSec = std::clamp(qsettings.value("tempoChartWindowSec", 300).toInt(), 30, 1800);
     settings.recordingView = std::clamp(qsettings.value("recordingView", 0).toInt(), 0, 1);
     settings.chartUseAllReadings = qsettings.value("chartUseAllReadings", true).toBool();
@@ -217,7 +217,7 @@ Settings::loadSettings()
     qsettings.endGroup();
 
     qsettings.beginGroup("segmentsByIntensity");
-    settings.segmentMinLengthMs = qsettings.value("minimumLength", 5).toInt();
+    settings.segmentMinLengthMs = std::clamp(qsettings.value("minimumLength", 5).toInt(), 0, 2000);
     qsettings.endGroup();
 
     qsettings.beginGroup("fillerSounds");

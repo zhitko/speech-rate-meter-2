@@ -377,11 +377,11 @@ Page {
 
                         FieldLabel {
                             text: qsTr("Updates per minute")
-                            help: qsTr("How often the live numbers are recalculated while you speak. The interval is 60000 divided by this value, in milliseconds. Changing it changes only the refresh rate, not the values. If a new buffer is ready before the previous analysis finishes, the older run is dropped. With Detect speech automatically on, new snapshots start only on speech frames. At least 6 per minute, default 60 (one second). No upper limit.")
-                            formula: "interval (ms) = 60000 / Updates per minute"
+                            help: qsTr("How often the live numbers are recalculated while you speak. The interval is 60000 divided by this value, in milliseconds. Fewer updates make the tempo curve less jittery. Changing it changes only the refresh rate, not the values. If a new buffer is ready before the previous analysis finishes, the older run is dropped. With Detect speech automatically on, new snapshots start only on speech frames. At least 1 per minute (once a minute), default 60 (once a second). No upper limit. Above 60000 the wait stays 1 ms. Gauge median still smooths the last few readings, and the chart keeps one point from each update inside its window (default 300 s).")
+                            formula: "interval (ms) = 60000 / Updates per minute\nwait is at least 1 ms"
                         }
                         SpinBox {
-                            from: 6
+                            from: 1
                             to: 2147483647
                             editable: true
                             value: settingsApi ? settingsApi.updatesPerMinute : 60
@@ -390,7 +390,7 @@ Page {
                             Layout.fillWidth: true
                         }
                         Hint {
-                            text: qsTr("How often Home updates while you speak.")
+                            text: qsTr("How often Home updates. Fewer updates jitter less.")
                         }
 
                         FieldLabel {
@@ -929,12 +929,14 @@ Page {
 
                     FieldLabel {
                         text: qsTr("Shortest vowel (ms)")
-                        help: qsTr("Vowel peaks shorter than this are ignored. The limit is converted to intensity points and truncated, so at the default 5 ms it removes only single-point blips. Each kept peak must also reach a speech gate: its raw intensity must be at least max(80, 3 × the quiet floor), where the floor is the 10th percentile of the buffer.")
-                        formula: "min points = trunc((8000 / Shift) / 1000 × ms)\nkeep a peak when its length > min points"
+                        help: qsTr("Vowel peaks shorter than this are ignored. Duration is the stored run, in steps of Shift/8000 (15 ms at the default shift). A peak is kept when that duration is at least this many milliseconds. 0 ms also keeps a single intensity point. The default 5 ms drops that point and keeps a run of 15 ms or longer, the same result as 15 ms. The step is one frame, 15 ms. Each kept peak must also reach a speech gate: its raw intensity must be at least max(80, 3 × the quiet floor), where the floor is the 10th percentile of the buffer. The same limit is used while recording and in the whole-recording summary.")
+                        formula: "step (ms) = Shift / 8000 × 1000\nkeep a peak when stored length × step >= Shortest vowel\n0 ms keeps a stored length of 0"
                     }
                     SpinBox {
                         from: 0
                         to: 2000
+                        stepSize: 15
+                        editable: true
                         value: settingsApi ? settingsApi.segmentMinLengthMs : 5
                         onValueModified: if (settingsApi)
                             settingsApi.segmentMinLengthMs = value

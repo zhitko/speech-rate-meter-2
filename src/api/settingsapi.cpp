@@ -303,7 +303,7 @@ int SettingsApi::analysisWindowSec() const
 
 void SettingsApi::setAnalysisWindowSec(int seconds)
 {
-    if (!assignIfChanged(m_settings.analysisWindowSec, std::max(3, seconds)))
+    if (!assignIfChanged(m_settings.analysisWindowSec, clampAnalysisWindowSec(seconds)))
         return;
     save();
     emit analysisWindowSecChanged();
@@ -316,7 +316,7 @@ int SettingsApi::updatesPerMinute() const
 
 void SettingsApi::setUpdatesPerMinute(int count)
 {
-    if (!assignIfChanged(m_settings.updatesPerMinute, std::max(6, count)))
+    if (!assignIfChanged(m_settings.updatesPerMinute, clampUpdatesPerMinute(count)))
         return;
     save();
     emit updatesPerMinuteChanged();

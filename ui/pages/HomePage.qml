@@ -28,6 +28,8 @@ Page {
     readonly property int tempoWindowSec: settingsApi ? settingsApi.tempoChartWindowSec : 300
     readonly property bool chartUseAllReadings: settingsApi ? settingsApi.chartUseAllReadings : true
     // Same publish cadence as the arcs: 60 / Updates per minute seconds.
+    // The chart uses this as the gap that still draws one line, so one update
+    // a minute stays connected across the 300 s window.
     readonly property real tempoSampleSec: 60.0 / Math.max(1, settingsApi ? settingsApi.updatesPerMinute : 60)
     // Use all readings: hold the last chart point, which is the median of every
     // reading since Start. Otherwise the tip is the gauge median, and zero at rest.

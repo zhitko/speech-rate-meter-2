@@ -1199,8 +1199,8 @@
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="380"/>
-        <source>How often the live numbers are recalculated while you speak. The interval is 60000 divided by this value, in milliseconds. Changing it changes only the refresh rate, not the values. If a new buffer is ready before the previous analysis finishes, the older run is dropped. With Detect speech automatically on, new snapshots start only on speech frames. At least 6 per minute, default 60 (one second). No upper limit.</source>
-        <translation>Как часто пересчитываются живые числа во время речи. Интервал равен 60000, делённым на это значение, в миллисекундах. Меняется только частота обновления, а не сами значения. Если новый буфер готов раньше, чем закончился предыдущий анализ, более старый результат отбрасывается. При включённом автоопределении речи новые снимки начинаются только на речевых кадрах. Не меньше 6 в минуту, по умолчанию 60 (раз в секунду). Верхнего предела нет.</translation>
+        <source>How often the live numbers are recalculated while you speak. The interval is 60000 divided by this value, in milliseconds. Fewer updates make the tempo curve less jittery. Changing it changes only the refresh rate, not the values. If a new buffer is ready before the previous analysis finishes, the older run is dropped. With Detect speech automatically on, new snapshots start only on speech frames. At least 1 per minute (once a minute), default 60 (once a second). No upper limit. Above 60000 the wait stays 1 ms. Gauge median still smooths the last few readings, and the chart keeps one point from each update inside its window (default 300 s).</source>
+        <translation>Как часто пересчитываются живые числа во время речи. Интервал равен 60000, делённым на это значение, в миллисекундах. Реже обновления — меньше дрожит кривая темпа. Меняется только частота обновления, а не сами значения. Если новый буфер готов раньше, чем закончился предыдущий анализ, более старый результат отбрасывается. При включённом автоопределении речи новые снимки начинаются только на речевых кадрах. Не меньше 1 в минуту (раз в минуту), по умолчанию 60 (раз в секунду). Верхнего предела нет. Выше 60000 пауза остаётся 1 мс. Медиана шкалы по-прежнему сглаживает несколько последних значений, а график хранит по точке на каждое обновление внутри своего окна (по умолчанию 300 с).</translation>
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="397"/>
@@ -1461,8 +1461,8 @@
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="932"/>
-        <source>Vowel peaks shorter than this are ignored. The limit is converted to intensity points and truncated, so at the default 5 ms it removes only single-point blips. Each kept peak must also reach a speech gate: its raw intensity must be at least max(80, 3 × the quiet floor), where the floor is the 10th percentile of the buffer.</source>
-        <translation>Пики гласных короче этого значения игнорируются. Предел переводится в точки интенсивности с округлением вниз, поэтому при 5 мс по умолчанию убираются только одноточечные всплески. Каждый оставшийся пик также должен пройти порог речи: его сырая интенсивность должна быть не ниже max(80; 3 × уровень тишины), где уровень тишины — 10-й процентиль буфера.</translation>
+        <source>Vowel peaks shorter than this are ignored. Duration is the stored run, in steps of Shift/8000 (15 ms at the default shift). A peak is kept when that duration is at least this many milliseconds. 0 ms also keeps a single intensity point. The default 5 ms drops that point and keeps a run of 15 ms or longer, the same result as 15 ms. The step is one frame, 15 ms. Each kept peak must also reach a speech gate: its raw intensity must be at least max(80, 3 × the quiet floor), where the floor is the 10th percentile of the buffer. The same limit is used while recording and in the whole-recording summary.</source>
+        <translation>Пики гласных короче этого значения игнорируются. Длительность — это сохранённая серия, шагами Shift/8000 (15 мс при шаге по умолчанию). Пик остаётся, если эта длительность не короче заданных миллисекунд. 0 мс оставляет и одиночную точку интенсивности. Значение по умолчанию 5 мс отбрасывает эту точку и оставляет серию от 15 мс, тот же результат, что и 15 мс. Шаг — один кадр, 15 мс. Каждый оставшийся пик также должен пройти порог речи: его сырая интенсивность должна быть не ниже max(80; 3 × уровень тишины), где уровень тишины — 10-й процентиль буфера. Тот же предел действует и во время записи, и в сводке всей записи.</translation>
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="954"/>
@@ -1906,8 +1906,8 @@
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="393"/>
-        <source>How often Home updates while you speak.</source>
-        <translation>Как часто главная обновляется, пока вы говорите.</translation>
+        <source>How often Home updates. Fewer updates jitter less.</source>
+        <translation>Как часто обновляется главная. Реже — меньше дрожи.</translation>
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="445"/>

@@ -115,12 +115,21 @@ double secondsFromFrames(double frameCount, int shift)
 
 std::uint32_t minLengthFrames(int shift, int minLengthMs)
 {
-    if (shift <= 0)
+    // 0 ms keeps every closed nucleus, including a single intensity point
+    // (stored length 0). A non-positive shift cannot define a duration.
+    if (shift <= 0 || minLengthMs <= 0)
         return 0;
-    const double frames = (kSampleRate / static_cast<double>(shift)) / 1000.0 * minLengthMs;
-    if (frames <= 0)
+    // Stored duration is length * shift / 8000 seconds. Smallest integer
+    // length whose duration is at least minLengthMs:
+    //   length >= minLengthMs * 8000 / (shift * 1000)
+    const double frames = static_cast<double>(minLengthMs) * (kSampleRate / static_cast<double>(shift)) / 1000.0;
+    // An exact integer (15 ms, 30 ms, …) must not be bumped by a binary remainder.
+    const double rounded = std::ceil(frames - 1e-9);
+    if (!(rounded > 0.0))
         return 0;
-    return static_cast<std::uint32_t>(frames);
+    if (rounded >= 4294967295.0)
+        return 4294967295u;
+    return static_cast<std::uint32_t>(rounded);
 }
 
 std::vector<double> intensity(const std::vector<float>& samples, int frame, int shift)
@@ -210,12 +219,14 @@ std::vector<Run> vowelNuclei(const std::vector<double>& normalized,
         } else if (difference > 0 && open) {
             ++length;
         } else if (difference < 0 && open) {
-            if (static_cast<std::uint32_t>(length) > minFrames)
+            // Inclusive: stored duration >= the shortest vowel. minFrames 0
+            // therefore keeps a single intensity point (stored length 0).
+            if (length >= 0 && static_cast<std::uint32_t>(length) >= minFrames)
                 nuclei.push_back(Run { start, length });
             open = false;
         }
     }
-    if (flushTail && open && static_cast<std::uint32_t>(length) > minFrames)
+    if (flushTail && open && length >= 0 && static_cast<std::uint32_t>(length) >= minFrames)
         nuclei.push_back(Run { start, length });
     return nuclei;
 }

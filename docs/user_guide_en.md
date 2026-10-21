@@ -36,7 +36,7 @@ Opening **Settings** stops an active recording first. An open phrase shorter tha
 Under **Measurement**:
 
 - **Analysis window** is how many recent seconds of speech Home uses while recording. Shorter reacts faster but jumps more. The shortest value is 3 seconds. There is no upper limit.
-- **Updates per minute** is how often the numbers are recalculated. The shortest value is 6. There is no upper limit. The tempo chart adds a point on each of those updates.
+- **Updates per minute** is how often the numbers are recalculated. The shortest value is 1, so the curve can be updated once a minute instead of several times a minute. There is no upper limit. Above 60000 the wait stays 1 ms. The tempo chart adds a point on each of those updates. **Gauge median** still takes the middle of the last few readings (default 3), and **Chart window** still keeps the last 300 seconds by default.
 - **Chart window** is how many seconds of the tempo chart stay on screen. The default is 300 seconds (5 minutes). Older points slide off. With **Use all readings** on, each point is the median of every reading since Start. With it off, the values match the arcs: the gauge median while measuring, and zero at rest.
 - **While recording** chooses Tempo chart or Arcs on Home during a session. After Stop, Home can show both when there is a result.
 - **Gauge** chooses the pace on the arc. **Speech rate** draws that pace. **Articulation rate** draws articulation. **Both** draws articulation on the outer arc and speech rate on the inner arc. A pace already on the gauge is not also a card.
@@ -53,7 +53,7 @@ Under **Measurement**:
 
 **Slow** and **Fast** are the ends of the gauge. The arc between them is split equally into Slow, Average, and Fast.
 
-**Advanced** opens the controls that change how the numbers are calculated, including **Keep recording files**. The checkbox turns off when you leave the app. **Keep recording files** itself stays as you set it. On, each phrase is left as a WAV file in `data/records`. Off, those files are deleted when you leave the app.
+**Advanced** opens the controls that change how the numbers are calculated, including **Keep recording files** and **Shortest vowel**. The checkbox turns off when you leave the app. **Keep recording files** itself stays as you set it. On, each phrase is left as a WAV file in `data/records`. Off, those files are deleted when you leave the app. **Shortest vowel** is the shortest peak that still counts, in milliseconds. The default is 5 ms: a single intensity point is ignored, and a peak of one frame (15 ms at the default shift) or longer is kept. 0 ms also counts that single point. The step is 15 ms, from 0 to 2000, and the same limit is used while recording and in the whole-recording summary.
 
 **Delete user data** removes saved sessions and any recording files still kept in `data/records`. These settings are kept.
 
