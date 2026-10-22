@@ -39,7 +39,7 @@ Under **Measurement**:
 - **Updates per minute** is how often the numbers are recalculated. The shortest value is 1, so the curve can be updated once a minute instead of several times a minute. There is no upper limit. Above 60000 the wait stays 1 ms. The tempo chart adds a point on each of those updates. **Gauge median** still takes the middle of the last few readings (default 3), and **Chart window** still keeps the last 300 seconds by default.
 - **Chart window** is how many seconds of the tempo chart stay on screen. The default is 300 seconds (5 minutes). Older points slide off. With **Use all readings** on, each point is the median of every reading since Start. With it off, the values match the arcs: the gauge median while measuring, and zero at rest.
 - **While recording** chooses Tempo chart or Arcs on Home during a session. After Stop, Home can show both when there is a result.
-- **Gauge** chooses the pace on the arc. **Speech rate** draws that pace. **Articulation rate** draws articulation. **Both** draws articulation on the outer arc and speech rate on the inner arc. A pace already on the gauge is not also a card.
+- **Gauge** chooses the pace on the arc. **Speech rate** draws that pace. **Articulation rate** draws articulation. **Both** draws speech rate on the outer arc and articulation on the inner arc. A pace already on the gauge is not also a card.
 - **Show Speech rate tile** and **Show Articulation rate tile** turn those cards on. Each switch cannot be changed, and the card stays hidden, while that pace is already on the gauge.
 - **Show Fillers tile** is off until you turn it on.
 - **Show Pauses tile**, **Show Speech tile**, and **Show Whole recording tile** are on by default. Whole recording is the summary after Stop or Open File.

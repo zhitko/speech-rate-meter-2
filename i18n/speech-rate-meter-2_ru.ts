@@ -1274,13 +1274,13 @@
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="541"/>
-        <source>Which pace the gauge shows. Speech rate: one arc. Articulation rate: one arc. Both: articulation on the outer arc and speech rate on the inner arc. This changes only the display; the values are the same. Each arc position is the median set by Gauge median, placed on the scale from Slow to Fast.</source>
-        <translation>Какой темп показывает шкала. Темп речи: одна дуга. Темп артикуляции: одна дуга. Оба: артикуляция на внешней дуге, темп речи на внутренней. Меняется только отображение, значения те же. Положение каждой дуги — медиана, заданная «Медианой шкалы», на шкале от «Медленно» до «Быстро».</translation>
+        <source>Which pace the gauge shows. Speech rate: one arc. Articulation rate: one arc. Both: speech rate on the outer arc and articulation on the inner arc. This changes only the display; the values are the same. Each arc position is the median set by Gauge median, placed on the scale from Slow to Fast.</source>
+        <translation>Какой темп показывает шкала. Темп речи: одна дуга. Темп артикуляции: одна дуга. Оба: темп речи на внешней дуге, артикуляция на внутренней. Меняется только отображение, значения те же. Положение каждой дуги — медиана, заданная «Медианой шкалы», на шкале от «Медленно» до «Быстро».</translation>
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="554"/>
-        <source>One pace, or both: articulation outside, speech rate inside.</source>
-        <translation>Один темп или оба: артикуляция снаружи, темп речи внутри.</translation>
+        <source>One pace, or both: speech rate outside, articulation inside.</source>
+        <translation>Один темп или оба: темп речи снаружи, артикуляция внутри.</translation>
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="559"/>

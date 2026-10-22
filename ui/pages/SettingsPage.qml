@@ -538,7 +538,7 @@ Page {
 
                         FieldLabel {
                             text: qsTr("Gauge")
-                            help: qsTr("Which pace the gauge shows. Speech rate: one arc. Articulation rate: one arc. Both: articulation on the outer arc and speech rate on the inner arc. This changes only the display; the values are the same. Each arc position is the median set by Gauge median, placed on the scale from Slow to Fast.")
+                            help: qsTr("Which pace the gauge shows. Speech rate: one arc. Articulation rate: one arc. Both: speech rate on the outer arc and articulation on the inner arc. This changes only the display; the values are the same. Each arc position is the median set by Gauge median, placed on the scale from Slow to Fast.")
                         }
                         SettingComboBox {
                             selectedValue: settingsApi ? settingsApi.gaugeMode : 0
@@ -551,7 +551,7 @@ Page {
                                 settingsApi.gaugeMode = model[index].id
                         }
                         Hint {
-                            text: qsTr("One pace, or both: articulation outside, speech rate inside.")
+                            text: qsTr("One pace, or both: speech rate outside, articulation inside.")
                         }
 
                         FieldLabel {

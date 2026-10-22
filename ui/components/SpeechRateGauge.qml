@@ -9,8 +9,8 @@ Item {
     property real value: 0
     property real secondValue: 0
     // Both paces: an inner arc and a second number. The outer arc is `value`
-    // and the top number. Callers pass articulation as `value` when both are
-    // shown, because that pace is always at least as long as speech rate.
+    // and the top number (speech rate, Rs). The inner arc is `secondValue`
+    // and the number under it (articulation, Ra).
     property bool showSecond: false
     property string metricLabel: qsTr("Speech rate")
     property string secondMetricLabel: qsTr("Articulation")

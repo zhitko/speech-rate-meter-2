@@ -791,14 +791,14 @@ Page {
                                 // speaking (or not enough yet), so the needle rests at zero.
                                 hasValue: root.hasResult || root.active
                                 showSecond: root.gaugeMode === 2
-                                // Both draws articulation on the outer arc (value, top number)
-                                // and speech rate on the inner arc. A single arc uses the pace
+                                // Both draws speech rate on the outer arc (value, top number)
+                                // and articulation on the inner arc. A single arc uses the pace
                                 // the Gauge setting names.
-                                metricLabel: root.gaugeMode === 0 ? qsTr("Speech rate") : qsTr("Articulation")
-                                secondMetricLabel: qsTr("Speech rate")
+                                metricLabel: root.gaugeMode === 1 ? qsTr("Articulation") : qsTr("Speech rate")
+                                secondMetricLabel: qsTr("Articulation")
                                 value: root.gaugeAtRest ? 0
-                                       : (root.gaugeMode === 0 ? sessionApi.speechRate : sessionApi.gaugeArticulationRate)
-                                secondValue: root.gaugeAtRest ? 0 : sessionApi.speechRate
+                                       : (root.gaugeMode === 1 ? sessionApi.gaugeArticulationRate : sessionApi.speechRate)
+                                secondValue: root.gaugeAtRest ? 0 : sessionApi.gaugeArticulationRate
                                 minimum: root.slowWpm
                                 maximum: root.fastWpm
                                 cardColor: gaugeCard.color

@@ -127,13 +127,13 @@ Page {
                         }
                         hasValue: sessionData.speechRate !== undefined
                         showSecond: root.gaugeMode === 2
-                        // Both: articulation on the outer arc, speech rate on the inner arc.
-                        metricLabel: root.gaugeMode === 0 ? qsTr("Speech rate") : qsTr("Articulation")
-                        secondMetricLabel: qsTr("Speech rate")
+                        // Both: speech rate on the outer arc, articulation on the inner arc.
+                        metricLabel: root.gaugeMode === 1 ? qsTr("Articulation") : qsTr("Speech rate")
+                        secondMetricLabel: qsTr("Articulation")
                         value: !hasValue ? 0
-                               : (root.gaugeMode === 0 ? Number(sessionData.speechRate)
-                                                       : Number(sessionData.articulationRate))
-                        secondValue: sessionData.speechRate !== undefined ? Number(sessionData.speechRate) : 0
+                               : (root.gaugeMode === 1 ? Number(sessionData.articulationRate)
+                                                       : Number(sessionData.speechRate))
+                        secondValue: sessionData.articulationRate !== undefined ? Number(sessionData.articulationRate) : 0
                         minimum: settingsApi ? settingsApi.slowWpm : 70
                         maximum: settingsApi ? settingsApi.fastWpm : 210
                     }
