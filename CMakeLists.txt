@@ -66,6 +66,8 @@ qt_add_executable(appspeech-rate-meter-2
     src/api/settingsapi.cpp
     src/api/sessionapi.h
     src/api/sessionapi.cpp
+    src/api/livecadence.h
+    src/api/livecadence.cpp
     src/services/speechrateanalysis.h
     src/services/speechrateanalysis.cpp
     src/services/sessionstore.h
@@ -398,6 +400,16 @@ if(NOT ANDROID)
     target_link_libraries(wavloader-test PRIVATE Qt6::Core)
     target_compile_definitions(wavloader-test PRIVATE "SRM_SOURCE_DIR=\"${CMAKE_SOURCE_DIR}\"")
     add_test(NAME wavloader COMMAND wavloader-test)
+
+    add_executable(livecadence-test
+        tests/livecadence_test.cpp
+        src/api/livecadence.cpp
+    )
+    target_include_directories(livecadence-test PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/api
+    )
+    target_link_libraries(livecadence-test PRIVATE Qt6::Core)
+    add_test(NAME livecadence COMMAND livecadence-test)
 endif()
 
 include(GNUInstallDirs)
