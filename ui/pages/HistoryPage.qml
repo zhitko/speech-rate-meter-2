@@ -33,12 +33,21 @@ Page {
         function onSummaryMethodChanged() { root.reload() }
     }
 
+    function speechTime(totalSeconds) {
+        var host = ApplicationWindow.window
+        if (!host)
+            return Number(totalSeconds).toFixed(0) + " " + qsTr("sec")
+        var text = host.speechDurationText(totalSeconds)
+        var unit = host.speechDurationUnit(totalSeconds)
+        return unit.length > 0 ? text + " " + unit : text
+    }
+
     function sessionLine(session) {
         return qsTr("Articulation %1 · Fillers %2 · Pauses %3 · Speech %4")
                 .arg(Number(session.articulationRate).toFixed(0) + " " + qsTr("wpm"))
                 .arg(Number(session.fillerPercent).toFixed(0) + " %")
                 .arg(Number(session.phrasePauses).toFixed(2) + " " + qsTr("sec"))
-                .arg(Number(session.speechDuration).toFixed(0) + " " + qsTr("sec"))
+                .arg(speechTime(session.speechDuration))
     }
 
     Label {

@@ -95,6 +95,21 @@ ApplicationWindow {
         return (minutes < 10 ? "0" : "") + minutes + ":" + (remain < 10 ? "0" : "") + remain
     }
 
+    // Under a minute the tile keeps the number and a separate "sec" unit.
+    // From one minute on, the unit is part of the value: "1m 30s".
+    function speechDurationText(totalSeconds) {
+        var seconds = Math.max(0, Math.round(Number(totalSeconds) || 0))
+        if (seconds < 60)
+            return String(seconds)
+        var minutes = Math.floor(seconds / 60)
+        return qsTr("%1m %2s").arg(minutes).arg(seconds % 60)
+    }
+
+    function speechDurationUnit(totalSeconds) {
+        var seconds = Math.max(0, Math.round(Number(totalSeconds) || 0))
+        return seconds < 60 ? qsTr("sec") : ""
+    }
+
     // Material.System is resolved once, when it is assigned. On Linux that
     // often happens before the desktop color scheme arrives, so the window
     // stays light while pages opened later resolve to dark. Track the live

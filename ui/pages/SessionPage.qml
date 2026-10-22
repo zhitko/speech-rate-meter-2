@@ -208,8 +208,18 @@ Page {
                             icon: Icons.faStopwatch
                             label: qsTr("Speech")
                             hint: qsTr("Total time counted as speech")
-                            value: root.number("speechDuration", 0)
-                            unit: qsTr("sec")
+                            value: {
+                                if (sessionData.speechDuration === undefined)
+                                    return "—"
+                                var host = ApplicationWindow.window
+                                return host ? host.speechDurationText(sessionData.speechDuration) : root.number("speechDuration", 0)
+                            }
+                            unit: {
+                                if (sessionData.speechDuration === undefined)
+                                    return ""
+                                var host = ApplicationWindow.window
+                                return host ? host.speechDurationUnit(sessionData.speechDuration) : qsTr("sec")
+                            }
                             accent: Theme.zoneColor(0, Material.theme)
                         }
                     }

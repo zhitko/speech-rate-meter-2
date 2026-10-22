@@ -32,7 +32,7 @@ All processing is local. The Android package requests only microphone access (`R
 | **Articulation** | Pace while speaking, with the gaps left out. Never below the speech rate | words per minute |
 | **Fillers** | How much some sounds are drawn out, such as a long “uh”. Not a count of words | percent |
 | **Pauses** | Length of the longer gaps. Not the total time spent silent | seconds |
-| **Speech** | Total time that counted as speech. While recording, the other four use the recent window and this one keeps the total | seconds |
+| **Speech** | Total time that counted as speech. While recording it advances every second. Silence before speech is detected is left out. A pause counts only up to Pause (s). From one minute the tile reads `1m 30s` | seconds |
 
 Speech rate is vowels per minute scaled into words per minute (`K1`, default 0.71). With **Speech rate method** set to Direct (the default), that time runs from the first non-silent frame through the last, so silence before the first sound and after the last is left out. Legacy uses the whole buffer. Direct articulation removes measured pauses from that same span. With no such pauses the two direct rates are equal. Legacy articulation keeps the older estimate from the typical gap between vowel nuclei. Fillers are the excess of long vowel nuclei over the typical nucleus, shown as a percent of a calibrated range. The full formulas are in [docs/TECHNICAL_DESCRIPTION.md](docs/TECHNICAL_DESCRIPTION.md).
 

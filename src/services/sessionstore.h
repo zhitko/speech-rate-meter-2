@@ -45,7 +45,7 @@ public:
     /** Retries leftover scratches. True when none are still waiting to be stored. */
     static bool recoverPending();
 
-    static bool setEndedAt(const QString& sessionId, const QString& endedAt);
+    static bool setEndedAt(const QString& sessionId, const QString& endedAt, int speechCountedSec = -1);
 
     /** Appends one metric snapshot that was actually shown on Home. */
     static bool appendShown(const QString& sessionId,

@@ -347,7 +347,7 @@ bool SessionStore::appendSegment(const QString& sessionId,
     return writeJson(path, root);
 }
 
-bool SessionStore::setEndedAt(const QString& sessionId, const QString& endedAt)
+bool SessionStore::setEndedAt(const QString& sessionId, const QString& endedAt, int speechCountedSec)
 {
     const QMutexLocker locker(&fileMutex());
     const QString path = sessionPath(sessionId);
@@ -360,6 +360,8 @@ bool SessionStore::setEndedAt(const QString& sessionId, const QString& endedAt)
     if (state != JsonState::Valid)
         return false;
     root.insert(QStringLiteral("endedAt"), endedAt);
+    if (speechCountedSec >= 0)
+        root.insert(QStringLiteral("speechCountedSec"), speechCountedSec);
     return writeJson(path, root);
 }
 
@@ -409,7 +411,10 @@ QVariantMap SessionStore::summarize(const QVariantMap& root)
         summary.insert(QStringLiteral("speechRate"), last.value(QStringLiteral("speechRate")));
         summary.insert(QStringLiteral("articulationRate"), last.value(QStringLiteral("articulationRate")));
         summary.insert(QStringLiteral("phrasePauses"), last.value(QStringLiteral("phrasePauses")));
-        summary.insert(QStringLiteral("speechDuration"), last.value(QStringLiteral("speechDuration")));
+        summary.insert(QStringLiteral("speechDuration"),
+            root.contains(QStringLiteral("speechCountedSec"))
+                ? root.value(QStringLiteral("speechCountedSec"))
+                : last.value(QStringLiteral("speechDuration")));
         summary.insert(QStringLiteral("fillerPercent"), last.value(QStringLiteral("fillerPercent")));
         return summary;
     }
@@ -418,7 +423,12 @@ QVariantMap SessionStore::summarize(const QVariantMap& root)
     summary.insert(QStringLiteral("speechRate"), summarizeColumn(segments, QStringLiteral("speechRate"), method));
     summary.insert(QStringLiteral("articulationRate"), summarizeColumn(segments, QStringLiteral("articulationRate"), method));
     summary.insert(QStringLiteral("phrasePauses"), summarizeColumn(segments, QStringLiteral("phrasePauses"), method));
-    summary.insert(QStringLiteral("speechDuration"), sumOf(segments, QStringLiteral("speechDuration")));
+    // The capture clock is the time shown as speech. Older sessions keep the
+    // sum of the analyzed buffers.
+    if (root.contains(QStringLiteral("speechCountedSec")))
+        summary.insert(QStringLiteral("speechDuration"), root.value(QStringLiteral("speechCountedSec")));
+    else
+        summary.insert(QStringLiteral("speechDuration"), sumOf(segments, QStringLiteral("speechDuration")));
     summary.insert(QStringLiteral("fillerPercent"), summarizeColumn(segments, QStringLiteral("fillerPercent"), method));
     return summary;
 }

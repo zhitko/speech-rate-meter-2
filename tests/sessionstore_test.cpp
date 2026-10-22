@@ -125,6 +125,19 @@ void testDurationWeightedSessionMean()
     SessionStore::clearAll();
 }
 
+void testSpeechClockReplacesBufferSum()
+{
+    const QString id = QStringLiteral("20261006-230200-000");
+    const QString started = QStringLiteral("2026-10-06T23:02:00.000");
+    expect(SessionStore::appendSegment(id, started, measuredSegment()), "append phrase before speech clock");
+    expect(SessionStore::setEndedAt(id, QStringLiteral("2026-10-06T23:02:30.000"), 90),
+        "store counted speech seconds");
+    const QVariantMap loaded = SessionStore::loadSession(id);
+    expect(loaded.value(QStringLiteral("speechDuration")).toInt() == 90,
+        "history speech time is the counted clock, not the buffer sum");
+    SessionStore::clearAll();
+}
+
 void setKeepRecordingFiles(bool keep)
 {
     AppSettings settings = Settings::getDefaultSettings();
@@ -441,6 +454,7 @@ int main(int argc, char** argv)
 
     testRoundTripAndClear();
     testDurationWeightedSessionMean();
+    testSpeechClockReplacesBufferSum();
     testCommitKeepsWavUntilClose();
     testCommitKeepsWavWhenEnabled();
     testDiscardSkipsUnsavedWav();

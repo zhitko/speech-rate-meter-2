@@ -139,6 +139,7 @@ signals:
 
 private slots:
     void applyPhase(int phase, int seconds, int epoch);
+    void applySpeechSeconds(int seconds, quint64 generation);
     void applyLevel(qreal level);
     void applyMetrics(const QVariantMap& metrics);
     void applyRunning(bool running);
@@ -195,6 +196,9 @@ private:
     std::deque<double> m_chartArticulationWindow;
     double m_phrasePauses = 0;
     double m_speechDuration = 0;
+    // While a take is open, speech time comes from the capture clock, not the
+    // analyzed buffer length. It stays in force after Stop until the next take.
+    bool m_useSpeechClock = false;
     double m_fillerScore = 0;
     QString m_openFileError;
     QVariantMap m_details;

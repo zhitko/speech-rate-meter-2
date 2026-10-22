@@ -371,6 +371,7 @@ struct Job {
     QString segmentStartedAt;
     QString segmentEndedAt;
     QString sessionEndedAt;
+    int speechCountedSec = -1;
 };
 
 } // namespace
@@ -465,7 +466,7 @@ protected:
                 continue;
             }
             if (job.kind == JobKind::EndSession) {
-                SessionStore::setEndedAt(job.sessionId, job.sessionEndedAt);
+                SessionStore::setEndedAt(job.sessionId, job.sessionEndedAt, job.speechCountedSec);
                 SessionStore::recoverPending();
                 QMetaObject::invokeMethod(m_api, "notifySessions", Qt::QueuedConnection);
                 QMetaObject::invokeMethod(m_api, "applySessionEnded", Qt::QueuedConnection,
@@ -759,6 +760,13 @@ public slots:
         m_speechStart = 0;
         m_speechEnd = 0;
         m_silenceFrames = 0;
+        m_clockCounted = 0;
+        m_clockRunStart = -1;
+        m_clockLastSpeech = 0;
+        m_clockCursor = 0;
+        m_clockFloor = -1;
+        m_clockFed = 0;
+        m_sentSpeechSeconds = -1;
         m_epoch = 0;
         m_queue->setPhraseEpoch(m_epoch);
         m_liveTimer.invalidate();
@@ -823,6 +831,8 @@ public slots:
             return;
         if (m_phraseSpeaking)
             closePhrase(false, true);
+        publishSpeechClock();
+        const int countedSpeech = speechClockSeconds();
         finishAudio();
         // End the session before the whole-file summary so the mean values
         // are not held behind that pass. The summary follows on the same thread.
@@ -831,6 +841,7 @@ public slots:
         end.generation = m_generation;
         end.sessionId = m_sessionId;
         end.sessionEndedAt = stamp(QDateTime::currentDateTime());
+        end.speechCountedSec = countedSpeech;
         m_queue->pushOrdered(std::move(end));
         Job summaryJob;
         summaryJob.kind = JobKind::Summarize;
@@ -851,6 +862,7 @@ public slots:
 
 signals:
     void phaseUpdated(int phase, int seconds, int epoch);
+    void speechSecondsUpdated(int seconds, quint64 generation);
     void levelUpdated(qreal level);
     void runningChanged(bool running);
     void deviceFailed();
@@ -891,7 +903,8 @@ private slots:
 
         if (!m_useSpeechDetection) {
             // The whole take is one phrase. Numbers update from the first sample
-            // and a pause does not close it.
+            // and a pause does not close it. Speech time still follows loudness,
+            // so the wait before speech and a long pause stay out of the total.
             if (!m_phraseSpeaking)
                 beginPhrase(0, m_fed);
             else
@@ -899,6 +912,7 @@ private slots:
             cutIfTooLong();
             notePhase();
             publishLive();
+            advanceSpeechClock();
             trim();
             return;
         }
@@ -920,6 +934,7 @@ private slots:
                 onFrame(frame, energy[index], m_corr->getU(frame));
             }
         }
+        advanceSpeechClock();
         trim();
     }
 
@@ -1136,6 +1151,107 @@ private:
         m_queue->pushOrdered(std::move(job));
     }
 
+    qint64 pauseLimitSamples() const
+    {
+        const int milliseconds = std::max(0, m_settings.autoStopSilenceDuration);
+        return static_cast<qint64>(milliseconds) * kSampleRate / 1000;
+    }
+
+    // Loudness, not the phrase-cutting gate. That gate stays at its default
+    // of 10000 unless the user calibrates, so it reports silence through a
+    // normal take and the speech total stays at 0.
+    bool loudSpeech(qint64 frameStart, qint64 frameEnd) const
+    {
+        qint64 start = frameStart;
+        qint64 end = frameEnd;
+        if (start < m_origin)
+            start = m_origin;
+        const qint64 available = m_origin + static_cast<qint64>(m_pcm.size());
+        if (end > available)
+            end = available;
+        if (end <= start)
+            return false;
+        double sum = 0;
+        for (qint64 index = start; index < end; ++index)
+            sum += std::abs(static_cast<int>(m_pcm[static_cast<std::size_t>(index - m_origin)]));
+        const double level = sum / static_cast<double>(end - start);
+
+        // A frame this quiet is background. Anything louder counts as speech
+        // until a floor has been learned, and then it must also clear that floor.
+        constexpr double kQuiet = 200.0;
+        if (m_clockFloor < 0) {
+            if (level < kQuiet)
+                m_clockFloor = level;
+            return level >= kQuiet;
+        }
+        if (level < m_clockFloor)
+            m_clockFloor = level;
+        else if (level < m_clockFloor * 2.0)
+            m_clockFloor += (level - m_clockFloor) * 0.02;
+        const double gate = std::max(kQuiet, m_clockFloor * 3.0 + 120.0);
+        return level >= gate;
+    }
+
+    // Speech time is the detected speech, plus a pause only while that pause
+    // is still within Pause (s). Time before the first speech frame is left
+    // out. Once a pause runs past that setting, the extra silence is left out
+    // and counting waits for the next speech frame.
+    void advanceSpeechClock()
+    {
+        while (m_clockFed + kHop <= m_fed) {
+            noteSpeechClock(m_clockFed, m_clockFed + kHop);
+            m_clockFed += kHop;
+        }
+    }
+
+    void noteSpeechClock(qint64 frameStart, qint64 frameEnd)
+    {
+        const bool speech = loudSpeech(frameStart, frameEnd);
+        if (frameEnd > m_clockCursor)
+            m_clockCursor = frameEnd;
+        const qint64 limit = pauseLimitSamples();
+        if (speech) {
+            if (m_clockRunStart < 0) {
+                m_clockRunStart = frameStart;
+                m_clockLastSpeech = frameEnd;
+            } else {
+                m_clockLastSpeech = std::max(m_clockLastSpeech, frameEnd);
+            }
+        } else if (m_clockRunStart >= 0 && frameEnd - m_clockLastSpeech > limit) {
+            m_clockCounted += std::max<qint64>(0, m_clockLastSpeech + limit - m_clockRunStart);
+            m_clockRunStart = -1;
+        }
+        publishSpeechClock();
+    }
+
+    qint64 speechClockSamples() const
+    {
+        if (m_clockRunStart < 0)
+            return m_clockCounted;
+        qint64 end = m_clockCursor;
+        if (end > m_clockLastSpeech) {
+            const qint64 gap = end - m_clockLastSpeech;
+            const qint64 limit = pauseLimitSamples();
+            if (gap > limit)
+                end = m_clockLastSpeech + limit;
+        }
+        return m_clockCounted + std::max<qint64>(0, end - m_clockRunStart);
+    }
+
+    int speechClockSeconds() const
+    {
+        return static_cast<int>(speechClockSamples() / kSampleRate);
+    }
+
+    void publishSpeechClock()
+    {
+        const int seconds = speechClockSeconds();
+        if (seconds == m_sentSpeechSeconds)
+            return;
+        m_sentSpeechSeconds = seconds;
+        emit speechSecondsUpdated(seconds, m_generation);
+    }
+
     qint64 leadingStart() const
     {
         if (!m_padLeading)
@@ -1201,6 +1317,13 @@ private:
     bool m_dropped = false;
     qint64 m_speechStart = 0;
     qint64 m_speechEnd = 0;
+    qint64 m_clockCounted = 0;
+    qint64 m_clockRunStart = -1;
+    qint64 m_clockLastSpeech = 0;
+    qint64 m_clockCursor = 0;
+    mutable double m_clockFloor = -1;
+    qint64 m_clockFed = 0;
+    int m_sentSpeechSeconds = -1;
     int m_silenceFrames = 0;
     int m_epoch = 0;
     int m_sentPhase = -1;
@@ -1275,6 +1398,7 @@ SessionApi::SessionApi(QObject* parent)
     m_worker->moveToThread(m_captureThread);
     connect(m_captureThread, &QThread::finished, m_worker, &QObject::deleteLater);
     connect(m_worker, &CaptureWorker::phaseUpdated, this, &SessionApi::applyPhase, Qt::QueuedConnection);
+    connect(m_worker, &CaptureWorker::speechSecondsUpdated, this, &SessionApi::applySpeechSeconds, Qt::QueuedConnection);
     connect(m_worker, &CaptureWorker::levelUpdated, this, &SessionApi::applyLevel, Qt::QueuedConnection);
     connect(m_worker, &CaptureWorker::runningChanged, this, &SessionApi::applyRunning, Qt::QueuedConnection);
     connect(m_worker, &CaptureWorker::deviceFailed, this, &SessionApi::applyDeviceFailed, Qt::QueuedConnection);
@@ -1406,6 +1530,7 @@ void SessionApi::beginCapture()
     m_lastShownKey.clear();
     m_noSpeech = false;
     m_sessionActive = true;
+    m_useSpeechClock = true;
     m_phase = Listening;
     m_phraseSeconds = 0;
     m_audioLevel = 0;
@@ -1431,6 +1556,7 @@ void SessionApi::resetResultState()
     m_gaugeArticulationRate = 0;
     m_phrasePauses = 0;
     m_speechDuration = 0;
+    m_useSpeechClock = false;
     m_fillerScore = 0;
     m_details.clear();
     clearRecordingSummary();
@@ -1551,6 +1677,17 @@ QVariantMap SessionApi::session(const QString& sessionId) const
     return SessionStore::loadSession(sessionId);
 }
 
+void SessionApi::applySpeechSeconds(int seconds, quint64 generation)
+{
+    if (!m_alive.load() || generation != m_captureGeneration || !m_useSpeechClock)
+        return;
+    const double value = std::max(0, seconds);
+    if (m_speechDuration == value)
+        return;
+    m_speechDuration = value;
+    emit metricsChanged();
+}
+
 void SessionApi::applyPhase(int phase, int seconds, int epoch)
 {
     if (!m_alive.load())
@@ -1661,13 +1798,7 @@ void SessionApi::applyMetrics(const QVariantMap& metrics)
         acc.addPhrase(phrase);
     if (!m_hasResult) {
         showMetrics(metricsToMap(acc.metrics, acc.fillerMin, acc.fillerMax, false, 0, true),
-            acc.metrics.speechDuration);
-        return;
-    }
-    if (m_speechDuration != acc.metrics.speechDuration) {
-        m_speechDuration = acc.metrics.speechDuration;
-        emit metricsChanged();
-        rememberShown(m_details, m_speechDuration);
+            m_useSpeechClock ? m_speechDuration : acc.metrics.speechDuration);
     }
 }
 
@@ -1690,9 +1821,9 @@ void SessionApi::showSessionMean()
     const speechrate::Metrics mean = acc.meanHeadlines(
         speechrate::summaryMethodOf(Settings::loadSettings().summaryMethod));
     QVariantMap shown = metricsToMap(mean, acc.fillerMin, acc.fillerMax, false, 0, true);
-    shown.insert(QStringLiteral("speechDuration"), acc.metrics.speechDuration);
+    shown.insert(QStringLiteral("speechDuration"), m_useSpeechClock ? m_speechDuration : acc.metrics.speechDuration);
     m_shownSessionId.clear();
-    showMetrics(shown, acc.metrics.speechDuration);
+    showMetrics(shown, m_useSpeechClock ? m_speechDuration : acc.metrics.speechDuration);
     setShowingMean(!acc.phrases.empty());
 }
 
@@ -1763,16 +1894,19 @@ void SessionApi::showMetrics(const QVariantMap& shown, double speechSeconds)
     m_articulationRate = shown.value(QStringLiteral("articulationRate")).toDouble();
     m_gaugeArticulationRate = medianOf(m_articulationWindow, m_articulationRate, live);
     m_phrasePauses = shown.value(QStringLiteral("phrasePauses")).toDouble();
-    m_speechDuration = speechSeconds;
+    if (!m_useSpeechClock)
+        m_speechDuration = speechSeconds;
     m_fillerScore = shown.value(QStringLiteral("fillerScore")).toDouble();
-    m_details = shown;
+    QVariantMap details = shown;
+    details.insert(QStringLiteral("speechDuration"), m_speechDuration);
+    m_details = details;
     if (!m_hasResult) {
         m_hasResult = true;
         emit hasResultChanged();
     }
     emit metricsChanged();
     noteTempoPoint(shown);
-    rememberShown(shown, speechSeconds);
+    rememberShown(details, m_speechDuration);
     if (!m_sessionActive && m_phase == IdleEmpty) {
         m_phase = IdleReady;
         emit phaseChanged();

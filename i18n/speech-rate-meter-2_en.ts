@@ -521,6 +521,11 @@
         <source>Version %1</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <location filename="../ui/Main.qml" line="98"/>
+        <source>%1m %2s</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>MetricChart</name>

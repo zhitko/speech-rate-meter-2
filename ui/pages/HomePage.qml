@@ -932,8 +932,18 @@ Page {
                             icon: Icons.faStopwatch
                             label: qsTr("Speech")
                             hint: qsTr("Total time counted as speech")
-                            value: root.hasResult ? sessionApi.speechDuration.toFixed(0) : "—"
-                            unit: qsTr("sec")
+                            value: {
+                                if (!sessionApi || !(root.active || root.hasResult || sessionApi.speechDuration > 0))
+                                    return "—"
+                                var host = ApplicationWindow.window
+                                return host ? host.speechDurationText(sessionApi.speechDuration) : "—"
+                            }
+                            unit: {
+                                if (!sessionApi || !(root.active || root.hasResult || sessionApi.speechDuration > 0))
+                                    return ""
+                                var host = ApplicationWindow.window
+                                return host ? host.speechDurationUnit(sessionApi.speechDuration) : ""
+                            }
                             accent: Theme.zoneColor(0, Material.theme)
                         }
                     }

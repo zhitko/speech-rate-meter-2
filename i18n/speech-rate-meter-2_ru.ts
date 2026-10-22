@@ -669,6 +669,11 @@
         <source>Version %1</source>
         <translation>Версия %1</translation>
     </message>
+    <message>
+        <location filename="../ui/Main.qml" line="98"/>
+        <source>%1m %2s</source>
+        <translation>%1 мин %2 с</translation>
+    </message>
 </context>
 <context>
     <name>MetricChart</name>
