@@ -1272,12 +1272,12 @@
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="882"/>
-        <source>Length of each loudness window, in audio samples at 8000 Hz (240 samples is 30 ms). Each intensity value is the mean absolute amplitude of this many samples. A longer window is smoother and blurs short sounds.</source>
+        <source>Length of each loudness window, in audio samples at 8000 Hz (64 samples is 8 ms). Each intensity value is the mean absolute amplitude of this many samples. A longer window is smoother and blurs short sounds.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="896"/>
-        <source>Step between neighbouring loudness windows, in samples at 8000 Hz. At 120 samples one intensity point is 15 ms. Every duration in the statistics is counted in these points, so this value sets the time resolution. Smaller is finer and slower.</source>
+        <source>Step between neighbouring loudness windows, in samples at 8000 Hz. At 32 samples one intensity point is 4 ms. Every duration in the statistics is counted in these points, so this value sets the time resolution. Smaller is finer and slower.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -1287,12 +1287,12 @@
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="910"/>
-        <source>Number of loudness points averaged into the smoothed curve S. Vowels are the parts that rise above S. Default 120 points, which is 1.8 s at the default shift. A longer window follows only slow changes in loudness, so it reacts more slowly.</source>
+        <source>Number of loudness points averaged into the smoothed curve S. Vowels are the parts that rise above S. Default 64 points, which is 256 ms at the default shift. A longer window follows only slow changes in loudness, so it reacts more slowly.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="932"/>
-        <source>Vowel peaks shorter than this are ignored. Duration is the stored run, in steps of Shift/8000 (15 ms at the default shift). A peak is kept when that duration is at least this many milliseconds. 0 ms also keeps a single intensity point. The default 5 ms drops that point and keeps a run of 15 ms or longer, the same result as 15 ms. The step is one frame, 15 ms. Each kept peak must also reach a speech gate: its raw intensity must be at least max(80, 3 × the quiet floor), where the floor is the 10th percentile of the buffer. The same limit is used while recording and in the whole-recording summary.</source>
+        <source>Vowel peaks shorter than this are ignored. Duration is the stored run, in steps of Shift/8000 (4 ms at the default shift). A peak is kept when that duration is at least this many milliseconds. 0 ms also keeps a single intensity point. The default 8 ms drops that point and a 4 ms run, and keeps a run of 8 ms or longer. Each kept peak must also reach a speech gate: its raw intensity must be at least max(80, 3 × the quiet floor), where the floor is the 10th percentile of the buffer. The same limit is used while recording and in the whole-recording summary.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -1534,7 +1534,7 @@
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="977"/>
-        <source>Converts vowels per minute into words per minute. It is a fixed calibration constant, not measured at runtime. Raising it raises the speech rate and Direct articulation in the same proportion. Used by both speech-rate methods and by Direct articulation. Window articulation uses K5 instead. Default 0.71.</source>
+        <source>Converts vowels per minute into words per minute. It is a fixed calibration constant, not measured at runtime. Raising it raises the speech rate and Direct articulation in the same proportion. Used by both speech-rate methods and by Direct articulation. Window articulation uses K5 instead. Default 0.41.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -1564,7 +1564,7 @@
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="1002"/>
-        <source>Scales the Window articulation rate. It converts vowels per minute into words per minute for that method, the same role K1 has for Direct. Default 0.71, matching K1, so the two rates share a scale. Raising it raises only the Window rate. K4 stays the filler scale.</source>
+        <source>Scales the Window articulation rate. It converts vowels per minute into words per minute for that method, the same role K1 has for Direct. Default 0.71. Raising it raises only the Window rate. K4 stays the filler scale.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>

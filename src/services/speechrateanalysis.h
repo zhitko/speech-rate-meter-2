@@ -54,7 +54,7 @@
  * buffer at the start of a session. A phrase or a whole file uses its own
  * length, so the vowel count and the pause sum stay on the same interval.
  * Leading and trailing silence stay in T_window and are not pauses, so they
- * count as articulation time. K5 defaults to 0.71, the same scale as K1.
+ * count as articulation time. K5 defaults to 0.71.
  * Unlike Direct and Legacy, this rate is not raised to the speech rate.
  *
  * Live metrics use the current analysis window (the same audio as speech
@@ -62,11 +62,11 @@
  * cumulative view: it includes silence between phrases and reports the
  * pause-duration distribution plus both pause estimates.
  *
- * Limitations: hop quantization (15 ms at the default shift) and the one-frame
- * short nucleus length can drop or shorten very short vowels. The shortest-vowel
+ * Limitations: hop quantization (4 ms at the default shift) and the short
+ * nucleus length can drop or shorten very short vowels. The shortest-vowel
  * setting compares that stored duration, in milliseconds, and keeps a run when
  * it is at least that long. 0 ms also keeps a single intensity point. The
- * default 5 ms still drops that point. A stop closure longer than the pause
+ * default 8 ms drops that point and a 4 ms run. A stop closure longer than the pause
  * minimum is counted.
  * Leading and trailing silence stay in T_s (legacy speech rate, and the
  * Speech time) and out of T_span. They are not part of the pause sum.
@@ -117,16 +117,16 @@ enum class SpeechMethod {
  * Time base is the constant 8000 Hz described in the technical specification.
  */
 struct Config {
-    int frame = 240;
-    int shift = 120;
-    int smooth = 120;
-    int minLengthMs = 5;
+    int frame = 64;
+    int shift = 32;
+    int smooth = 64;
+    int minLengthMs = 8;
     int degree = 3;
-    double k1 = 0.71;
+    double k1 = 0.41;
     double k2 = 1.2;
     double k3 = 0.30;
     double k4 = 100.0;
-    // Window articulation scale. 0.71 matches K1, so the two rates share a scale.
+    // Window articulation scale. Independent of K1.
     double k5 = 0.71;
     double peakMargin = 0.009;
     // Direct articulation subtracts interior pauses at least this long.
@@ -216,8 +216,9 @@ double secondsFromFrames(double frameCount, int shift);
 /**
  * Inclusive minimum stored length, in intensity frames, for a shortest-vowel
  * setting. vowelNuclei keeps a run when `length >=` this value, which is the
- * same as stored duration >= minLengthMs. 0 ms returns 0. At a 120-sample
- * shift, 5 ms returns 1 (15 ms) and matches the old truncated gate.
+ * same as stored duration >= minLengthMs. 0 ms returns 0. At the default
+ * 32-sample shift, 8 ms returns 2. At a 120-sample shift, 5 ms returns 1
+ * (15 ms) and matches the old truncated gate.
  */
 std::uint32_t minLengthFrames(int shift, int minLengthMs);
 

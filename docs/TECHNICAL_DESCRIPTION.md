@@ -248,14 +248,14 @@ Open File decodes PCM and IEEE float into that signed 16-bit scale, then resampl
 
 ```
 SAMPLE_RATE = 8000          # used everywhere seconds are computed
-FRAME       = 240           # intensity window, in samples. Default.
-SHIFT       = 120           # intensity hop, in samples. Default.
-SMOOTH      = 120           # smoother length, in intensity samples. Default.
-MIN_LENGTH_MS = 5           # minimum vowel length, milliseconds. Default.
+FRAME       = 64            # intensity window, in samples. Default.
+SHIFT       = 32            # intensity hop, in samples. Default.
+SMOOTH      = 64            # smoother length, in intensity samples. Default.
+MIN_LENGTH_MS = 8           # minimum vowel length, milliseconds. Default.
 PEAK_MARGIN = 0.009         # DATA_NORMALIZED_LIMIT
 ```
 
-One intensity sample represents `SHIFT / SAMPLE_RATE` seconds of audio. At the defaults that is `120/8000 = 0.015` s = 15 ms.
+One intensity sample represents `SHIFT / SAMPLE_RATE` seconds of audio. At the defaults that is `32/8000 = 0.004` s = 4 ms.
 
 Conversion used by every duration that comes from a segment statistic:
 
@@ -277,7 +277,7 @@ T_s = sample_count / SAMPLE_RATE          # UI always analyzes 100% of the file
 
 ### 4.1 Short-time mean absolute amplitude
 
-Let `x[n]` be the raw float samples (int16 values, typically about −32768…32767). With `half = round(FRAME / 2)` (120 when FRAME is 240):
+Let `x[n]` be the raw float samples (int16 values, typically about −32768…32767). With `half = round(FRAME / 2)` (32 when FRAME is 64):
 
 ```
 start = -half
@@ -320,7 +320,7 @@ half_s = ceil(SMOOTH / 2)
 W = half_s * 2
 ```
 
-Default SMOOTH 120 → `half_s = 60`, `W = 120`.
+Default SMOOTH 64 → `half_s = 32`, `W = 64`.
 
 For each index `i` in `0 .. len(I_norm)-1`:
 
@@ -366,12 +366,12 @@ otherwise ceil(MIN_LENGTH_MS * SAMPLE_RATE / (SHIFT * 1000))
 keep when length >= min_length_frames
 ```
 
-`SAMPLE_RATE` here is the constant 8000. At the default shift one stored frame is 15 ms. `0` ms returns 0 frames, so a single intensity point (stored length 0, duration 0 ms) is kept. The default 5 ms is `ceil(0.333…) = 1`, so that single point is dropped and a stored run of 15 ms is kept. That is the same gate the old truncation produced for the default (`uint32(0.333) = 0`, then `length > 0`). `15` ms is the same gate as 5 ms. `16` ms needs two stored frames (30 ms). `30` ms keeps a stored run of 30 ms; the old truncation asked for `length > 2`, which was 45 ms. `100` ms needs seven stored frames (105 ms), which is where the old `length > 6` gate already landed. The same conversion is used by the live measurement and by the whole-recording summary.
+`SAMPLE_RATE` here is the constant 8000. At the default shift one stored frame is 4 ms. `0` ms returns 0 frames, so a single intensity point (stored length 0, duration 0 ms) is kept. The default 8 ms is `ceil(2) = 2`, so that single point and a 4 ms run are dropped, and a stored run of 8 ms is kept. At a 120-sample shift the same rule maps 5 ms to one 15 ms frame (`ceil(0.333…) = 1`), which is the gate the old truncation produced (`uint32(0.333) = 0`, then `length > 0`). On that shift, `15` ms matches 5 ms, `16` ms needs two stored frames (30 ms), and `100` ms needs seven stored frames (105 ms). The same conversion is used by the live measurement and by the whole-recording summary.
 
 The stored record is the pair `(start, length)`:
 
 - The run covers intensity indexes `start, start+1, …, start+length` (that is `length + 1` samples).
-- Statistics in section 6 use the integer `length`, not `length + 1`. A kept two-sample nucleus contributes a duration of 1 frame = 15 ms.
+- Statistics in section 6 use the integer `length`, not `length + 1`. A kept two-sample nucleus contributes a duration of 1 frame. At the default shift that is 4 ms.
 
 ### 5.2 Gaps (consonants and silence)
 
@@ -470,7 +470,7 @@ The same applies to the gap sum `T_c`, which is shown on the details screen but 
 ### 6.2 Speech rate
 
 ```
-K1 = 0.71          # default
+K1 = 0.41          # default
 R_s_legacy = K1 * N_v * 60 / T_s        # words per minute
 ```
 
@@ -492,7 +492,7 @@ R_s_direct = K1 * N_v * 60 / T_span
 
 `General/speechRateMethod` chooses which rate is published as `speechRate`. `0` (Direct, the default) publishes `R_s_direct`. `1` (Legacy) publishes `R_s_legacy`. Both are always computed. The Whole recording card shows them side by side.
 
-On a buffer that is speech from the first framed sample to the last, the two rates still differ by the samples the intensity contour does not cover at the ends, about one or two hops (15 ms at the default shift). Real leading or trailing silence is what moves the number. `N_v` is the tempo vowel count. With no interior pauses, direct articulation on this same span equals `R_s_direct`.
+On a buffer that is speech from the first framed sample to the last, the two rates still differ by the samples the intensity contour does not cover at the ends, about one or two hops (4 ms at the default shift). Real leading or trailing silence is what moves the number. `N_v` is the tempo vowel count. With no interior pauses, direct articulation on this same span equals `R_s_direct`.
 
 ### 6.3 Articulation rate
 
@@ -528,7 +528,7 @@ The published pause value in Direct mode, and in Window mode, is the mean pause 
 ### 6.3.2 Window articulation rate
 
 ```
-K5 = 0.71          # default, the same scale as K1
+K5 = 0.71          # default
 T_window = T_s of the buffer being analyzed
 R_a = K5 * N_v * 60 / (T_window - ΣT_p)
 ```
@@ -655,16 +655,16 @@ With Advanced on, **Keep recording files** (`General/keepRecordingFiles`, defaul
 | UI label | Symbol | Default | INI key | Visible without Advanced |
 | --- | --- | --- | --- | --- |
 | Long-sound weight | `d` | 3 | `speechRate/MeanValueDegry` | no. Labeled Long-sound weight. |
-| Speech-rate scale | `K1` | 0.71 | `speechRate/K1` | no |
+| Speech-rate scale | `K1` | 0.41 | `speechRate/K1` | no |
 | Min RS | `MinRS` | 70 | `speechRate/Min` | yes, labeled Slow. Also copies to articulation min. |
 | Max RS | `MaxRS` | 210 | `speechRate/Max` | yes, labeled Fast. Also copies to articulation max. |
 | Articulation scale | `K2` | 1.2 | `articulationRate/K2` | no |
 | Window scale | `K5` | 0.71 | `articulationRate/K5` | no. Window articulation only. A missing stored value is read as 0.71. |
 | Pause scale | `K3` | 0.30 | `meanPauses/Max` | no |
-| Frame | `FRAME` | 240 | `intensity/frame` | no. Spin range 0…1024. |
-| Shift | `SHIFT` | 120 | `intensity/shift` | no. Spin range 0…512. |
-| Smooth window | `SMOOTH` | 120 | `intensity/smoothFrame` | no. Spin range 0…1024. |
-| Shortest vowel (ms) | `MIN_LENGTH_MS` | 5 | `segmentsByIntensity/minimumLength` | no. Spin range 0…2000, step 15, editable. 0 ms keeps a one-point peak. Default 5 ms still drops it. A stored value outside 0…2000 is clamped on load. |
+| Frame | `FRAME` | 64 | `intensity/frame` | no. Spin range 0…1024. |
+| Shift | `SHIFT` | 32 | `intensity/shift` | no. Spin range 0…512. |
+| Smooth window | `SMOOTH` | 64 | `intensity/smoothFrame` | no. Spin range 0…1024. |
+| Shortest vowel (ms) | `MIN_LENGTH_MS` | 8 | `segmentsByIntensity/minimumLength` | no. Spin range 0…2000, step 15, editable. 0 ms keeps a one-point peak. Default 8 ms drops that point and a 4 ms run. A stored value outside 0…2000 is clamped on load. |
 | Filler scale | `K4` | 100 | `fillerSounds/K4` | no |
 | Low filler score | `F_min` | 120 | `fillerSounds/Min` | no |
 | High filler score | `F_max` | 240 | `fillerSounds/Max` | no |
@@ -745,7 +745,7 @@ filler_label        = format((F_c - F_min) / (F_max - F_min) * 100, 0) + " %"
 
 ## 11. Worked numeric skeleton
 
-Defaults, one nucleus of stored length 4 and a second of stored length 10, one gap of stored length 40, `sample_count = 80000` (10.0 s), `SHIFT = 120`.
+Wiring check with `SHIFT = 120` and `K1 = 0.71`, not the product defaults: one nucleus of stored length 4 and a second of stored length 10, one gap of stored length 40, `sample_count = 80000` (10.0 s).
 
 ```
 T_s = 10
@@ -768,7 +768,7 @@ F = 100 * (0.120 - 0.105) / 0.105 ≈ 14.286
     clamped to 120 → label "0 %"
 ```
 
-This example is only a check of the formula wiring. Real nuclei are much more numerous; `K1 = 0.71` is what brings a normal vowel count into the 70–210 wpm band.
+This example is only a check of the formula wiring. It uses `K1 = 0.71` and `SHIFT = 120`. The product defaults are `K1 = 0.41`, frame 64, shift 32, smooth window 64, and a shortest vowel of 8 ms.
 
 ## 12. Platform behavior worth copying
 
@@ -792,9 +792,9 @@ Do not implement these for behavioral parity:
 ## 14. Parity checklist
 
 1. Keep a background session. Cut a kept segment at a pause or at 15 s, drop a segment shorter than 1 s, resample to 8000 Hz mono s16le, and analyze that buffer with sections 2–11. Live snapshots analyze the last Analysis window seconds of kept plus open audio. Fillers, pauses, and speech are shown unjoined and unaveraged. Each pace drawn on the gauge shows the median of the last Gauge median live readings of that pace (default 3). With Use all readings on, the tempo chart stores the median of every live reading since Start. With it off, the tempo chart stores that same gauge median on each live update. Articulation left in the tile stays raw. After Stop, the gauge and tiles show the duration-weighted mean of the kept phrases, speech stays the total, and the screen is labeled Mean values. Silence must not produce nuclei (section 5.4). Keep the segment audio after its metrics are stored. After Stop, Listen plays that session’s saved phrase files in order. Delete those files when the application closes, unless Keep recording files is on.
-2. Intensity uses mean absolute amplitude, full-window divisor, hop 120, window 240, and the exact loop bounds.
+2. Intensity uses mean absolute amplitude, full-window divisor, hop 32, window 64, and the exact loop bounds.
 3. Normalize to [0, 1], then the moving average with even length, full-window divisor, and the `index > 0` edge rule.
-4. Nuclei are `I_norm - S > 0.009`, stored length is `run_samples - 1`, runs of one sample are dropped at the default minimum, and a nucleus still open at the last sample is dropped.
+4. Nuclei are `I_norm - S > 0.009`, stored length is `run_samples - 1`, runs shorter than the default 8 ms are dropped, and a nucleus still open at the last sample is dropped.
 5. Gaps are only interiors between nuclei.
 6. Durations truncate fractional frame counts before multiplying by `SHIFT/8000`.
 7. Means on the details screen and in the formulas are power means of degree 3, not arithmetic means.

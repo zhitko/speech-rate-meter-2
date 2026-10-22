@@ -879,13 +879,13 @@ Page {
 
                     FieldLabel {
                         text: qsTr("Frame")
-                        help: qsTr("Length of each loudness window, in audio samples at 8000 Hz (240 samples is 30 ms). Each intensity value is the mean absolute amplitude of this many samples. A longer window is smoother and blurs short sounds.")
+                        help: qsTr("Length of each loudness window, in audio samples at 8000 Hz (64 samples is 8 ms). Each intensity value is the mean absolute amplitude of this many samples. A longer window is smoother and blurs short sounds.")
                         formula: "I(j) = sum of abs(x) over the window / Frame"
                     }
                     SpinBox {
                         from: 0
                         to: 1024
-                        value: settingsApi ? settingsApi.intensityFrame : 240
+                        value: settingsApi ? settingsApi.intensityFrame : 64
                         onValueModified: if (settingsApi)
                             settingsApi.intensityFrame = value
                         Layout.fillWidth: true
@@ -893,13 +893,13 @@ Page {
                     Hint { text: qsTr("Length of each loudness window.") }
                     FieldLabel {
                         text: qsTr("Shift")
-                        help: qsTr("Step between neighbouring loudness windows, in samples at 8000 Hz. At 120 samples one intensity point is 15 ms. Every duration in the statistics is counted in these points, so this value sets the time resolution. Smaller is finer and slower.")
+                        help: qsTr("Step between neighbouring loudness windows, in samples at 8000 Hz. At 32 samples one intensity point is 4 ms. Every duration in the statistics is counted in these points, so this value sets the time resolution. Smaller is finer and slower.")
                         formula: "point time (s) = Shift / 8000\nduration (s) = points × Shift / 8000"
                     }
                     SpinBox {
                         from: 0
                         to: 512
-                        value: settingsApi ? settingsApi.intensityShift : 120
+                        value: settingsApi ? settingsApi.intensityShift : 32
                         onValueModified: if (settingsApi)
                             settingsApi.intensityShift = value
                         Layout.fillWidth: true
@@ -907,13 +907,13 @@ Page {
                     Hint { text: qsTr("Step to the next window. Smaller is finer.") }
                     FieldLabel {
                         text: qsTr("Smooth window")
-                        help: qsTr("Number of loudness points averaged into the smoothed curve S. Vowels are the parts that rise above S. Default 120 points, which is 1.8 s at the default shift. A longer window follows only slow changes in loudness, so it reacts more slowly.")
+                        help: qsTr("Number of loudness points averaged into the smoothed curve S. Vowels are the parts that rise above S. Default 64 points, which is 256 ms at the default shift. A longer window follows only slow changes in loudness, so it reacts more slowly.")
                         formula: "S(i) = mean of I_norm over about Smooth points around i\nvowel sample: I_norm(i) - S(i) > 0.009"
                     }
                     SpinBox {
                         from: 0
                         to: 1024
-                        value: settingsApi ? settingsApi.intensitySmooth : 120
+                        value: settingsApi ? settingsApi.intensitySmooth : 64
                         onValueModified: if (settingsApi)
                             settingsApi.intensitySmooth = value
                         Layout.fillWidth: true
@@ -929,7 +929,7 @@ Page {
 
                     FieldLabel {
                         text: qsTr("Shortest vowel (ms)")
-                        help: qsTr("Vowel peaks shorter than this are ignored. Duration is the stored run, in steps of Shift/8000 (15 ms at the default shift). A peak is kept when that duration is at least this many milliseconds. 0 ms also keeps a single intensity point. The default 5 ms drops that point and keeps a run of 15 ms or longer, the same result as 15 ms. The step is one frame, 15 ms. Each kept peak must also reach a speech gate: its raw intensity must be at least max(80, 3 × the quiet floor), where the floor is the 10th percentile of the buffer. The same limit is used while recording and in the whole-recording summary.")
+                        help: qsTr("Vowel peaks shorter than this are ignored. Duration is the stored run, in steps of Shift/8000 (4 ms at the default shift). A peak is kept when that duration is at least this many milliseconds. 0 ms also keeps a single intensity point. The default 8 ms drops that point and a 4 ms run, and keeps a run of 8 ms or longer. Each kept peak must also reach a speech gate: its raw intensity must be at least max(80, 3 × the quiet floor), where the floor is the 10th percentile of the buffer. The same limit is used while recording and in the whole-recording summary.")
                         formula: "step (ms) = Shift / 8000 × 1000\nkeep a peak when stored length × step >= Shortest vowel\n0 ms keeps a stored length of 0"
                     }
                     SpinBox {
@@ -937,7 +937,7 @@ Page {
                         to: 2000
                         stepSize: 15
                         editable: true
-                        value: settingsApi ? settingsApi.segmentMinLengthMs : 5
+                        value: settingsApi ? settingsApi.segmentMinLengthMs : 8
                         onValueModified: if (settingsApi)
                             settingsApi.segmentMinLengthMs = value
                         Layout.fillWidth: true
@@ -976,11 +976,11 @@ Page {
                     SubHeader { text: qsTr("Speech rate"); Layout.columnSpan: root.singleColumnForm ? 1 : 2 }
                     FieldLabel {
                         text: qsTr("Speech-rate scale")
-                        help: qsTr("Converts vowels per minute into words per minute. It is a fixed calibration constant, not measured at runtime. Raising it raises the speech rate and Direct articulation in the same proportion. Used by both speech-rate methods and by Direct articulation. Window articulation uses K5 instead. Default 0.71.")
+                        help: qsTr("Converts vowels per minute into words per minute. It is a fixed calibration constant, not measured at runtime. Raising it raises the speech rate and Direct articulation in the same proportion. Used by both speech-rate methods and by Direct articulation. Window articulation uses K5 instead. Default 0.41.")
                         formula: "Rs = K1 × Nv × 60 / T"
                     }
                     DecimalSpinBox {
-                        value: settingsApi ? Math.round(settingsApi.k1 * 100) : 71
+                        value: settingsApi ? Math.round(settingsApi.k1 * 100) : 41
                         onRealValueEdited: function(v) { if (settingsApi) settingsApi.k1 = v }
                         Layout.fillWidth: true
                     }
@@ -1001,7 +1001,7 @@ Page {
 
                     FieldLabel {
                         text: qsTr("Window scale")
-                        help: qsTr("Scales the Window articulation rate. It converts vowels per minute into words per minute for that method, the same role K1 has for Direct. Default 0.71, matching K1, so the two rates share a scale. Raising it raises only the Window rate. K4 stays the filler scale.")
+                        help: qsTr("Scales the Window articulation rate. It converts vowels per minute into words per minute for that method, the same role K1 has for Direct. Default 0.71. Raising it raises only the Window rate. K4 stays the filler scale.")
                         formula: "Ra_window = K5 × Nv × 60 / (T_window − ΣTp)"
                     }
                     DecimalSpinBox {

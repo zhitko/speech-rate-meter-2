@@ -363,7 +363,13 @@ void testWindowUpdatesAndVowelMinimumLoad()
 {
     expect(Settings::getDefaultSettings().analysisWindowSec == 10, "analysis window defaults to 10 s");
     expect(Settings::getDefaultSettings().updatesPerMinute == 60, "updates per minute default to 60");
-    expect(Settings::getDefaultSettings().segmentMinLengthMs == 5, "shortest vowel defaults to 5 ms");
+    expect(Settings::getDefaultSettings().speechRateK1 == 0.41, "speech-rate scale defaults to 0.41");
+    expect(Settings::getDefaultSettings().articulationK2 == 1.2, "articulation scale defaults to 1.2");
+    expect(Settings::getDefaultSettings().pausesK3 == 0.30, "pause scale defaults to 0.30");
+    expect(Settings::getDefaultSettings().intensityFrame == 64, "frame defaults to 64 samples");
+    expect(Settings::getDefaultSettings().intensityShift == 32, "shift defaults to 32 samples");
+    expect(Settings::getDefaultSettings().intensitySmooth == 64, "smooth window defaults to 64 points");
+    expect(Settings::getDefaultSettings().segmentMinLengthMs == 8, "shortest vowel defaults to 8 ms");
     expect(clampAnalysisWindowSec(1) == 3, "analysis window stays at least 3 s");
     expect(clampAnalysisWindowSec(7200) == 7200, "a long analysis window is kept");
     expect(clampUpdatesPerMinute(0) == 1, "zero updates per minute becomes one");

@@ -27,9 +27,21 @@ void expectNear(double actual, double expected, const std::string& message)
     }
 }
 
-void testWorkedExample()
+// Fixed hop and scale so the numeric checks below stay exact.
+speechrate::Config referenceConfig()
 {
     speechrate::Config cfg;
+    cfg.frame = 240;
+    cfg.shift = 120;
+    cfg.smooth = 120;
+    cfg.minLengthMs = 5;
+    cfg.k1 = 0.71;
+    return cfg;
+}
+
+void testWorkedExample()
+{
+    speechrate::Config cfg = referenceConfig();
     const speechrate::Metrics metrics = speechrate::metricsFromLengths({ 4, 10 }, { 40 }, 10.0, cfg, 0, 0);
 
     expect(metrics.valid, "worked example is valid");
@@ -53,17 +65,32 @@ void testWorkedExample()
 
 void testIntegerMedian()
 {
-    speechrate::Config cfg;
+    speechrate::Config cfg = referenceConfig();
     const speechrate::Metrics metrics = speechrate::metricsFromLengths({ 4, 5 }, {}, 10.0, cfg);
     expectNear(metrics.vowelMedian, 4.0 * 120.0 / 8000.0, "even median uses integer division");
 }
 
+void testProductDefaults()
+{
+    const speechrate::Config cfg;
+    expect(cfg.frame == 64, "default frame is 64 samples");
+    expect(cfg.shift == 32, "default shift is 32 samples");
+    expect(cfg.smooth == 64, "default smooth window is 64 points");
+    expect(cfg.minLengthMs == 8, "default shortest vowel is 8 ms");
+    expectNear(cfg.k1, 0.41, "default speech-rate scale");
+    expectNear(cfg.k2, 1.2, "default articulation scale");
+    expectNear(cfg.k3, 0.30, "default pause scale");
+}
+
 void testMinLengthFrames()
 {
-    // Default shift is 120 samples, so one stored frame is 15 ms.
+    // A 120-sample shift makes one stored frame 15 ms.
     // 5 ms rounds up to that one frame. The old truncation returned 0 and
     // then required length > 0, which is the same gate.
-    expect(speechrate::minLengthFrames(120, 5) == 1, "default 5 ms needs one stored frame");
+    expect(speechrate::minLengthFrames(32, 8) == 2, "default 8 ms at a 32-sample shift needs two stored frames");
+    expect(speechrate::minLengthFrames(32, 4) == 1, "4 ms at a 32-sample shift is one stored frame");
+    expect(speechrate::minLengthFrames(32, 0) == 0, "0 ms at the default shift keeps a single intensity point");
+    expect(speechrate::minLengthFrames(120, 5) == 1, "5 ms at a 120-sample shift needs one stored frame");
     expect(speechrate::minLengthFrames(120, 0) == 0, "0 ms keeps a single intensity point");
     expect(speechrate::minLengthFrames(120, 1) == 1, "1 ms still needs a 15 ms run");
     expect(speechrate::minLengthFrames(120, 15) == 1, "15 ms is exactly one stored frame");
@@ -90,8 +117,8 @@ void testShortNucleusDropped()
     const std::vector<double> smoothed { 0, 0 };
     const std::vector<speechrate::Run> atZero = speechrate::vowelNuclei(normalized, smoothed, 0.009, 0);
     expect(atZero.size() == 1 && atZero[0].length == 0, "0 ms keeps a one-sample nucleus");
-    const std::vector<speechrate::Run> atDefault = speechrate::vowelNuclei(normalized, smoothed, 0.009, 1);
-    expect(atDefault.empty(), "the default gate drops a one-sample nucleus");
+    const std::vector<speechrate::Run> atOneFrame = speechrate::vowelNuclei(normalized, smoothed, 0.009, 1);
+    expect(atOneFrame.empty(), "a one-frame gate drops a one-sample nucleus");
 
     const std::vector<double> openRun { 1, 1, 1 };
     expect(speechrate::vowelNuclei(openRun, { 0, 0, 0 }, 0.009, 0).empty(),
@@ -101,7 +128,7 @@ void testShortNucleusDropped()
 
     const std::vector<double> longer { 1, 1, 0 };
     const std::vector<speechrate::Run> nuclei = speechrate::vowelNuclei(longer, { 0, 0, 0 }, 0.009, 1);
-    expect(nuclei.size() == 1, "two-sample nucleus passes the default gate");
+    expect(nuclei.size() == 1, "two-sample nucleus passes a one-frame gate");
     expect(nuclei[0].start == 0 && nuclei[0].length == 1, "stored length is run length minus one");
 }
 
@@ -129,7 +156,7 @@ void testMinLengthIsMonotonic()
     const int at100 = nucleiAt(100);
     expect(at0 == 6, "0 ms keeps every crafted nucleus");
     expect(at5 == 5, "5 ms drops only the single-point nucleus");
-    expect(at15 == at5, "5 ms and 15 ms share a gate at the default shift");
+    expect(at15 == at5, "5 ms and 15 ms share a gate at a 120-sample shift");
     expect(at30 == 4, "30 ms drops runs shorter than two frames");
     expect(at60 == 3, "60 ms keeps the three longest crafted runs");
     expect(at100 == 1, "100 ms keeps only the 105 ms crafted run");
@@ -166,7 +193,7 @@ VowelCounts mixedVowelCounts(int minLengthMs)
             cursor += length + gap;
         }
     }
-    speechrate::Config cfg;
+    speechrate::Config cfg = referenceConfig();
     cfg.minLengthMs = minLengthMs;
     const speechrate::Measurement measured = speechrate::measure(samples, cfg);
     const speechrate::RecordingSummary summary = speechrate::summarizeRecording(samples, cfg, 200);
@@ -214,13 +241,13 @@ void testGapsIgnoreTails()
 
 void testEmptyAndFlat()
 {
-    expect(!speechrate::analyze({}, {}).valid, "empty recording");
-    expect(!speechrate::analyze(std::vector<float>(1600, 0), {}).valid, "flat recording");
+    expect(!speechrate::analyze({}, referenceConfig()).valid, "empty recording");
+    expect(!speechrate::analyze(std::vector<float>(1600, 0), referenceConfig()).valid, "flat recording");
 }
 
 void testCollectedPhrases()
 {
-    speechrate::Config cfg;
+    speechrate::Config cfg = referenceConfig();
     speechrate::Parts first;
     first.vowelLengths = { 4, 10 };
     first.gapLengths = { 40 };
@@ -258,7 +285,7 @@ void testSpeechDurationUsesSampleCount()
     samples[1000] = 1000;
     samples[2000] = 5000;
     samples[4000] = 1000;
-    const speechrate::Metrics metrics = speechrate::analyze(samples, {});
+    const speechrate::Metrics metrics = speechrate::analyze(samples, referenceConfig());
     if (metrics.valid)
         expectNear(metrics.speechDuration, 10.0, "T_s is sample_count / 8000");
     else
@@ -291,8 +318,8 @@ void addSyllables(std::vector<float>& samples, double perSecond, double amplitud
 
 void testSilenceIsNotSpeech()
 {
-    expect(!speechrate::analyze(noise(80000, 30, 1), {}).valid, "quiet background noise is not speech");
-    expect(!speechrate::analyze(noise(80000, 200, 2), {}).valid, "loud background noise is not speech");
+    expect(!speechrate::analyze(noise(80000, 30, 1), referenceConfig()).valid, "quiet background noise is not speech");
+    expect(!speechrate::analyze(noise(80000, 200, 2), referenceConfig()).valid, "loud background noise is not speech");
 }
 
 void testSyllableRateSurvivesGate()
@@ -300,7 +327,7 @@ void testSyllableRateSurvivesGate()
     for (double rate : { 2.0, 4.0, 6.0 }) {
         std::vector<float> samples = noise(80000, 200, 3);
         addSyllables(samples, rate, 1500);
-        const speechrate::Metrics metrics = speechrate::analyze(samples, {});
+        const speechrate::Metrics metrics = speechrate::analyze(samples, referenceConfig());
         expect(metrics.valid, "syllable train is speech");
         expect(metrics.vowelCount == static_cast<int>(rate * 10), "every syllable is one nucleus");
         expectNear(speechrate::fillerPercent(metrics.fillerScore, 120, 240), 0.0, "even syllables are not fillers");
@@ -420,7 +447,7 @@ void testWholeRecordingSummary()
     cursor += vowel + static_cast<int>(0.05 * kRate);
     addTone(samples, cursor, vowel, 180, 6000);
 
-    const speechrate::RecordingSummary summary = speechrate::summarizeRecording(samples, {});
+    const speechrate::RecordingSummary summary = speechrate::summarizeRecording(samples, referenceConfig());
     expect(summary.valid, "framed recording is valid");
     expect(summary.vowelCount == 3, "three voiced bursts are three nuclei");
     expect(summary.phrasalPauseCount == 1, "only the 400 ms gap is a phrasal pause");
@@ -440,7 +467,7 @@ void testWholeRecordingSummary()
         histogramTotal += bin.count;
     expect(histogramTotal == summary.vowelCount, "histogram counts every vowel");
 
-    const speechrate::RecordingSummary strict = speechrate::summarizeRecording(samples, {}, 2000);
+    const speechrate::RecordingSummary strict = speechrate::summarizeRecording(samples, referenceConfig(), 2000);
     expect(strict.vowelCount == 3, "raising the pause threshold keeps the vowels");
     expect(strict.phrasalPauseCount == 0, "400 ms is below a 2 s pause threshold");
 
@@ -452,12 +479,12 @@ void testWholeRecordingSummary()
     for (int index = 0; index < 1600 && noiseAt + index < static_cast<int>(bridged.size()); ++index)
         bridged[static_cast<std::size_t>(noiseAt + index)] = static_cast<float>(dist(rng));
     addTone(bridged, noiseAt + 1600 + 400, vowel, 150, 6000);
-    const speechrate::RecordingSummary loudGap = speechrate::summarizeRecording(bridged, {});
+    const speechrate::RecordingSummary loudGap = speechrate::summarizeRecording(bridged, referenceConfig());
     expect(loudGap.vowelCount == 2, "loud unvoiced noise is not a vowel nucleus");
     expect(loudGap.phrasalPauseCount == 0, "a loud unvoiced gap is not a phrasal pause");
 
-    expect(!speechrate::summarizeRecording({}, {}).valid, "empty summary is not valid");
-    const speechrate::RecordingSummary quiet = speechrate::summarizeRecording(std::vector<float>(kRate, 0), {});
+    expect(!speechrate::summarizeRecording({}, referenceConfig()).valid, "empty summary is not valid");
+    const speechrate::RecordingSummary quiet = speechrate::summarizeRecording(std::vector<float>(kRate, 0), referenceConfig());
     expect(quiet.valid, "silence can still be framed");
     expect(quiet.vowelCount == 0 && quiet.phrasalPauseCount == 0, "silence has no vowels and no interior pause");
 }
@@ -498,7 +525,7 @@ void testSpeechSpan()
 
 void testDirectSpeechRatePublishing()
 {
-    speechrate::Config cfg;
+    speechrate::Config cfg = referenceConfig();
     speechrate::Metrics metrics = speechrate::metricsFromLengths({ 4, 10 }, { 40 }, 10.0, cfg);
     speechrate::applyPauseStats(metrics, 1, 2.0, 8.0, cfg);
     expectNear(metrics.legacySpeechRate, 0.71 * 2.0 * 60.0 / 10.0, "legacy speech rate uses the whole buffer");
@@ -567,7 +594,7 @@ void testWindowArticulationFormula()
     expectNear(speechrate::windowArticulationRate(-1, 10.0, 1.0, 0.71), 0.0,
         "a negative vowel count is a zero rate");
 
-    speechrate::Config cfg;
+    speechrate::Config cfg = referenceConfig();
     cfg.k5 = 0.71;
     speechrate::Metrics metrics = speechrate::metricsFromLengths({ 4, 10, 6, 8 }, { 20 }, 10.0, cfg);
     speechrate::applyPauseStats(metrics, 1, 1.0, 6.0, cfg);
@@ -640,7 +667,7 @@ std::vector<float> threeBursts()
 void testDirectPausesFromSignal()
 {
     const std::vector<float> samples = threeBursts();
-    speechrate::Config direct;
+    speechrate::Config direct = referenceConfig();
     const speechrate::Measurement measured = speechrate::measure(samples, direct);
     expect(measured.metrics.valid, "three bursts are measurable speech");
     expect(measured.metrics.pauseCount == 1, "the 80 ms closure is not a pause; the 400 ms gap is");
@@ -830,6 +857,7 @@ void testSessionSummary()
 
 int main()
 {
+    testProductDefaults();
     testWorkedExample();
     testIntegerMedian();
     testMinLengthFrames();

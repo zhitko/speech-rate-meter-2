@@ -1436,13 +1436,13 @@
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="882"/>
-        <source>Length of each loudness window, in audio samples at 8000 Hz (240 samples is 30 ms). Each intensity value is the mean absolute amplitude of this many samples. A longer window is smoother and blurs short sounds.</source>
-        <translation>Длина каждого окна громкости в отсчётах аудио при 8000 Гц (240 отсчётов — это 30 мс). Каждое значение интенсивности — средняя абсолютная амплитуда такого числа отсчётов. Более длинное окно сглаживает кривую и размывает короткие звуки.</translation>
+        <source>Length of each loudness window, in audio samples at 8000 Hz (64 samples is 8 ms). Each intensity value is the mean absolute amplitude of this many samples. A longer window is smoother and blurs short sounds.</source>
+        <translation>Длина каждого окна громкости в отсчётах аудио при 8000 Гц (64 отсчёта — это 8 мс). Каждое значение интенсивности — средняя абсолютная амплитуда такого числа отсчётов. Более длинное окно сглаживает кривую и размывает короткие звуки.</translation>
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="896"/>
-        <source>Step between neighbouring loudness windows, in samples at 8000 Hz. At 120 samples one intensity point is 15 ms. Every duration in the statistics is counted in these points, so this value sets the time resolution. Smaller is finer and slower.</source>
-        <translation>Шаг между соседними окнами громкости в отсчётах при 8000 Гц. При 120 отсчётах одна точка интенсивности равна 15 мс. Все длительности в статистике считаются в этих точках, поэтому значение задаёт разрешение по времени. Меньше — точнее и медленнее.</translation>
+        <source>Step between neighbouring loudness windows, in samples at 8000 Hz. At 32 samples one intensity point is 4 ms. Every duration in the statistics is counted in these points, so this value sets the time resolution. Smaller is finer and slower.</source>
+        <translation>Шаг между соседними окнами громкости в отсчётах при 8000 Гц. При 32 отсчётах одна точка интенсивности равна 4 мс. Все длительности в статистике считаются в этих точках, поэтому значение задаёт разрешение по времени. Меньше — точнее и медленнее.</translation>
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="907"/>
@@ -1451,8 +1451,8 @@
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="910"/>
-        <source>Number of loudness points averaged into the smoothed curve S. Vowels are the parts that rise above S. Default 120 points, which is 1.8 s at the default shift. A longer window follows only slow changes in loudness, so it reacts more slowly.</source>
-        <translation>Число точек громкости, которые усредняются в сглаженную кривую S, с которой сравниваются гласные. По умолчанию 120 точек, это 1,8 с при сдвиге по умолчанию. Более длинное окно следит только за медленными изменениями громкости и реагирует медленнее.</translation>
+        <source>Number of loudness points averaged into the smoothed curve S. Vowels are the parts that rise above S. Default 64 points, which is 256 ms at the default shift. A longer window follows only slow changes in loudness, so it reacts more slowly.</source>
+        <translation>Число точек громкости, которые усредняются в сглаженную кривую S, с которой сравниваются гласные. По умолчанию 64 точки, это 256 мс при сдвиге по умолчанию. Более длинное окно следит только за медленными изменениями громкости и реагирует медленнее.</translation>
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="921"/>
@@ -1466,8 +1466,8 @@
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="932"/>
-        <source>Vowel peaks shorter than this are ignored. Duration is the stored run, in steps of Shift/8000 (15 ms at the default shift). A peak is kept when that duration is at least this many milliseconds. 0 ms also keeps a single intensity point. The default 5 ms drops that point and keeps a run of 15 ms or longer, the same result as 15 ms. The step is one frame, 15 ms. Each kept peak must also reach a speech gate: its raw intensity must be at least max(80, 3 × the quiet floor), where the floor is the 10th percentile of the buffer. The same limit is used while recording and in the whole-recording summary.</source>
-        <translation>Пики гласных короче этого значения игнорируются. Длительность — это сохранённая серия, шагами Shift/8000 (15 мс при шаге по умолчанию). Пик остаётся, если эта длительность не короче заданных миллисекунд. 0 мс оставляет и одиночную точку интенсивности. Значение по умолчанию 5 мс отбрасывает эту точку и оставляет серию от 15 мс, тот же результат, что и 15 мс. Шаг — один кадр, 15 мс. Каждый оставшийся пик также должен пройти порог речи: его сырая интенсивность должна быть не ниже max(80; 3 × уровень тишины), где уровень тишины — 10-й процентиль буфера. Тот же предел действует и во время записи, и в сводке всей записи.</translation>
+        <source>Vowel peaks shorter than this are ignored. Duration is the stored run, in steps of Shift/8000 (4 ms at the default shift). A peak is kept when that duration is at least this many milliseconds. 0 ms also keeps a single intensity point. The default 8 ms drops that point and a 4 ms run, and keeps a run of 8 ms or longer. Each kept peak must also reach a speech gate: its raw intensity must be at least max(80, 3 × the quiet floor), where the floor is the 10th percentile of the buffer. The same limit is used while recording and in the whole-recording summary.</source>
+        <translation>Пики гласных короче этого значения игнорируются. Длительность — это сохранённая серия, шагами Shift/8000 (4 мс при шаге по умолчанию). Пик остаётся, если эта длительность не короче заданных миллисекунд. 0 мс оставляет и одиночную точку интенсивности. Значение по умолчанию 8 мс отбрасывает эту точку и серию в 4 мс, а оставляет серию от 8 мс. Каждый оставшийся пик также должен пройти порог речи: его сырая интенсивность должна быть не ниже max(80; 3 × уровень тишины), где уровень тишины — 10-й процентиль буфера. Тот же предел действует и во время записи, и в сводке всей записи.</translation>
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="954"/>
@@ -1486,8 +1486,8 @@
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="977"/>
-        <source>Converts vowels per minute into words per minute. It is a fixed calibration constant, not measured at runtime. Raising it raises the speech rate and Direct articulation in the same proportion. Used by both speech-rate methods and by Direct articulation. Window articulation uses K5 instead. Default 0.71.</source>
-        <translation>Переводит гласные в минуту в слова в минуту. Это фиксированная калибровочная константа, а не величина, измеряемая во время работы. Увеличение повышает темп речи и прямую артикуляцию в той же пропорции. Используется обоими методами темпа речи и прямой артикуляцией. Оконная артикуляция использует K5. По умолчанию 0,71.</translation>
+        <source>Converts vowels per minute into words per minute. It is a fixed calibration constant, not measured at runtime. Raising it raises the speech rate and Direct articulation in the same proportion. Used by both speech-rate methods and by Direct articulation. Window articulation uses K5 instead. Default 0.41.</source>
+        <translation>Переводит гласные в минуту в слова в минуту. Это фиксированная калибровочная константа, а не величина, измеряемая во время работы. Увеличение повышает темп речи и прямую артикуляцию в той же пропорции. Используется обоими методами темпа речи и прямой артикуляцией. Оконная артикуляция использует K5. По умолчанию 0,41.</translation>
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="990"/>
@@ -1506,8 +1506,8 @@
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="1002"/>
-        <source>Scales the Window articulation rate. It converts vowels per minute into words per minute for that method, the same role K1 has for Direct. Default 0.71, matching K1, so the two rates share a scale. Raising it raises only the Window rate. K4 stays the filler scale.</source>
-        <translation>Масштабирует оконный темп артикуляции. Переводит гласные в минуту в слова в минуту для этого метода, ту же роль, что K1 для прямого. По умолчанию 0,71, как у K1, поэтому обе оценки в одном масштабе. Увеличение повышает только оконный темп. K4 остаётся масштабом заполнителей.</translation>
+        <source>Scales the Window articulation rate. It converts vowels per minute into words per minute for that method, the same role K1 has for Direct. Default 0.71. Raising it raises only the Window rate. K4 stays the filler scale.</source>
+        <translation>Масштабирует оконный темп артикуляции. Переводит гласные в минуту в слова в минуту для этого метода, ту же роль, что K1 для прямого. По умолчанию 0,71. Увеличение повышает только оконный темп. K4 остаётся масштабом заполнителей.</translation>
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="1010"/>

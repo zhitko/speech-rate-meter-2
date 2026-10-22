@@ -62,19 +62,19 @@ struct AppSettings {
     double autoCorrEnergyThreshold = 0.02;
 
     int meanValueDegry = 3;
-    double speechRateK1 = 0.71;
+    double speechRateK1 = 0.41;
     double speechRateMin = 70;
     double speechRateMax = 210;
     double articulationK2 = 1.2;
     double articulationMin = 70;
     double articulationMax = 210;
     double pausesK3 = 0.30;
-    int intensityFrame = 240;
-    int intensityShift = 120;
-    int intensitySmooth = 120;
-    int segmentMinLengthMs = 5;
+    int intensityFrame = 64;
+    int intensityShift = 32;
+    int intensitySmooth = 64;
+    int segmentMinLengthMs = 8;
     double fillerK4 = 100;
-    // Window articulation scale. Matches K1 so the rates share a scale.
+    // Window articulation scale. Stored separately from K1.
     double windowK5 = 0.71;
     double fillerMin = 120;
     double fillerMax = 240;

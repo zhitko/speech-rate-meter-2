@@ -194,7 +194,7 @@ Settings::loadSettings()
 
     qsettings.beginGroup("speechRate");
     settings.meanValueDegry = qsettings.value("MeanValueDegry", 3).toInt();
-    settings.speechRateK1 = qsettings.value("K1", 0.71).toDouble();
+    settings.speechRateK1 = qsettings.value("K1", 0.41).toDouble();
     settings.speechRateMin = qsettings.value("Min", 70).toDouble();
     settings.speechRateMax = qsettings.value("Max", 210).toDouble();
     qsettings.endGroup();
@@ -211,13 +211,13 @@ Settings::loadSettings()
     qsettings.endGroup();
 
     qsettings.beginGroup("intensity");
-    settings.intensityFrame = qsettings.value("frame", 240).toInt();
-    settings.intensityShift = qsettings.value("shift", 120).toInt();
-    settings.intensitySmooth = qsettings.value("smoothFrame", 120).toInt();
+    settings.intensityFrame = qsettings.value("frame", 64).toInt();
+    settings.intensityShift = qsettings.value("shift", 32).toInt();
+    settings.intensitySmooth = qsettings.value("smoothFrame", 64).toInt();
     qsettings.endGroup();
 
     qsettings.beginGroup("segmentsByIntensity");
-    settings.segmentMinLengthMs = std::clamp(qsettings.value("minimumLength", 5).toInt(), 0, 2000);
+    settings.segmentMinLengthMs = std::clamp(qsettings.value("minimumLength", 8).toInt(), 0, 2000);
     qsettings.endGroup();
 
     qsettings.beginGroup("fillerSounds");
