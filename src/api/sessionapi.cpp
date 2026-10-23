@@ -1,6 +1,7 @@
 #include "sessionapi.h"
 
 #include "helpers/logger.h"
+#include "livecadence.h"
 #include "helpers/settings.h"
 #include "src/services/sessionstore.h"
 #include "src/services/speechrateanalysis.h"
@@ -40,16 +41,11 @@
 
 namespace {
 
-constexpr int kSampleRate = 8000;
-constexpr int kHop = 64;
-constexpr int kVadFrame = 128;
-constexpr qint64 kPadSamples = kSampleRate * 300 / 1000;
-// A phrase shorter than this is not stored.
-constexpr qint64 kMinPhraseSamples = kSampleRate;
+constexpr int kSampleRate = LiveCapture::kSampleRate;
+constexpr int kHop = LiveCapture::kHop;
+constexpr int kVadFrame = LiveCapture::kVadFrame;
 // Live numbers need at least this much audio in the window.
-constexpr qint64 kMinWindowSamples = kSampleRate * 3 / 2;
-// Longer speech without a pause is stored as several segments.
-constexpr qint64 kMaxSegmentSamples = kSampleRate * 15;
+constexpr qint64 kMinWindowSamples = LiveCapture::kMinWindowSamples;
 
 QString stamp(const QDateTime& time)
 {
@@ -749,27 +745,12 @@ public slots:
         m_settings = Settings::loadSettings();
         m_useSpeechDetection = m_settings.autoCalibrate;
         m_settingsTimer.start();
-        m_pcm.clear();
         m_sessionSamples.clear();
-        m_recent.clear();
-        m_origin = 0;
-        m_fed = 0;
-        m_phraseSpeaking = false;
-        m_padLeading = true;
-        m_dropped = false;
-        m_speechStart = 0;
-        m_speechEnd = 0;
-        m_silenceFrames = 0;
-        m_clockCounted = 0;
-        m_clockRunStart = -1;
-        m_clockLastSpeech = 0;
-        m_clockCursor = 0;
-        m_clockFloor = -1;
-        m_clockFed = 0;
+        m_take.start(m_settings.updatesPerMinute, m_settings.analysisWindowSec);
+        m_take.setPauseLimitMs(m_settings.autoStopSilenceDuration);
+        m_clock.start();
         m_sentSpeechSeconds = -1;
-        m_epoch = 0;
-        m_queue->setPhraseEpoch(m_epoch);
-        m_liveTimer.invalidate();
+        m_queue->setPhraseEpoch(m_take.epoch());
 
         const QDateTime started = QDateTime::currentDateTime();
         m_sessionId = started.toString(QStringLiteral("yyyyMMdd-HHmmss-zzz"));
@@ -821,7 +802,7 @@ public slots:
         }
         connect(m_io, &QIODevice::readyRead, this, &CaptureWorker::onReadyRead);
         m_running = true;
-        emit phaseUpdated(SessionApi::Listening, 0, m_epoch);
+        emit phaseUpdated(SessionApi::Listening, 0, m_take.epoch());
         LOG_INFO() << "Session started" << m_sessionId;
     }
 
@@ -829,10 +810,10 @@ public slots:
     {
         if (!m_running)
             return;
-        if (m_phraseSpeaking)
-            closePhrase(false, true);
+        if (m_take.phraseSpeaking())
+            dispatch(m_take.closeForStop(), false);
         publishSpeechClock();
-        const int countedSpeech = speechClockSeconds();
+        const int countedSpeech = m_take.speechClockSeconds();
         finishAudio();
         // End the session before the whole-file summary so the mean values
         // are not held behind that pass. The summary follows on the same thread.
@@ -890,30 +871,27 @@ private slots:
         const qreal level = std::min(1.0, (static_cast<double>(absSum) / samples.size()) / 4000.0);
         emit levelUpdated(level);
 
-        m_pcm.insert(m_pcm.end(), samples.begin(), samples.end());
-        m_fed += static_cast<qint64>(samples.size());
+        m_take.setRates(m_settings.updatesPerMinute, m_settings.analysisWindowSec);
+        m_take.setPauseLimitMs(m_settings.autoStopSilenceDuration);
+        m_take.append(samples.data(), static_cast<int>(samples.size()));
+        m_chunkNowMs = m_clock.elapsed();
         // Keep the whole take, including silence between phrases, for the
-        // one-shot summary. The rolling m_pcm buffer is still trimmed.
+        // one-shot summary. LiveCapture trims its own rolling buffer.
         if (m_sessionSamples.capacity() < m_sessionSamples.size() + samples.size()) {
             m_sessionSamples.reserve(m_sessionSamples.size() + samples.size()
                 + static_cast<std::size_t>(kSampleRate * 30));
         }
         for (qint16 sample : samples)
             m_sessionSamples.push_back(static_cast<float>(sample));
+        publishSpeechClock();
 
         if (!m_useSpeechDetection) {
-            // The whole take is one phrase. Numbers update from the first sample
-            // and a pause does not close it. Speech time still follows loudness,
-            // so the wait before speech and a long pause stay out of the total.
-            if (!m_phraseSpeaking)
-                beginPhrase(0, m_fed);
-            else
-                m_speechEnd = m_fed;
-            cutIfTooLong();
-            notePhase();
-            publishLive();
-            advanceSpeechClock();
-            trim();
+            // The whole take is one phrase. A pause does not close it.
+            // Gauges and the tempo chart wait for the updates-per-minute
+            // cadence. A 15 s cut stores a segment without publishing.
+            // Speech time is the loudness clock and ticks once a second.
+            dispatch(m_take.advanceContinuous(m_chunkNowMs));
+            m_take.trim();
             return;
         }
 
@@ -934,8 +912,7 @@ private slots:
                 onFrame(frame, energy[index], m_corr->getU(frame));
             }
         }
-        advanceSpeechClock();
-        trim();
+        m_take.trim();
     }
 
 private:
@@ -955,49 +932,12 @@ private:
         emit levelUpdated(0);
     }
 
-    qint64 span() const
-    {
-        return std::max<qint64>(0, m_speechEnd - m_speechStart);
-    }
-
-    bool longEnough() const
-    {
-        return span() >= kMinPhraseSamples;
-    }
-
-    qint64 openSamples() const
-    {
-        return std::max<qint64>(0, m_speechEnd - leadingStart());
-    }
-
-    qint64 windowSamples() const
-    {
-        return static_cast<qint64>(clampAnalysisWindowSec(m_settings.analysisWindowSec)) * kSampleRate;
-    }
-
-    bool windowReady() const
-    {
-        return static_cast<qint64>(m_recent.size()) + openSamples() >= kMinWindowSamples;
-    }
-
-    int liveIntervalMs() const
-    {
-        // 1 per minute waits 60 s. Above 60000 the wait stays 1 ms.
-        return liveUpdateIntervalMs(m_settings.updatesPerMinute);
-    }
-
-    void bumpEpoch()
-    {
-        ++m_epoch;
-        m_queue->setPhraseEpoch(m_epoch);
-    }
-
     void onFrame(int frameIndex, double energy, double correlation)
     {
         if (frameIndex < 0 || !m_running)
             return;
 
-        const bool inPhrase = m_phraseSpeaking;
+        const bool inPhrase = m_take.phraseSpeaking();
         const bool energySpeech = m_energy->isSpeech(energy, inPhrase);
         const bool correlationSpeech = m_corr->isSpeech(correlation, inPhrase);
         bool speech = energySpeech;
@@ -1010,71 +950,10 @@ private:
 
         const qint64 frameStart = static_cast<qint64>(frameIndex) * kHop;
         const qint64 frameEnd = frameStart + kVadFrame;
-        if (speech) {
-            m_silenceFrames = 0;
-            if (!m_phraseSpeaking)
-                beginPhrase(frameStart, frameEnd);
-            else {
-                m_speechEnd = std::max(m_speechEnd, frameEnd);
-                cutIfTooLong();
-                notePhase();
-                publishLive();
-            }
-        } else if (m_phraseSpeaking) {
-            ++m_silenceFrames;
-            const int silenceMs = (m_silenceFrames * kHop * 1000) / kSampleRate;
-            if (silenceMs >= m_settings.autoStopSilenceDuration)
-                closePhrase(true, false);
-        }
-    }
-
-    void beginPhrase(qint64 start, qint64 end)
-    {
-        m_phraseSpeaking = true;
-        m_padLeading = true;
-        m_dropped = false;
-        m_speechStart = start;
-        m_speechEnd = end;
-        m_phraseStartedAt = QDateTime::currentDateTime();
-        m_silenceFrames = 0;
-        bumpEpoch();
-        m_liveTimer.invalidate();
-        notePhase();
-    }
-
-    void cutIfTooLong()
-    {
-        while (m_phraseSpeaking && span() >= kMaxSegmentSamples) {
-            const qint64 cut = m_speechStart + kMaxSegmentSamples;
-            const std::vector<float> buffer = extract(leadingStart(), cut);
-            const QDateTime ended = QDateTime::currentDateTime();
-            postFinal(buffer, m_phraseStartedAt, ended);
-            m_speechStart = cut;
-            m_padLeading = false;
-            m_phraseStartedAt = ended;
-            if (m_speechEnd < m_speechStart)
-                m_speechEnd = m_speechStart;
-            bumpEpoch();
-            m_liveTimer.invalidate();
-        }
-    }
-
-    void closePhrase(bool pause, bool sessionEnding)
-    {
-        const bool keep = longEnough();
-        if (keep) {
-            const qint64 end = m_speechEnd + kPadSamples;
-            postFinal(extract(leadingStart(), end), m_phraseStartedAt, QDateTime::currentDateTime());
-        } else if (pause) {
-            m_dropped = true;
-        }
-        m_phraseSpeaking = false;
-        m_speechStart = 0;
-        m_speechEnd = 0;
-        m_silenceFrames = 0;
-        bumpEpoch();
-        if (!sessionEnding)
-            notePhase();
+        if (speech)
+            dispatch(m_take.advanceSpeech(frameStart, frameEnd, m_chunkNowMs));
+        else if (m_take.phraseSpeaking())
+            dispatch(m_take.advanceSilence(m_settings.autoStopSilenceDuration));
     }
 
     void notePhase()
@@ -1083,66 +962,33 @@ private:
             return;
         int phase = SessionApi::Listening;
         int seconds = 0;
-        if (m_phraseSpeaking) {
-            seconds = static_cast<int>(span() / kSampleRate);
-            phase = windowReady() ? SessionApi::Measuring : SessionApi::TooShort;
-        } else if (m_dropped) {
+        if (m_take.phraseSpeaking()) {
+            seconds = m_take.phraseSeconds();
+            phase = m_take.windowReady() ? SessionApi::Measuring : SessionApi::TooShort;
+        } else if (m_take.dropped()) {
             phase = SessionApi::Dropped;
         }
-        if (phase == m_sentPhase && seconds == m_sentSeconds && m_epoch == m_sentEpoch)
+        const int epoch = m_take.epoch();
+        if (phase == m_sentPhase && seconds == m_sentSeconds && epoch == m_sentEpoch)
             return;
         m_sentPhase = phase;
         m_sentSeconds = seconds;
-        m_sentEpoch = m_epoch;
-        emit phaseUpdated(phase, seconds, m_epoch);
+        m_sentEpoch = epoch;
+        emit phaseUpdated(phase, seconds, epoch);
     }
 
-    void publishLive()
-    {
-        if (!m_phraseSpeaking || !windowReady())
-            return;
-        if (m_liveTimer.isValid() && m_liveTimer.elapsed() < liveIntervalMs())
-            return;
-        m_liveTimer.start();
-        const std::vector<float> open = extract(leadingStart(), m_speechEnd);
-        const std::size_t window = static_cast<std::size_t>(windowSamples());
-        Job job;
-        job.kind = JobKind::Live;
-        if (open.size() >= window) {
-            job.samples.assign(open.end() - static_cast<std::ptrdiff_t>(window), open.end());
-        } else {
-            const std::size_t fromRecent = std::min(m_recent.size(), window - open.size());
-            job.samples.reserve(fromRecent + open.size());
-            job.samples.insert(job.samples.end(),
-                m_recent.end() - static_cast<std::ptrdiff_t>(fromRecent), m_recent.end());
-            job.samples.insert(job.samples.end(), open.begin(), open.end());
-        }
-        job.openSeconds = static_cast<double>(open.size()) / kSampleRate;
-        job.config = configFrom(m_settings);
-        job.fillerMin = m_settings.fillerMin;
-        job.fillerMax = m_settings.fillerMax;
-        job.phraseEpoch = m_epoch;
-        job.generation = m_generation;
-        job.sessionId = m_sessionId;
-        job.sessionStartedAt = m_sessionStartedAt;
-        m_queue->pushLive(std::move(job));
-    }
-
-    void postFinal(const std::vector<float>& samples, const QDateTime& started, const QDateTime& ended)
+    void postClosed(const std::vector<float>& samples, const QDateTime& started,
+        const QDateTime& ended, int epoch)
     {
         if (samples.empty())
             return;
-        m_recent.insert(m_recent.end(), samples.begin(), samples.end());
-        const qint64 cap = windowSamples();
-        if (m_recent.size() > static_cast<std::size_t>(cap))
-            m_recent.erase(m_recent.begin(), m_recent.end() - static_cast<std::ptrdiff_t>(cap));
         Job job;
         job.kind = JobKind::Final;
         job.samples = samples;
         job.config = configFrom(m_settings);
         job.fillerMin = m_settings.fillerMin;
         job.fillerMax = m_settings.fillerMax;
-        job.phraseEpoch = m_epoch;
+        job.phraseEpoch = epoch;
         job.generation = m_generation;
         job.sessionId = m_sessionId;
         job.sessionStartedAt = m_sessionStartedAt;
@@ -1151,151 +997,58 @@ private:
         m_queue->pushOrdered(std::move(job));
     }
 
-    qint64 pauseLimitSamples() const
-    {
-        const int milliseconds = std::max(0, m_settings.autoStopSilenceDuration);
-        return static_cast<qint64>(milliseconds) * kSampleRate / 1000;
-    }
-
-    // Loudness, not the phrase-cutting gate. That gate stays at its default
-    // of 10000 unless the user calibrates, so it reports silence through a
-    // normal take and the speech total stays at 0.
-    bool loudSpeech(qint64 frameStart, qint64 frameEnd) const
-    {
-        qint64 start = frameStart;
-        qint64 end = frameEnd;
-        if (start < m_origin)
-            start = m_origin;
-        const qint64 available = m_origin + static_cast<qint64>(m_pcm.size());
-        if (end > available)
-            end = available;
-        if (end <= start)
-            return false;
-        double sum = 0;
-        for (qint64 index = start; index < end; ++index)
-            sum += std::abs(static_cast<int>(m_pcm[static_cast<std::size_t>(index - m_origin)]));
-        const double level = sum / static_cast<double>(end - start);
-
-        // A frame this quiet is background. Anything louder counts as speech
-        // until a floor has been learned, and then it must also clear that floor.
-        constexpr double kQuiet = 200.0;
-        if (m_clockFloor < 0) {
-            if (level < kQuiet)
-                m_clockFloor = level;
-            return level >= kQuiet;
-        }
-        if (level < m_clockFloor)
-            m_clockFloor = level;
-        else if (level < m_clockFloor * 2.0)
-            m_clockFloor += (level - m_clockFloor) * 0.02;
-        const double gate = std::max(kQuiet, m_clockFloor * 3.0 + 120.0);
-        return level >= gate;
-    }
-
-    // Speech time is the detected speech, plus a pause only while that pause
-    // is still within Pause (s). Time before the first speech frame is left
-    // out. Once a pause runs past that setting, the extra silence is left out
-    // and counting waits for the next speech frame.
-    void advanceSpeechClock()
-    {
-        while (m_clockFed + kHop <= m_fed) {
-            noteSpeechClock(m_clockFed, m_clockFed + kHop);
-            m_clockFed += kHop;
-        }
-    }
-
-    void noteSpeechClock(qint64 frameStart, qint64 frameEnd)
-    {
-        const bool speech = loudSpeech(frameStart, frameEnd);
-        if (frameEnd > m_clockCursor)
-            m_clockCursor = frameEnd;
-        const qint64 limit = pauseLimitSamples();
-        if (speech) {
-            if (m_clockRunStart < 0) {
-                m_clockRunStart = frameStart;
-                m_clockLastSpeech = frameEnd;
-            } else {
-                m_clockLastSpeech = std::max(m_clockLastSpeech, frameEnd);
-            }
-        } else if (m_clockRunStart >= 0 && frameEnd - m_clockLastSpeech > limit) {
-            m_clockCounted += std::max<qint64>(0, m_clockLastSpeech + limit - m_clockRunStart);
-            m_clockRunStart = -1;
-        }
-        publishSpeechClock();
-    }
-
-    qint64 speechClockSamples() const
-    {
-        if (m_clockRunStart < 0)
-            return m_clockCounted;
-        qint64 end = m_clockCursor;
-        if (end > m_clockLastSpeech) {
-            const qint64 gap = end - m_clockLastSpeech;
-            const qint64 limit = pauseLimitSamples();
-            if (gap > limit)
-                end = m_clockLastSpeech + limit;
-        }
-        return m_clockCounted + std::max<qint64>(0, end - m_clockRunStart);
-    }
-
-    int speechClockSeconds() const
-    {
-        return static_cast<int>(speechClockSamples() / kSampleRate);
-    }
-
+    // Speech time is counted inside LiveCapture. Emit only when the integer
+    // second changes. This does not queue a gauge or chart publish.
     void publishSpeechClock()
     {
-        const int seconds = speechClockSeconds();
+        const int seconds = m_take.speechClockSeconds();
         if (seconds == m_sentSpeechSeconds)
             return;
         m_sentSpeechSeconds = seconds;
         emit speechSecondsUpdated(seconds, m_generation);
     }
 
-    qint64 leadingStart() const
+    void pushLive(const LiveCapture::Reading& reading)
     {
-        if (!m_padLeading)
-            return m_speechStart;
-        return m_speechStart - kPadSamples;
+        Job job;
+        job.kind = JobKind::Live;
+        job.samples = reading.samples;
+        job.openSeconds = reading.openSeconds;
+        job.config = configFrom(m_settings);
+        job.fillerMin = m_settings.fillerMin;
+        job.fillerMax = m_settings.fillerMax;
+        job.phraseEpoch = reading.epoch;
+        job.generation = m_generation;
+        job.sessionId = m_sessionId;
+        job.sessionStartedAt = m_sessionStartedAt;
+        m_queue->pushLive(std::move(job));
     }
 
-    std::vector<float> extract(qint64 start, qint64 end) const
+    void dispatch(const LiveCapture::Update& update, bool announcePhase = true)
     {
-        if (start < m_origin)
-            start = m_origin;
-        const qint64 available = m_origin + static_cast<qint64>(m_pcm.size());
-        if (end > available)
-            end = available;
-        if (end < start)
-            end = start;
-        std::vector<float> samples;
-        samples.reserve(static_cast<std::size_t>(end - start));
-        for (qint64 index = start; index < end; ++index)
-            samples.push_back(static_cast<float>(m_pcm[static_cast<std::size_t>(index - m_origin)]));
-        return samples;
-    }
-
-    void trim()
-    {
-        // Keep a second of audio before the 300 ms pad so a late VAD decision
-        // can still include the leading pad.
-        qint64 keep = m_fed - (kPadSamples + kSampleRate);
-        if (m_phraseSpeaking)
-            keep = leadingStart();
-        if (keep < m_origin)
-            keep = m_origin;
-        const qint64 drop = keep - m_origin;
-        if (drop <= 0 || drop > static_cast<qint64>(m_pcm.size()))
-            return;
-        m_pcm.erase(m_pcm.begin(), m_pcm.begin() + static_cast<std::ptrdiff_t>(drop));
-        m_origin = keep;
+        if (update.began)
+            m_phraseStartedAt = QDateTime::currentDateTime();
+        // Publish the segment id before the live job so a cut still drops a
+        // buffer that was queued for the previous segment. The cadence clock
+        // lives in LiveCapture and is not restarted here.
+        m_queue->setPhraseEpoch(update.epoch);
+        for (const LiveCapture::ClosedSegment& closed : update.closed) {
+            const QDateTime ended = QDateTime::currentDateTime();
+            postClosed(closed.samples, m_phraseStartedAt, ended, closed.epoch);
+            m_phraseStartedAt = ended;
+        }
+        if (update.hasReading)
+            pushLive(update.reading);
+        if (announcePhase)
+            notePhase();
     }
 
     JobQueue* m_queue = nullptr;
     bool m_running = false;
     AppSettings m_settings;
     QElapsedTimer m_settingsTimer;
-    QElapsedTimer m_liveTimer;
+    QElapsedTimer m_clock;
+    qint64 m_chunkNowMs = 0;
     QAudioDevice m_device;
     std::unique_ptr<QAudioSource> m_source;
     QIODevice* m_io = nullptr;
@@ -1303,29 +1056,11 @@ private:
     std::unique_ptr<VADEnergyService> m_energy;
     std::unique_ptr<VADAutocorrelationService> m_corr;
 
-    std::vector<qint16> m_pcm;
+    LiveCapture m_take;
     // Resampled session audio at 8 kHz. Released into the summarize job on Stop.
     std::vector<float> m_sessionSamples;
-    // Audio of the segments already closed in this session, newest last.
-    // Live windows continue from it across pauses.
-    std::deque<float> m_recent;
-    qint64 m_origin = 0;
-    qint64 m_fed = 0;
     bool m_useSpeechDetection = false;
-    bool m_phraseSpeaking = false;
-    bool m_padLeading = true;
-    bool m_dropped = false;
-    qint64 m_speechStart = 0;
-    qint64 m_speechEnd = 0;
-    qint64 m_clockCounted = 0;
-    qint64 m_clockRunStart = -1;
-    qint64 m_clockLastSpeech = 0;
-    qint64 m_clockCursor = 0;
-    mutable double m_clockFloor = -1;
-    qint64 m_clockFed = 0;
     int m_sentSpeechSeconds = -1;
-    int m_silenceFrames = 0;
-    int m_epoch = 0;
     int m_sentPhase = -1;
     int m_sentSeconds = -1;
     int m_sentEpoch = -1;
@@ -1796,6 +1531,12 @@ void SessionApi::applyMetrics(const QVariantMap& metrics)
         return;
     if (phrase.valid)
         acc.addPhrase(phrase);
+    // Gauges and the tempo chart move only on a live snapshot. Storing a
+    // segment must not paint them while recording. Speech time is the 1 s
+    // clock (applySpeechSeconds) and is not updated here. Stop still paints
+    // the summary from this accumulator.
+    if (!segmentClosePaintsScreen(m_sessionActive, m_stopPending))
+        return;
     if (!m_hasResult) {
         showMetrics(metricsToMap(acc.metrics, acc.fillerMin, acc.fillerMax, false, 0, true),
             m_useSpeechClock ? m_speechDuration : acc.metrics.speechDuration);
