@@ -119,7 +119,7 @@ The analysis window is the audio of the kept segments of this session, joined en
 - When a segment closes, its final analysis is stored in the session file and added to the session collection. While recording, that close leaves the gauges and the chart as they were; those move on the next live snapshot. Speech time keeps ticking once a second. The buffer is then released.
 - After Stop, once the last segment is stored, Home shows that mean. That final switch is not recorded as a shown change.
 - Speech is a clock of detected speech since Start. It advances once a second while speech is detected, and through a pause only until that pause reaches Pause (s). Silence before the first detected speech, and any silence after the pause setting, is not included. It is not the recording timer, and it is not the analyzed buffer length. It does not follow Updates per minute or the analysis window.
-- Open File is a single whole-file analysis for the tiles, the arcs, and the whole-recording card. It is not joined with a session. The tempo chart additionally samples non-overlapping analysis windows over the last Chart window of the file. With Use all readings on, each of those points is the median of every window from the start of that span. With it off, each point is the gauge median of the last few windows, using the same count and middle-value rule as the arcs. A file shorter than one window is one point, the whole-file pace, which is also what the arcs show.
+- Open File is a single whole-file analysis for the tiles, the arcs, and the whole-recording card. It is not joined with a session. The tempo chart uses the same cadence as the microphone: one point every `max(1, 60000 / Updates per minute)` ms, each measured on the last Analysis window seconds of the file ending at that time. Near the start the window is only as long as the audio so far, and it is never shorter than 1.5 s. Each point is stamped at the window end, including a point at the end of the file. Only the last Chart window seconds are drawn. With Use all readings on, each drawn point is the median of every reading from the start of that span. With it off, each point is the gauge median of the last few readings in that span, with the same count and middle-value rule as the arcs. Speech rate and articulation keep separate medians. The arcs stay the whole-file pace. A file shorter than 1.5 s adds no chart sample of its own; the chart then shows one point, that whole-file pace.
 
 **Files**
 
@@ -617,9 +617,9 @@ Everyday labels use plain units. Silence Duration is edited in seconds and store
 
 | On screen | Stored setting | Default | Hint |
 | --- | --- | --- | --- |
-| Analysis window (s) | `General/analysisWindowSec` | 10 s | Recent speech used on Home. Shorter reacts faster. At least 3 s. No upper limit. A stored value below 3 loads as 3. Any larger stored value is kept. |
-| Updates per minute | `General/updatesPerMinute` | 60 | How often Home updates while you speak. At least 1 (once a minute). No upper limit. The wait is at least 1 ms. A stored value below 1 loads as 1. |
-| Chart window (s) | `General/tempoChartWindowSec` | 300 s | How much of the tempo chart stays on screen. A point is added on each live update. Range 30…1800. |
+| Analysis window (s) | `General/analysisWindowSec` | 10 s | Recent speech used on Home and for each Open File chart point. Shorter reacts faster. At least 3 s. No upper limit. A stored value below 3 loads as 3. Any larger stored value is kept. |
+| Updates per minute | `General/updatesPerMinute` | 60 | How often Home updates while you speak, and how often Open File adds a chart point. At least 1 (once a minute). No upper limit. The wait is at least 1 ms. A stored value below 1 loads as 1. |
+| Chart window (s) | `General/tempoChartWindowSec` | 300 s | How much of the tempo chart stays on screen. A point is added on each live update and on each Open File sample. Range 30…1800. |
 | While recording | `General/recordingView` | Tempo chart (`0`) | What Home shows while recording. Tempo chart is `0`, Arcs is `1`. After Stop both can appear when there is a result. |
 | Gauge | `General/gaugeMode` | Speech rate (`0`) | One pace, or both: speech rate outside, articulation inside. Articulation rate is `1`, Both is `2`. A pace on the gauge is not also a tile. |
 | Show Speech rate tile | `General/showSpeechRateTile` | on | Shows the speech-rate card. The switch is disabled, and the card stays hidden, when Gauge is Speech rate or Both. |
@@ -772,7 +772,7 @@ This example is only a check of the formula wiring. It uses `K1 = 0.71` and `SHI
 
 ## 12. Platform behavior worth copying
 
-- Capture, pause cutting, and analysis run off the UI thread. Headline metrics of the analysis window update during an open segment (section 1.2), at most Updates per minute times per minute. Open File is still a single whole-file analysis.
+- Capture, pause cutting, and analysis run off the UI thread. Headline metrics of the analysis window update during an open segment (section 1.2), at most Updates per minute times per minute. Open File still measures the whole file once for the arcs, the tiles, and the whole-recording card. Its tempo chart follows Updates per minute and the analysis window.
 - One application-level `SessionApi` instance owns capture, analysis queues, the open-session accumulator, history access, and the result exposed to every page. Pages obtain that shared instance from the application window; they do not construct per-screen analysis backends. `SettingsApi` is likewise application-level. Details reads the metrics already published by `SessionApi` and does not re-read scratch audio.
 - Logging: one Qt message handler appends each Qt log line to `logs.txt` in the process working directory, prefixed with 24-hour local time `dd.MM.yyyy HH:mm:ss:zzz`. `main.cpp` does not initialize a second `FileLogger` sink.
 - Android package id `by.intoncore.SpeechRateMeter2`, versionName `1.0.0`, versionCode `18`. The only declared permission is `RECORD_AUDIO`.

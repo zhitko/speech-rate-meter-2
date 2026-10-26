@@ -359,7 +359,7 @@ Page {
 
                         FieldLabel {
                             text: qsTr("Analysis window (s)")
-                            help: qsTr("Length of the recent speech used for the live numbers on Home. The app joins the kept phrases of this session and the phrase in progress, keeps only the last N seconds, and runs the whole analysis on that buffer. The vowel count, speaking span and pauses all come from this buffer, so a shorter window reacts faster but has fewer vowels and noisier numbers. At least 3 s, default 10 s. No upper limit.")
+                            help: qsTr("Length of the recent speech used for the live numbers on Home, and for each point on the Open File tempo chart. While recording, the app joins the kept phrases of this session and the phrase in progress, keeps only the last N seconds, and runs the whole analysis on that buffer. Open File measures each chart point on the last N seconds of the file ending at that point, shorter near the start of the file. The vowel count, speaking span and pauses all come from this buffer, so a shorter window reacts faster but has fewer vowels and noisier numbers. At least 3 s, default 10 s. No upper limit.")
                             formula: "buffer = last N seconds of (kept phrases + phrase in progress)"
                         }
                         SpinBox {
@@ -372,12 +372,12 @@ Page {
                             Layout.fillWidth: true
                         }
                         Hint {
-                            text: qsTr("Recent speech used on Home. Shorter reacts faster.")
+                            text: qsTr("Recent speech used on Home and for Open File. Shorter reacts faster.")
                         }
 
                         FieldLabel {
                             text: qsTr("Updates per minute")
-                            help: qsTr("How often the live numbers are recalculated while you speak. The interval is 60000 divided by this value, in milliseconds. Fewer updates make the tempo curve less jittery. Changing it changes only the refresh rate, not the values. If a new buffer is ready before the previous analysis finishes, the older run is dropped. With Detect speech automatically on, new snapshots start only on speech frames. At least 1 per minute (once a minute), default 60 (once a second). No upper limit. Above 60000 the wait stays 1 ms. Gauge median still smooths the last few readings, and the chart keeps one point from each update inside its window (default 300 s).")
+                            help: qsTr("How often the live numbers are recalculated while you speak, and how often Open File places a tempo-chart point. The interval is 60000 divided by this value, in milliseconds. Fewer updates make the tempo curve less jittery. Changing it changes only the refresh rate, not the values. If a new buffer is ready before the previous analysis finishes, the older run is dropped. With Detect speech automatically on, new snapshots start only on speech frames. At least 1 per minute (once a minute), default 60 (once a second). No upper limit. Above 60000 the wait stays 1 ms. Gauge median still smooths the last few readings, and the chart keeps one point from each update inside its window (default 300 s). Open File uses this same interval and also keeps a point at the end of the file.")
                             formula: "interval (ms) = 60000 / Updates per minute\nwait is at least 1 ms"
                         }
                         SpinBox {
@@ -390,7 +390,7 @@ Page {
                             Layout.fillWidth: true
                         }
                         Hint {
-                            text: qsTr("How often Home updates. Fewer updates jitter less.")
+                            text: qsTr("How often Home and Open File update. Fewer updates jitter less.")
                         }
 
                         FieldLabel {

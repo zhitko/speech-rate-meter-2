@@ -3,6 +3,7 @@
 #include "helpers/logger.h"
 #include "livecadence.h"
 #include "helpers/settings.h"
+#include "temposeries.h"
 #include "src/services/sessionstore.h"
 #include "src/services/speechrateanalysis.h"
 #include "src/services/wavloader.h"
@@ -106,64 +107,6 @@ double rollingMedian(std::deque<double>& window, double rate, int count, bool ke
             window.pop_front();
     }
     return medianValue(window);
-}
-
-// Non-overlapping analysis windows over the last chartWindowSec of a file.
-// Each point is stamped at the window's end. With useAllReadings it is the
-// median of every window in that span. Otherwise it is the gauge median of
-// the last few windows.
-QVariantList tempoSeries(const std::vector<float>& samples,
-    const speechrate::Config& cfg,
-    int windowSec,
-    int chartWindowSec,
-    int gaugeAverageCount,
-    bool useAllReadings)
-{
-    QVariantList points;
-    const qint64 total = static_cast<qint64>(samples.size());
-    if (total < kMinWindowSamples)
-        return points;
-
-    const int stepSec = clampAnalysisWindowSec(windowSec);
-    const int historySec = std::clamp(chartWindowSec, 30, 1800);
-    const qint64 step = static_cast<qint64>(stepSec) * kSampleRate;
-    const qint64 regionStart = std::max<qint64>(
-        0, total - static_cast<qint64>(historySec) * kSampleRate);
-    std::deque<double> speechWindow;
-    std::deque<double> articulationWindow;
-
-    const auto push = [&](qint64 start, qint64 end) {
-        if (end <= start || end - start < kMinWindowSamples || end < regionStart)
-            return;
-        const speechrate::Measurement measured = speechrate::measure(
-            std::vector<float>(samples.begin() + static_cast<std::ptrdiff_t>(start),
-                samples.begin() + static_cast<std::ptrdiff_t>(end)),
-            cfg);
-        if (!measured.metrics.valid)
-            return;
-        points.append(tempoPoint(static_cast<double>(end) / kSampleRate,
-            rollingMedian(speechWindow, measured.metrics.speechRate, gaugeAverageCount, useAllReadings),
-            rollingMedian(articulationWindow, measured.metrics.articulationRate, gaugeAverageCount, useAllReadings)));
-    };
-
-    if (total <= step) {
-        push(0, total);
-        return points;
-    }
-
-    qint64 start = 0;
-    if (regionStart > 0)
-        start = (regionStart / step) * step;
-    while (start < total) {
-        const qint64 end = std::min(total, start + step);
-        if (end - start < kMinWindowSamples)
-            break;
-        push(start, end);
-        if (end == total)
-            break;
-        start = end;
-    }
-    return points;
 }
 
 speechrate::Config configFrom(const AppSettings& settings)
@@ -543,12 +486,15 @@ protected:
                     m_cache.insert(key, map);
                 }
                 const AppSettings chartSettings = Settings::loadSettings();
+                // The arcs and the tiles stay on the whole-file measurement
+                // above. The chart follows the live cadence.
                 QVariantList series = tempoSeries(loaded.samples,
                     job.config,
                     chartSettings.analysisWindowSec,
                     chartSettings.tempoChartWindowSec,
                     chartSettings.gaugeAverageCount,
-                    chartSettings.chartUseAllReadings);
+                    chartSettings.chartUseAllReadings,
+                    chartSettings.updatesPerMinute);
                 if (series.isEmpty() && map.value(QStringLiteral("valid")).toBool()) {
                     series.append(tempoPoint(static_cast<double>(loaded.samples.size()) / kSampleRate,
                         map.value(QStringLiteral("speechRate")).toDouble(),
