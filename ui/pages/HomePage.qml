@@ -71,6 +71,21 @@ Page {
     readonly property bool showPausesTile: settingsApi ? settingsApi.showPausesTile : true
     readonly property bool showSpeechTile: settingsApi ? settingsApi.showSpeechTile : true
     readonly property bool showWholeRecordingTile: settingsApi ? settingsApi.showWholeRecordingTile : true
+    readonly property int visibleMetricTiles: (showSpeechRateTile ? 1 : 0)
+                                               + (showArticulationRateTile ? 1 : 0)
+                                               + (showFillersTile ? 1 : 0)
+                                               + (showPausesTile ? 1 : 0)
+                                               + (showSpeechTile ? 1 : 0)
+    // Stacked home: one row of up to three tiles, sharing the page width.
+    // A wide window keeps a single column beside the chart, or two on a short
+    // window so three or more tiles still leave room for the Start button.
+    readonly property int metricColumns: wideLayout ? (AppScale.isShort && visibleMetricTiles >= 3 ? 2 : 1)
+                                         : Math.max(1, Math.min(3, visibleMetricTiles))
+    readonly property bool stackMetrics: !wideLayout && visibleMetricTiles > 0
+    // Stacked home: the tiles keep their natural height and the chart alone
+    // takes the rest of the screen down to the buttons.
+    readonly property bool stackedChartFills: stackMetrics && showTempoChart && !showGaugeArcs
+    readonly property real stackedChartHeight: Math.max(148, Math.min(200, viewportHeight * 0.26))
     readonly property bool gaugeAtRest: !sessionApi || (active && phase() !== SessionApi.Measuring)
     function lastTempoValue(key) {
         var pts = tempoPoints
@@ -627,6 +642,9 @@ Page {
                 id: layout
                 width: root.layoutWidth
                 x: (parent.width - scrollView.effectiveScrollBarWidth - width) / 2
+                height: root.stackedChartFills
+                        ? Math.max(implicitHeight, parent.height - AppScale.pagePadding * 2)
+                        : implicitHeight
                 anchors.verticalCenter: parent.verticalCenter
                 columns: root.wideLayout ? 2 : 1
                 columnSpacing: AppScale.pageSpacing
@@ -638,7 +656,7 @@ Page {
                     Layout.preferredWidth: root.wideLayout
                                             ? Math.max(1, root.layoutWidth - root.metricColumnWidth)
                                             : 1
-                    Layout.fillHeight: root.wideLayout
+                    Layout.fillHeight: root.wideLayout || root.stackedChartFills
                     Layout.alignment: Qt.AlignTop
                     implicitHeight: gaugeColumn.implicitHeight + 32
                     radius: Theme.shapeExtraLarge
@@ -722,13 +740,17 @@ Page {
                             visible: root.showTempoChart
                             Layout.fillWidth: true
                             Layout.topMargin: 36
-                            Layout.fillHeight: root.wideLayout && root.showTempoChart && !root.showGaugeArcs
+                            Layout.fillHeight: (root.wideLayout || root.stackedChartFills)
+                                               && root.showTempoChart && !root.showGaugeArcs
                             Layout.preferredHeight: !root.showTempoChart ? 0
-                                                   : (root.chartAndGauge ? root.finishedChartHeight : root.liveChartHeight)
+                                                   : (root.chartAndGauge ? root.finishedChartHeight
+                                                      : (root.stackMetrics ? root.stackedChartHeight
+                                                                           : root.liveChartHeight))
                             Layout.minimumHeight: !root.showTempoChart ? 0
-                                                   : (root.chartAndGauge ? root.finishedChartHeight : 140)
+                                                   : (root.chartAndGauge ? root.finishedChartHeight
+                                                      : (root.stackMetrics ? root.stackedChartHeight : 140))
                             Layout.maximumHeight: !root.showTempoChart ? 0
-                                                   : (root.wideLayout && !root.showGaugeArcs
+                                                   : ((root.wideLayout || root.stackedChartFills) && !root.showGaugeArcs
                                                       ? 10000
                                                       : Layout.preferredHeight)
                             points: root.tempoPoints
@@ -827,7 +849,7 @@ Page {
                     Layout.fillWidth: !root.wideLayout
                     Layout.preferredWidth: root.wideLayout ? root.metricColumnWidth : 1
                     Layout.maximumWidth: root.wideLayout ? root.metricColumnWidth : -1
-                    Layout.alignment: Qt.AlignVCenter
+                    Layout.alignment: root.stackMetrics ? Qt.AlignTop : Qt.AlignVCenter
                     Layout.fillHeight: false
                     spacing: AppScale.pageSpacing
 
@@ -871,7 +893,7 @@ Page {
                     GridLayout {
                         Layout.fillWidth: true
                         Layout.fillHeight: false
-                        columns: root.wideLayout ? 1 : (root.layoutWidth < 680 ? 2 : 4)
+                        columns: root.metricColumns
                         columnSpacing: AppScale.isCompact ? 8 : 12
                         rowSpacing: AppScale.isCompact ? 8 : 12
 
@@ -879,6 +901,7 @@ Page {
                             Layout.fillWidth: true
                             Layout.fillHeight: true
                             Layout.preferredWidth: 1
+                            Layout.minimumWidth: 96
                             visible: root.showSpeechRateTile
                             icon: Icons.faGaugeHigh
                             label: qsTr("Speech rate")
@@ -891,6 +914,7 @@ Page {
                             Layout.fillWidth: true
                             Layout.fillHeight: true
                             Layout.preferredWidth: 1
+                            Layout.minimumWidth: 96
                             visible: root.showArticulationRateTile
                             icon: Icons.faCommentDots
                             label: qsTr("Articulation")
@@ -903,6 +927,7 @@ Page {
                             Layout.fillWidth: true
                             Layout.fillHeight: true
                             Layout.preferredWidth: 1
+                            Layout.minimumWidth: 96
                             visible: root.showFillersTile
                             icon: Icons.faWaveSquare
                             label: qsTr("Fillers")
@@ -916,6 +941,7 @@ Page {
                             Layout.fillWidth: true
                             Layout.fillHeight: true
                             Layout.preferredWidth: 1
+                            Layout.minimumWidth: 96
                             visible: root.showPausesTile
                             icon: Icons.faPause
                             label: qsTr("Pauses")
@@ -928,6 +954,7 @@ Page {
                             Layout.fillWidth: true
                             Layout.fillHeight: true
                             Layout.preferredWidth: 1
+                            Layout.minimumWidth: 96
                             visible: root.showSpeechTile
                             icon: Icons.faStopwatch
                             label: qsTr("Speech")

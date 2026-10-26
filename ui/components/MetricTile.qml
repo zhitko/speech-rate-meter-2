@@ -25,9 +25,7 @@ Rectangle {
 
     ColumnLayout {
         id: content
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.top: parent.top
+        anchors.fill: parent
         anchors.margins: AppScale.isCompact ? 12 : 14
         spacing: AppScale.isCompact ? 4 : 8
 
@@ -67,7 +65,7 @@ Rectangle {
 
             Text {
                 text: root.value
-                font.pixelSize: AppScale.fs(AppScale.isCompact ? 22 : 26)
+                font.pixelSize: AppScale.fs(root.height > 240 ? 34 : (AppScale.isCompact ? 22 : 26))
                 font.weight: Font.DemiBold
                 font.features: { "tnum": 1 }
                 color: root.value === "—" ? Theme.outline(Material.theme) : Theme.onSurface(Material.theme)
@@ -84,17 +82,6 @@ Rectangle {
             }
         }
 
-        Text {
-            Layout.fillWidth: true
-            visible: root.hint.length > 0
-            text: root.hint
-            wrapMode: Text.Wrap
-            maximumLineCount: 3
-            elide: Text.ElideRight
-            font.pixelSize: AppScale.fs(11)
-            color: Theme.onSurfaceVariant(Material.theme)
-        }
-
         Rectangle {
             Layout.fillWidth: true
             visible: root.progress >= 0
@@ -109,6 +96,23 @@ Rectangle {
                 color: root.accent
                 Behavior on width { NumberAnimation { duration: 400; easing.type: Easing.OutCubic } }
             }
+        }
+
+        // Tiles in a row share one height, so this keeps their hints level.
+        Item {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+        }
+
+        Text {
+            Layout.fillWidth: true
+            visible: root.hint.length > 0
+            text: root.hint
+            wrapMode: Text.Wrap
+            maximumLineCount: 3
+            elide: Text.ElideRight
+            font.pixelSize: AppScale.fs(11)
+            color: Theme.onSurfaceVariant(Material.theme)
         }
     }
 }
