@@ -29,8 +29,11 @@ class JobQueue;
  * statistics, and it keeps both the direct and legacy pause estimates.
  * That pass does not replace the phrase summary already shown. Live direct
  * pauses use the analysis window, not the whole take.
- * The tempo chart stores one pace sample per live update. A 15 s segment
- * cut, the end of a segment, and a new phrase leave that cadence alone.
+ * The tempo chart stores one pace sample per live update. Open File builds
+ * the same series from the file: a point every live update interval, measured
+ * on the last analysis window, keeping the last Chart window, plus a point
+ * at the end of the file. The arcs after Open File stay the whole-file pace.
+ * A 15 s segment cut, the end of a segment, and a new phrase leave that cadence alone.
  * Speech time is a separate clock: it advances once a second of detected
  * speech and does not follow the analysis window or the updates-per-minute
  * cadence. With Use all readings on, that sample is the median of every

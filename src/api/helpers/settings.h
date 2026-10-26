@@ -34,9 +34,9 @@ struct AppSettings {
     // Session summary after Stop. Matches speechrate::SummaryMethod.
     // 2 is the median.
     int summaryMethod = 2;
-    int analysisWindowSec = 10; // live metrics cover this much recent speech, at least 3, no upper limit
-    int updatesPerMinute = 60; // live recalculations per minute, at least 1, no upper limit
-    // Tempo chart on Home. A point is stored once per analysis window.
+    int analysisWindowSec = 10; // live metrics, and each Open File chart point, cover this much recent speech; at least 3, no upper limit
+    int updatesPerMinute = 60; // live recalculations and Open File chart points per minute; at least 1, no upper limit
+    // Tempo chart on Home. A point is stored on each live update.
     // The chart draws the last this many seconds. 30…1800.
     int tempoChartWindowSec = 300;
     // While recording on Home: 0 tempo chart, 1 arcs. After Stop both can show.

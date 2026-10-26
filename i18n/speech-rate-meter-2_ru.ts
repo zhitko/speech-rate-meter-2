@@ -1199,13 +1199,13 @@
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="362"/>
-        <source>Length of the recent speech used for the live numbers on Home. The app joins the kept phrases of this session and the phrase in progress, keeps only the last N seconds, and runs the whole analysis on that buffer. The vowel count, speaking span and pauses all come from this buffer, so a shorter window reacts faster but has fewer vowels and noisier numbers. At least 3 s, default 10 s. No upper limit.</source>
-        <translation>Длина недавней речи, по которой считаются живые числа на главной. Приложение объединяет сохранённые фразы этого сеанса и фразу, которая идёт сейчас, оставляет только последние N секунд и выполняет весь анализ по этому буферу. Число гласных, длительность речевого отрезка и паузы берутся только из этого буфера, поэтому короткое окно реагирует быстрее, но гласных меньше и числа менее точные. Не меньше 3 с, по умолчанию 10 с. Верхнего предела нет.</translation>
+        <source>Length of the recent speech used for the live numbers on Home, and for each point on the Open File tempo chart. While recording, the app joins the kept phrases of this session and the phrase in progress, keeps only the last N seconds, and runs the whole analysis on that buffer. Open File measures each chart point on the last N seconds of the file ending at that point, shorter near the start of the file. The vowel count, speaking span and pauses all come from this buffer, so a shorter window reacts faster but has fewer vowels and noisier numbers. At least 3 s, default 10 s. No upper limit.</source>
+        <translation>Длина недавней речи, по которой считаются живые числа на главной и каждая точка графика темпа после «Открыть файл». Во время записи приложение объединяет сохранённые фразы этого сеанса и фразу, которая идёт сейчас, оставляет только последние N секунд и выполняет весь анализ по этому буферу. «Открыть файл» измеряет каждую точку графика по последним N секундам файла, заканчивающимся в этой точке; в начале файла окно короче. Число гласных, длительность речевого отрезка и паузы берутся только из этого буфера, поэтому короткое окно реагирует быстрее, но гласных меньше и числа менее точные. Не меньше 3 с, по умолчанию 10 с. Верхнего предела нет.</translation>
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="380"/>
-        <source>How often the live numbers are recalculated while you speak. The interval is 60000 divided by this value, in milliseconds. Fewer updates make the tempo curve less jittery. Changing it changes only the refresh rate, not the values. If a new buffer is ready before the previous analysis finishes, the older run is dropped. With Detect speech automatically on, new snapshots start only on speech frames. At least 1 per minute (once a minute), default 60 (once a second). No upper limit. Above 60000 the wait stays 1 ms. Gauge median still smooths the last few readings, and the chart keeps one point from each update inside its window (default 300 s).</source>
-        <translation>Как часто пересчитываются живые числа во время речи. Интервал равен 60000, делённым на это значение, в миллисекундах. Реже обновления — меньше дрожит кривая темпа. Меняется только частота обновления, а не сами значения. Если новый буфер готов раньше, чем закончился предыдущий анализ, более старый результат отбрасывается. При включённом автоопределении речи новые снимки начинаются только на речевых кадрах. Не меньше 1 в минуту (раз в минуту), по умолчанию 60 (раз в секунду). Верхнего предела нет. Выше 60000 пауза остаётся 1 мс. Медиана шкалы по-прежнему сглаживает несколько последних значений, а график хранит по точке на каждое обновление внутри своего окна (по умолчанию 300 с).</translation>
+        <source>How often the live numbers are recalculated while you speak, and how often Open File places a tempo-chart point. The interval is 60000 divided by this value, in milliseconds. Fewer updates make the tempo curve less jittery. Changing it changes only the refresh rate, not the values. If a new buffer is ready before the previous analysis finishes, the older run is dropped. With Detect speech automatically on, new snapshots start only on speech frames. At least 1 per minute (once a minute), default 60 (once a second). No upper limit. Above 60000 the wait stays 1 ms. Gauge median still smooths the last few readings, and the chart keeps one point from each update inside its window (default 300 s). Open File uses this same interval and also keeps a point at the end of the file.</source>
+        <translation>Как часто пересчитываются живые числа во время речи и как часто «Открыть файл» ставит точку графика темпа. Интервал равен 60000, делённым на это значение, в миллисекундах. Реже обновления — меньше дрожит кривая темпа. Меняется только частота обновления, а не сами значения. Если новый буфер готов раньше, чем закончился предыдущий анализ, более старый результат отбрасывается. При включённом автоопределении речи новые снимки начинаются только на речевых кадрах. Не меньше 1 в минуту (раз в минуту), по умолчанию 60 (раз в секунду). Верхнего предела нет. Выше 60000 пауза остаётся 1 мс. Медиана шкалы по-прежнему сглаживает несколько последних значений, а график хранит по точке на каждое обновление внутри своего окна (по умолчанию 300 с). «Открыть файл» использует тот же интервал и ещё сохраняет точку в конце файла.</translation>
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="397"/>
@@ -1906,13 +1906,13 @@
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="375"/>
-        <source>Recent speech used on Home. Shorter reacts faster.</source>
-        <translation>Недавняя речь на главной. Короче — быстрее отклик.</translation>
+        <source>Recent speech used on Home and for Open File. Shorter reacts faster.</source>
+        <translation>Недавняя речь на главной и для «Открыть файл». Короче — быстрее отклик.</translation>
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="393"/>
-        <source>How often Home updates. Fewer updates jitter less.</source>
-        <translation>Как часто обновляется главная. Реже — меньше дрожи.</translation>
+        <source>How often Home and Open File update. Fewer updates jitter less.</source>
+        <translation>Как часто обновляются главная и «Открыть файл». Реже — меньше дрожи.</translation>
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="445"/>

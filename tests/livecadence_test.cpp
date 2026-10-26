@@ -1,9 +1,17 @@
 #include "helpers/settings.h"
 #include "livecadence.h"
+#include "speechrateanalysis.h"
+#include "temposeries.h"
+#include "wavloader.h"
 
 #include <QCoreApplication>
+#include <QDir>
+#include <QStringList>
+#include <QVariantMap>
 
 #include <algorithm>
+#include <cmath>
+#include <deque>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -16,6 +24,14 @@ void expect(bool condition, const std::string& message)
 {
     if (!condition) {
         std::cerr << "FAIL: " << message << '\n';
+        ++failures;
+    }
+}
+
+void expectNear(double actual, double expected, const std::string& message)
+{
+    if (!(std::fabs(actual - expected) <= 1e-6)) {
+        std::cerr << "FAIL: " << message << " actual=" << actual << " expected=" << expected << '\n';
         ++failures;
     }
 }
@@ -396,6 +412,291 @@ void testScreenPolicy()
     expect(liveUpdateIntervalMs(60000) == 1, "the wait is never shorter than 1 ms");
 }
 
+// Same middle-value rule as tempoSeries and the gauge.
+double medianOf(const std::deque<double>& window)
+{
+    if (window.empty())
+        return 0;
+    std::vector<double> sorted(window.begin(), window.end());
+    std::sort(sorted.begin(), sorted.end());
+    const std::size_t mid = sorted.size() / 2;
+    if (sorted.size() % 2 == 1)
+        return sorted[mid];
+    return (sorted[mid - 1] + sorted[mid]) / 2.0;
+}
+
+double pushMedian(std::deque<double>& window, double rate, int count, bool keepAll)
+{
+    window.push_back(rate);
+    if (!keepAll) {
+        const int keep = std::clamp(count, 1, 30);
+        while (static_cast<int>(window.size()) > keep)
+            window.pop_front();
+    }
+    return medianOf(window);
+}
+
+struct PacePoint {
+    double seconds = 0;
+    double speech = 0;
+    double articulation = 0;
+};
+
+QString testsDir()
+{
+    QStringList roots;
+#ifdef SRM_SOURCE_DIR
+    roots << QString::fromUtf8(SRM_SOURCE_DIR);
+#endif
+    roots << QDir::currentPath();
+    roots << QCoreApplication::applicationDirPath();
+    for (const QString& root : roots) {
+        QDir dir(root);
+        for (int depth = 0; depth < 7; ++depth) {
+            const QString candidate = dir.filePath(QStringLiteral("data/tests"));
+            if (QDir(candidate).exists())
+                return QDir(candidate).absolutePath();
+            if (!dir.cdUp())
+                break;
+        }
+    }
+    return {};
+}
+
+QString findWav(const QString& dirPath, const QString& namePart)
+{
+    const QStringList names = QDir(dirPath).entryList(
+        { QStringLiteral("*.wav"), QStringLiteral("*.WAV") }, QDir::Files, QDir::Name);
+    for (const QString& name : names) {
+        if (name.contains(namePart))
+            return QDir(dirPath).filePath(name);
+    }
+    return {};
+}
+
+std::vector<float> loadWav(const QString& path)
+{
+    const WavLoadResult loaded = loadAnalysisWav(path);
+    expect(loaded.ok && !loaded.samples.empty(),
+        "load " + path.toStdString());
+    return loaded.samples;
+}
+
+qint16 clampPcm(float sample)
+{
+    const long rounded = std::lround(static_cast<double>(sample));
+    return static_cast<qint16>(std::clamp(rounded, -32768L, 32767L));
+}
+
+// Points the microphone would publish for this file when the clock is the
+// sample position and advanceContinuous is called on each update mark, plus
+// the file-end point Open File keeps when that mark has not come yet.
+// Speech rate and articulation are smoothed separately.
+std::vector<PacePoint> liveFilePoints(const std::vector<float>& samples,
+    const speechrate::Config& cfg,
+    int updatesPerMinute,
+    int windowSec,
+    int chartWindowSec,
+    int gaugeAverageCount,
+    bool useAllReadings)
+{
+    std::vector<PacePoint> points;
+    const qint64 total = static_cast<qint64>(samples.size());
+    if (total < LiveCapture::kMinWindowSamples)
+        return points;
+
+    const int intervalMs = liveUpdateIntervalMs(updatesPerMinute);
+    const qint64 step = static_cast<qint64>(intervalMs) * LiveCapture::kSampleRate / 1000;
+    const qint64 windowSamples = static_cast<qint64>(clampAnalysisWindowSec(windowSec)) * LiveCapture::kSampleRate;
+    const int historySec = std::clamp(chartWindowSec, 30, 1800);
+    const qint64 regionStart = std::max<qint64>(
+        0, total - static_cast<qint64>(historySec) * LiveCapture::kSampleRate);
+
+    LiveCapture take;
+    take.start(updatesPerMinute, windowSec);
+    std::deque<double> speechWindow;
+    std::deque<double> articulationWindow;
+    qint64 fed = 0;
+
+    const auto record = [&](qint64 end, const std::vector<float>& audio) {
+        if (end < LiveCapture::kMinWindowSamples || end < regionStart || end > total)
+            return;
+        const qint64 start = (windowSamples > 0 && end > windowSamples) ? end - windowSamples : 0;
+        expect(static_cast<qint64>(audio.size()) == end - start,
+            "live window at " + std::to_string(end) + " samples has the analysis-window length");
+        const speechrate::Measurement measured = speechrate::measure(audio, cfg);
+        if (!measured.metrics.valid)
+            return;
+        PacePoint point;
+        point.seconds = static_cast<double>(end) / LiveCapture::kSampleRate;
+        point.speech = pushMedian(speechWindow, measured.metrics.speechRate, gaugeAverageCount, useAllReadings);
+        point.articulation = pushMedian(articulationWindow, measured.metrics.articulationRate, gaugeAverageCount, useAllReadings);
+        points.push_back(point);
+    };
+
+    const auto feedTo = [&](qint64 next, bool keepFileEnd) {
+        if (next <= fed)
+            return;
+        std::vector<qint16> chunk(static_cast<std::size_t>(next - fed));
+        for (qint64 index = fed; index < next; ++index)
+            chunk[static_cast<std::size_t>(index - fed)] = clampPcm(samples[static_cast<std::size_t>(index)]);
+        take.append(chunk.data(), static_cast<int>(chunk.size()));
+        const qint64 nowMs = next * 1000 / LiveCapture::kSampleRate;
+        const LiveCapture::Update update = take.advanceContinuous(nowMs);
+        take.trim();
+        fed = next;
+        if (update.hasReading) {
+            record(next, update.reading.samples);
+        } else if (keepFileEnd) {
+            const qint64 start = (windowSamples > 0 && next > windowSamples) ? next - windowSamples : 0;
+            record(next, std::vector<float>(samples.begin() + static_cast<std::ptrdiff_t>(start),
+                samples.begin() + static_cast<std::ptrdiff_t>(next)));
+        }
+    };
+
+    for (qint64 end = step; end < total; end += step)
+        feedTo(end, false);
+    if (fed < total)
+        feedTo(total, true);
+    return points;
+}
+
+void expectSeriesMatches(const QVariantList& series, const std::vector<PacePoint>& live, const char* label)
+{
+    expect(series.size() == static_cast<int>(live.size()),
+        std::string(label) + " point count " + std::to_string(series.size())
+            + " vs live " + std::to_string(live.size()));
+    const int count = std::min(static_cast<int>(series.size()), static_cast<int>(live.size()));
+    for (int index = 0; index < count; ++index) {
+        const QVariantMap point = series.at(index).toMap();
+        const std::string where = std::string(label) + " point " + std::to_string(index);
+        expectNear(point.value(QStringLiteral("seconds")).toDouble(), live[static_cast<std::size_t>(index)].seconds,
+            where + " time");
+        expectNear(point.value(QStringLiteral("speechRate")).toDouble(), live[static_cast<std::size_t>(index)].speech,
+            where + " speech rate");
+        expectNear(point.value(QStringLiteral("articulationRate")).toDouble(), live[static_cast<std::size_t>(index)].articulation,
+            where + " articulation rate");
+    }
+}
+
+void expectFileMatchesLive(const std::vector<float>& samples, const char* label,
+    int windowSec, int updatesPerMinute, int chartWindowSec, int gaugeAverageCount, bool useAllReadings)
+{
+    const speechrate::Config cfg;
+    const QVariantList series = tempoSeries(samples, cfg, windowSec, chartWindowSec,
+        gaugeAverageCount, useAllReadings, updatesPerMinute);
+    const std::vector<PacePoint> live = liveFilePoints(samples, cfg, updatesPerMinute, windowSec,
+        chartWindowSec, gaugeAverageCount, useAllReadings);
+    expectSeriesMatches(series, live, label);
+    if (!series.isEmpty()) {
+        const double duration = static_cast<double>(samples.size()) / LiveCapture::kSampleRate;
+        expectNear(series.last().toMap().value(QStringLiteral("seconds")).toDouble(), duration,
+            std::string(label) + " keeps a point at the end of the file");
+        const double oldest = duration - std::clamp(chartWindowSec, 30, 1800);
+        for (const QVariant& item : series) {
+            expect(item.toMap().value(QStringLiteral("seconds")).toDouble() + 1e-9 >= oldest,
+                std::string(label) + " stays inside the chart window");
+        }
+    }
+}
+
+void testOpenFileTempoMatchesLive()
+{
+    const QString dir = testsDir();
+    expect(!dir.isEmpty(), "data/tests is present");
+    if (dir.isEmpty())
+        return;
+
+    const QString fastPath = findWav(dir, QStringLiteral("1 English_Fast"));
+    const QString slowPath = findWav(dir, QStringLiteral("2 English_Slow"));
+    const QString shortPath = findWav(dir, QStringLiteral("Advatasment"));
+    const QString slidingPath = findWav(dir, QStringLiteral("110"));
+    const QString longPath = findWav(dir, QStringLiteral("Helena"));
+    expect(!fastPath.isEmpty() && !slowPath.isEmpty() && !shortPath.isEmpty()
+            && !slidingPath.isEmpty() && !longPath.isEmpty(),
+        "the Open File comparison recordings are in data/tests");
+    if (fastPath.isEmpty() || slowPath.isEmpty() || shortPath.isEmpty()
+        || slidingPath.isEmpty() || longPath.isEmpty())
+        return;
+
+    const std::vector<float> fast = loadWav(fastPath);
+    const std::vector<float> slow = loadWav(slowPath);
+    const std::vector<float> brief = loadWav(shortPath);
+    const std::vector<float> sliding = loadWav(slidingPath);
+    const std::vector<float> longTake = loadWav(longPath);
+    if (fast.empty() || slow.empty() || brief.empty() || sliding.empty() || longTake.empty())
+        return;
+
+    constexpr int kWindowSec = 60;
+    constexpr int kUpdates = 12;
+    constexpr int kChartSec = 300;
+
+    // Shorter than the 1.5 s gate: no chart sample. The whole-file gauge is
+    // filled by the caller, not by tempoSeries.
+    expect(fast.size() > static_cast<std::size_t>(LiveCapture::kSampleRate), "English Fast is longer than 1 s");
+    const std::vector<float> oneSecond(fast.begin(), fast.begin() + LiveCapture::kSampleRate);
+    expect(tempoSeries(oneSecond, speechrate::Config(), kWindowSec, kChartSec, 1, false, kUpdates).isEmpty(),
+        "a file shorter than 1.5 s yields no tempo point");
+
+    // Longer than 1.5 s, shorter than the 5 s step, and shorter than the
+    // 60 s analysis window: one point, the whole prefix.
+    const std::vector<float> twoSeconds(fast.begin(), fast.begin() + 2 * LiveCapture::kSampleRate);
+    const speechrate::Measurement twoMeasured = speechrate::measure(twoSeconds, speechrate::Config());
+    expect(twoMeasured.metrics.valid, "two seconds of English Fast is measurable");
+    const QVariantList twoSeries = tempoSeries(twoSeconds, speechrate::Config(), kWindowSec, kChartSec, 1, true, kUpdates);
+    expect(twoSeries.size() == 1, "a file shorter than the update step is one point at the end");
+    if (twoSeries.size() == 1) {
+        expectNear(twoSeries.first().toMap().value(QStringLiteral("seconds")).toDouble(), 2.0,
+            "the short-file point is stamped at the end");
+        expectNear(twoSeries.first().toMap().value(QStringLiteral("speechRate")).toDouble(),
+            twoMeasured.metrics.speechRate, "the short-file point is the whole prefix");
+        expectNear(twoSeries.first().toMap().value(QStringLiteral("articulationRate")).toDouble(),
+            twoMeasured.metrics.articulationRate, "the short-file articulation is the whole prefix");
+    }
+
+    // Window larger than the file: every point uses a prefix, not a full 60 s.
+    expect(brief.size() < static_cast<std::size_t>(kWindowSec * LiveCapture::kSampleRate),
+        "the advertisement is shorter than the 60 s window");
+    expectFileMatchesLive(brief, "window larger than the file, gauge 1", kWindowSec, kUpdates, kChartSec, 1, false);
+    expectFileMatchesLive(brief, "window larger than the file, all readings", kWindowSec, kUpdates, kChartSec, 3, true);
+
+    // The analysis window actually slides. Chart window still holds the file.
+    expect(sliding.size() > static_cast<std::size_t>(kWindowSec * LiveCapture::kSampleRate),
+        "the 110 s file is longer than the analysis window");
+    expect(sliding.size() < static_cast<std::size_t>(kChartSec * LiveCapture::kSampleRate),
+        "the 110 s file fits in the chart window");
+    expectFileMatchesLive(sliding, "sliding window, gauge 1", kWindowSec, kUpdates, kChartSec, 1, false);
+    expectFileMatchesLive(sliding, "sliding window, gauge median 3", kWindowSec, kUpdates, kChartSec, 3, false);
+    expectFileMatchesLive(sliding, "sliding window, all readings", kWindowSec, kUpdates, kChartSec, 3, true);
+
+    const QVariantList raw = tempoSeries(sliding, speechrate::Config(), kWindowSec, kChartSec, 1, false, kUpdates);
+    const QVariantList averaged = tempoSeries(sliding, speechrate::Config(), kWindowSec, kChartSec, 3, false, kUpdates);
+    const QVariantList allReadings = tempoSeries(sliding, speechrate::Config(), kWindowSec, kChartSec, 1, true, kUpdates);
+    expect(raw.size() > 10, "12 updates per minute on a 110 s file is more than a handful of points");
+    expect(raw.size() == averaged.size() && raw.size() == allReadings.size(),
+        "smoothing does not change how many points are kept");
+    bool gaugeDiffers = false;
+    bool allDiffers = false;
+    for (int index = 0; index < raw.size(); ++index) {
+        const double speech = raw.at(index).toMap().value(QStringLiteral("speechRate")).toDouble();
+        if (std::fabs(speech - averaged.at(index).toMap().value(QStringLiteral("speechRate")).toDouble()) > 1e-6)
+            gaugeDiffers = true;
+        if (std::fabs(speech - allReadings.at(index).toMap().value(QStringLiteral("speechRate")).toDouble()) > 1e-6)
+            allDiffers = true;
+    }
+    expect(gaugeDiffers, "gauge median 3 is not the raw reading on this file");
+    expect(allDiffers, "use all readings is not the raw reading on this file");
+
+    // A take longer than the chart window keeps only the last 300 s, and
+    // those points still match the live windows (gauge median 1 needs no
+    // earlier readings).
+    expect(longTake.size() > static_cast<std::size_t>(kChartSec * LiveCapture::kSampleRate),
+        "Helena is longer than the chart window");
+    expectFileMatchesLive(longTake, "chart window trims a long file", kWindowSec, kUpdates, kChartSec, 1, false);
+    expectFileMatchesLive(slow, "English Slow, gauge median 4", kWindowSec, kUpdates, kChartSec, 4, false);
+    expectFileMatchesLive(slow, "English Slow, all readings", kWindowSec, kUpdates, kChartSec, 1, true);
+}
+
 } // namespace
 
 int main(int argc, char** argv)
@@ -412,6 +713,7 @@ int main(int argc, char** argv)
     testCadenceAcrossCuts(1, 60, firstReadingMs() + 60000, sixtySecondTags);
     testSegmentEndDoesNotPublish();
     testShortPhraseIsNotAReading();
+    testOpenFileTempoMatchesLive();
     if (failures == 0) {
         std::cout << "live cadence tests passed\n";
         return 0;
