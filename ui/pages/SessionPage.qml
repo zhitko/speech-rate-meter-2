@@ -22,13 +22,20 @@ Page {
     readonly property real layoutWidth: Math.min(scrollView.availableWidth - AppScale.pagePadding * 2, 1120)
     readonly property bool wideLayout: layoutWidth >= 680
     readonly property int gaugeMode: settingsApi ? settingsApi.gaugeMode : 0
-    // A saved session is the result of a recording, so every card is shown.
-    // The Home switches only hide cards while recording and while Home is idle.
-    readonly property bool showSpeechRateTile: true
-    readonly property bool showArticulationRateTile: true
-    readonly property bool showFillersTile: true
-    readonly property bool showPausesTile: true
-    readonly property bool showSpeechTile: true
+    // A saved result shows the cards the Measurement switches leave on.
+    // A pace already drawn on the gauge is not repeated as a card.
+    readonly property bool showSpeechRateTile: gaugeMode === 1
+                                                && (settingsApi ? settingsApi.showSpeechRateTile : true)
+    readonly property bool showArticulationRateTile: gaugeMode === 0
+                                                      && (settingsApi ? settingsApi.showArticulationRateTile : true)
+    readonly property bool showFillersTile: settingsApi ? settingsApi.showFillersTile : false
+    readonly property bool showPausesTile: settingsApi ? settingsApi.showPausesTile : true
+    readonly property bool showSpeechTile: settingsApi ? settingsApi.showSpeechTile : true
+    readonly property int visibleMetricTiles: (showSpeechRateTile ? 1 : 0)
+                                               + (showArticulationRateTile ? 1 : 0)
+                                               + (showFillersTile ? 1 : 0)
+                                               + (showPausesTile ? 1 : 0)
+                                               + (showSpeechTile ? 1 : 0)
 
     function number(key, decimals) {
         return sessionData[key] !== undefined ? Number(sessionData[key]).toFixed(decimals) : "—"
@@ -116,6 +123,7 @@ Page {
                     SpeechRateGauge {
                         Layout.fillWidth: true
                         Layout.preferredWidth: root.wideLayout ? 1 : -1
+                        Layout.columnSpan: root.wideLayout && root.visibleMetricTiles === 0 ? 2 : 1
                         Layout.preferredHeight: {
                             var legacy = root.wideLayout
                                          ? 240
@@ -142,6 +150,7 @@ Page {
                         Layout.fillWidth: true
                         Layout.preferredWidth: root.wideLayout ? 1 : -1
                         Layout.alignment: Qt.AlignVCenter
+                        visible: root.visibleMetricTiles > 0
                         columns: 2
                         columnSpacing: AppScale.isCompact ? 8 : 12
                         rowSpacing: AppScale.isCompact ? 8 : 12

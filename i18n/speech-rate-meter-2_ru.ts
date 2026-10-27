@@ -1264,8 +1264,20 @@
         <location filename="../ui/pages/SettingsPage.qml" line="592"/>
         <location filename="../ui/pages/SettingsPage.qml" line="601"/>
         <location filename="../ui/pages/SettingsPage.qml" line="610"/>
-        <source>Shows or hides this card on Home. Display only: the value is the same either way. The switch is disabled when the gauge already shows this pace.</source>
-        <translation>Показывает или скрывает эту карточку на главной. Только отображение: значение не меняется. Переключатель отключён, если этот темп уже показан на шкале.</translation>
+        <source>Shows or hides this card after Stop, after Open File, and on a saved result. Display only: the value is the same either way. The switch is disabled when the gauge already shows this pace.</source>
+        <translation>Показывает или скрывает эту карточку после «Стоп», после «Открыть файл» и в сохранённом результате. Только отображение: значение не меняется. Переключатель отключён, если этот темп уже показан на шкале.</translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SettingsPage.qml" line="566"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="576"/>
+        <location filename="../ui/pages/SettingsPage.qml" line="585"/>
+        <source>Shows or hides this card after Stop, after Open File, and on a saved result. Display only: the value is the same either way.</source>
+        <translation>Показывает или скрывает эту карточку после «Стоп», после «Открыть файл» и в сохранённом результате. Только отображение: значение не меняется.</translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/SettingsPage.qml" line="593"/>
+        <source>Shows or hides the whole-recording summary on Home after Stop and after Open File. Display only: the value is the same either way.</source>
+        <translation>Показывает или скрывает сводку всей записи на главной после «Стоп» и после «Открыть файл». Только отображение: значение не меняется.</translation>
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="578"/>

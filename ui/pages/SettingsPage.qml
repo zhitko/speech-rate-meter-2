@@ -539,7 +539,7 @@ Page {
 
                         FieldLabel {
                             text: qsTr("Show Speech rate tile")
-                            help: qsTr("Shows or hides this card on Home. Display only: the value is the same either way. The switch is disabled when the gauge already shows this pace.")
+                            help: qsTr("Shows or hides this card after Stop, after Open File, and on a saved result. Display only: the value is the same either way. The switch is disabled when the gauge already shows this pace.")
                         }
                         Switch {
                             enabled: !!settingsApi && settingsApi.gaugeMode === 1
@@ -549,7 +549,7 @@ Page {
                         }
                         FieldLabel {
                             text: qsTr("Show Articulation rate tile")
-                            help: qsTr("Shows or hides this card on Home. Display only: the value is the same either way. The switch is disabled when the gauge already shows this pace.")
+                            help: qsTr("Shows or hides this card after Stop, after Open File, and on a saved result. Display only: the value is the same either way. The switch is disabled when the gauge already shows this pace.")
                         }
                         Switch {
                             enabled: !!settingsApi && settingsApi.gaugeMode === 0
@@ -563,7 +563,7 @@ Page {
 
                         FieldLabel {
                             text: qsTr("Show Fillers tile")
-                            help: qsTr("Shows or hides this card on Home. Display only: the value is the same either way. The switch is disabled when the gauge already shows this pace.")
+                            help: qsTr("Shows or hides this card after Stop, after Open File, and on a saved result. Display only: the value is the same either way.")
                         }
                         Switch {
                             checked: settingsApi ? settingsApi.showFillersTile : false
@@ -572,7 +572,7 @@ Page {
                         }
                         FieldLabel {
                             text: qsTr("Show Pauses tile")
-                            help: qsTr("Shows or hides this card on Home. Display only: the value is the same either way. The switch is disabled when the gauge already shows this pace.")
+                            help: qsTr("Shows or hides this card after Stop, after Open File, and on a saved result. Display only: the value is the same either way.")
                         }
                         Switch {
                             checked: settingsApi ? settingsApi.showPausesTile : true
@@ -581,7 +581,7 @@ Page {
                         }
                         FieldLabel {
                             text: qsTr("Show Speech tile")
-                            help: qsTr("Shows or hides this card on Home. Display only: the value is the same either way. The switch is disabled when the gauge already shows this pace.")
+                            help: qsTr("Shows or hides this card after Stop, after Open File, and on a saved result. Display only: the value is the same either way.")
                         }
                         Switch {
                             checked: settingsApi ? settingsApi.showSpeechTile : true
@@ -590,7 +590,7 @@ Page {
                         }
                         FieldLabel {
                             text: qsTr("Show Whole recording tile")
-                            help: qsTr("Shows or hides this card on Home. Display only: the value is the same either way. The switch is disabled when the gauge already shows this pace.")
+                            help: qsTr("Shows or hides the whole-recording summary on Home after Stop and after Open File. Display only: the value is the same either way.")
                         }
                         Switch {
                             checked: settingsApi ? settingsApi.showWholeRecordingTile : true

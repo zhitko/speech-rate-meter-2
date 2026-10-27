@@ -56,28 +56,25 @@ Page {
     readonly property bool showTempoChart: true
     readonly property bool showGaugeArcs: true
     readonly property bool chartAndGauge: true
-    // Integers in the arc centre and in the tiles appear after the session,
-    // after Open File, and for a saved result. While recording the arcs and
-    // the chart keep moving and the tiles hold a dash so the row does not jump.
+    // Integers in the arc centre appear after the session and after Open File.
+    // While recording the arcs and the chart keep moving and the value cards
+    // stay off. After Stop or Open File the switches choose which cards show.
+    // A pace already on the gauge is not repeated as a card.
     readonly property bool showReadings: !active
-    // After Stop or Open File the result shows every card. The switches only
-    // choose which cards stay up while recording and while Home is idle.
-    // A pace already on the gauge is not repeated as a tile until that result.
-    readonly property bool showAllResultCards: !active && hasResult
-    readonly property bool showSpeechRateTile: showAllResultCards
-                                                || (gaugeMode === 1
-                                                    && (settingsApi ? settingsApi.showSpeechRateTile : true))
-    readonly property bool showArticulationRateTile: showAllResultCards
-                                                      || (gaugeMode === 0
-                                                          && (settingsApi ? settingsApi.showArticulationRateTile : true))
-    readonly property bool showFillersTile: showAllResultCards
-                                             || (settingsApi ? settingsApi.showFillersTile : false)
-    readonly property bool showPausesTile: showAllResultCards
-                                            || (settingsApi ? settingsApi.showPausesTile : true)
-    readonly property bool showSpeechTile: showAllResultCards
-                                            || (settingsApi ? settingsApi.showSpeechTile : true)
-    readonly property bool showWholeRecordingTile: showAllResultCards
-                                                    || (settingsApi ? settingsApi.showWholeRecordingTile : true)
+    readonly property bool showResultCards: !active && hasResult
+    readonly property bool showSpeechRateTile: showResultCards
+                                                && gaugeMode === 1
+                                                && (settingsApi ? settingsApi.showSpeechRateTile : true)
+    readonly property bool showArticulationRateTile: showResultCards
+                                                      && gaugeMode === 0
+                                                      && (settingsApi ? settingsApi.showArticulationRateTile : true)
+    readonly property bool showFillersTile: showResultCards
+                                             && (settingsApi ? settingsApi.showFillersTile : false)
+    readonly property bool showPausesTile: showResultCards
+                                            && (settingsApi ? settingsApi.showPausesTile : true)
+    readonly property bool showSpeechTile: showResultCards
+                                            && (settingsApi ? settingsApi.showSpeechTile : true)
+    readonly property bool showWholeRecordingTile: settingsApi ? settingsApi.showWholeRecordingTile : true
     readonly property bool wholeRecordingShown: showWholeRecordingTile && !active && !!sessionApi
                                                  && (sessionApi.recordingSummaryPending || sessionApi.hasRecordingSummary)
     // Phone keeps Start in the footer, so an empty side column would only
@@ -88,14 +85,16 @@ Page {
                                               || (!!sessionApi && (sessionApi.busy || fileError.length > 0))
                                               || (!!settingsApi && settingsApi.advanced && hasResult)
     readonly property bool metricCardsHidden: visibleMetricTiles === 0 && !wholeRecordingShown
+    // On a phone the result cards sit under the gauge. Squeezing the arc to
+    // fit them on one screen elides its labels, so the page scrolls instead.
+    readonly property bool cardsBelowGauge: !wideLayout && !metricCardsHidden
     readonly property int visibleMetricTiles: (showSpeechRateTile ? 1 : 0)
                                                + (showArticulationRateTile ? 1 : 0)
                                                + (showFillersTile ? 1 : 0)
                                                + (showPausesTile ? 1 : 0)
                                                + (showSpeechTile ? 1 : 0)
-    // Stacked home: one row of up to three tiles, sharing the page width.
-    // A wide window keeps a single column beside the chart, or two on a short
-    // window so three or more tiles still leave room for the Start button.
+    // One row of up to three tiles on a phone. A wide window keeps one column
+    // beside the chart, or two on a short window.
     readonly property int metricColumns: wideLayout ? (AppScale.isShort && visibleMetricTiles >= 3 ? 2 : 1)
                                          : Math.max(1, Math.min(3, visibleMetricTiles))
     readonly property bool stackMetrics: !wideLayout && visibleMetricTiles > 0
@@ -195,7 +194,7 @@ Page {
         return Math.max(chartMinHeight, viewportHeight - restedGaugeHeight - sideH - chrome)
     }
     readonly property real fittedGaugeHeight: {
-        if (!fitNavigation)
+        if (!fitNavigation || cardsBelowGauge)
             return naturalGaugeHeight
         // A few spare pixels keep rounding from bringing the scrollbar back.
         var budget = viewportHeight - AppScale.pagePadding * 2 - 8
@@ -830,8 +829,9 @@ Page {
                             Layout.verticalStretchFactor: root.metricCardsHidden ? 1 : 5
                             Layout.topMargin: 0
                             readonly property real hintBlock: 4 + gaugeHint.implicitHeight + 2
-                            Layout.preferredHeight: (root.metricCardsHidden ? root.restedGaugeHeight : root.gaugeFloor) + hintBlock
-                            Layout.minimumHeight: root.gaugeFloor + hintBlock
+                            Layout.preferredHeight: (root.metricCardsHidden || root.cardsBelowGauge
+                                                     ? root.restedGaugeHeight : root.gaugeFloor) + hintBlock
+                            Layout.minimumHeight: (root.cardsBelowGauge ? root.restedGaugeHeight : root.gaugeFloor) + hintBlock
                             Layout.maximumHeight: root.metricCardsHidden
                                                    ? root.restedGaugeHeight + hintBlock
                                                    : 10000
@@ -941,7 +941,7 @@ Page {
 
                     GridLayout {
                         Layout.fillWidth: true
-                        Layout.fillHeight: false
+                        visible: root.visibleMetricTiles > 0
                         columns: root.metricColumns
                         columnSpacing: AppScale.isCompact ? 8 : 12
                         rowSpacing: AppScale.isCompact ? 8 : 12
