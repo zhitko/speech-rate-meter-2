@@ -60,15 +60,34 @@ Page {
     // after Open File, and for a saved result. While recording the arcs and
     // the chart keep moving and the tiles hold a dash so the row does not jump.
     readonly property bool showReadings: !active
-    // A pace on the gauge is not repeated as a tile. Fillers stays off until chosen.
-    readonly property bool showSpeechRateTile: gaugeMode === 1
-                                                && (settingsApi ? settingsApi.showSpeechRateTile : true)
-    readonly property bool showArticulationRateTile: gaugeMode === 0
-                                                      && (settingsApi ? settingsApi.showArticulationRateTile : true)
-    readonly property bool showFillersTile: settingsApi ? settingsApi.showFillersTile : false
-    readonly property bool showPausesTile: settingsApi ? settingsApi.showPausesTile : true
-    readonly property bool showSpeechTile: settingsApi ? settingsApi.showSpeechTile : true
-    readonly property bool showWholeRecordingTile: settingsApi ? settingsApi.showWholeRecordingTile : true
+    // After Stop or Open File the result shows every card. The switches only
+    // choose which cards stay up while recording and while Home is idle.
+    // A pace already on the gauge is not repeated as a tile until that result.
+    readonly property bool showAllResultCards: !active && hasResult
+    readonly property bool showSpeechRateTile: showAllResultCards
+                                                || (gaugeMode === 1
+                                                    && (settingsApi ? settingsApi.showSpeechRateTile : true))
+    readonly property bool showArticulationRateTile: showAllResultCards
+                                                      || (gaugeMode === 0
+                                                          && (settingsApi ? settingsApi.showArticulationRateTile : true))
+    readonly property bool showFillersTile: showAllResultCards
+                                             || (settingsApi ? settingsApi.showFillersTile : false)
+    readonly property bool showPausesTile: showAllResultCards
+                                            || (settingsApi ? settingsApi.showPausesTile : true)
+    readonly property bool showSpeechTile: showAllResultCards
+                                            || (settingsApi ? settingsApi.showSpeechTile : true)
+    readonly property bool showWholeRecordingTile: showAllResultCards
+                                                    || (settingsApi ? settingsApi.showWholeRecordingTile : true)
+    readonly property bool wholeRecordingShown: showWholeRecordingTile && !active && !!sessionApi
+                                                 && (sessionApi.recordingSummaryPending || sessionApi.hasRecordingSummary)
+    // Phone keeps Start in the footer, so an empty side column would only
+    // leave a hole. Wide windows still need it for Start and Open File.
+    readonly property bool sideColumnActive: wideLayout
+                                              || visibleMetricTiles > 0
+                                              || wholeRecordingShown
+                                              || (!!sessionApi && (sessionApi.busy || fileError.length > 0))
+                                              || (!!settingsApi && settingsApi.advanced && hasResult)
+    readonly property bool metricCardsHidden: visibleMetricTiles === 0 && !wholeRecordingShown
     readonly property int visibleMetricTiles: (showSpeechRateTile ? 1 : 0)
                                                + (showArticulationRateTile ? 1 : 0)
                                                + (showFillersTile ? 1 : 0)
@@ -137,13 +156,44 @@ Page {
         var content = byWidth * 1.66 + labelSpace + 4
         return Math.min(fittedGaugeHeight, Math.max(gaugeFloor, content))
     }
-    // Preferred heights of the chart and the arcs stay at the floor. fillHeight
-    // then gives a tall card to both, and a short window does not scroll just
-    // because a preferred size was large.
+    // Preferred heights stay at the floor while the value cards are on, so a
+    // short window does not scroll just because a preferred size was large.
+    // fillHeight then shares whatever height is left. With those cards hidden,
+    // expandedChartHeight gives the leftover page to the tempo chart.
     // Wide windows stack the value tiles in one column. The column stays only
     // as wide as those tiles and the Start / Open File controls, and the
     // tempo chart takes the rest of the row.
-    readonly property real metricColumnWidth: Math.max(280, sideColumn.implicitWidth)
+    // With the value cards hidden the column is only the buttons, so the
+    // chart keeps the width those cards used to take.
+    readonly property real metricColumnWidth: (visibleMetricTiles > 0 || wholeRecordingShown)
+                                               ? Math.max(280, sideColumn.implicitWidth)
+                                               : Math.max(1, sideColumn.implicitWidth)
+    // Height of the arc at this width, before it is asked to fill the page.
+    function gaugeArcHeight(gaugeWidth) {
+        var labelSpace = AppScale.fs(12) + 10
+        var byWidth = Math.max(20, (Math.max(0, gaugeWidth) - 4) / 2.15)
+        return Math.max(gaugeFloor, byWidth * 1.66 + labelSpace + 4)
+    }
+    readonly property real restedGaugeHeight: {
+        var gaugeWidth = wideLayout
+                         ? Math.max(120, layoutWidth - metricColumnWidth)
+                         : Math.max(120, layoutWidth)
+        // The arc stays readable. Height past this goes to the tempo chart
+        // once the value cards are hidden.
+        var cap = Math.max(gaugeFloor, viewportHeight * (wideLayout ? 0.46 : 0.34))
+        return Math.min(gaugeArcHeight(gaugeWidth), cap)
+    }
+    // When the value cards are hidden, the tempo chart takes the page height
+    // the cards no longer use. The gauge stays the size of its arc.
+    readonly property real expandedChartHeight: {
+        if (!metricCardsHidden)
+            return chartMinHeight
+        var sideH = sideColumnActive && !wideLayout
+                    ? sideColumn.implicitHeight + 12
+                    : 0
+        var chrome = AppScale.pagePadding * 2 + 104
+        return Math.max(chartMinHeight, viewportHeight - restedGaugeHeight - sideH - chrome)
+    }
     readonly property real fittedGaugeHeight: {
         if (!fitNavigation)
             return naturalGaugeHeight
@@ -639,7 +689,7 @@ Page {
                 Rectangle {
                     id: gaugeCard
                     Layout.fillWidth: true
-                    Layout.preferredWidth: root.wideLayout
+                    Layout.preferredWidth: root.wideLayout && sideColumn.visible
                                             ? Math.max(1, root.layoutWidth - root.metricColumnWidth)
                                             : 1
                     Layout.fillHeight: root.cardFills
@@ -740,6 +790,7 @@ Page {
                         spacing: 4
 
                         TempoChart {
+                            id: tempoChart
                             visible: root.showTempoChart
                             compactHeader: true
                             Layout.fillWidth: true
@@ -748,8 +799,8 @@ Page {
                             // can start as soon as the chip ends.
                             Layout.topMargin: 32
                             Layout.fillHeight: true
-                            Layout.verticalStretchFactor: 4
-                            Layout.preferredHeight: root.chartMinHeight
+                            Layout.verticalStretchFactor: root.metricCardsHidden ? 8 : 4
+                            Layout.preferredHeight: root.expandedChartHeight
                             Layout.minimumHeight: root.chartMinHeight
                             Layout.maximumHeight: 10000
                             points: root.tempoPoints
@@ -775,13 +826,15 @@ Page {
                             id: gaugeSlot
                             visible: root.showGaugeArcs
                             Layout.fillWidth: true
-                            Layout.fillHeight: true
-                            Layout.verticalStretchFactor: 5
+                            Layout.fillHeight: !root.metricCardsHidden
+                            Layout.verticalStretchFactor: root.metricCardsHidden ? 1 : 5
                             Layout.topMargin: 0
                             readonly property real hintBlock: 4 + gaugeHint.implicitHeight + 2
-                            Layout.preferredHeight: root.gaugeFloor + hintBlock
+                            Layout.preferredHeight: (root.metricCardsHidden ? root.restedGaugeHeight : root.gaugeFloor) + hintBlock
                             Layout.minimumHeight: root.gaugeFloor + hintBlock
-                            Layout.maximumHeight: 10000
+                            Layout.maximumHeight: root.metricCardsHidden
+                                                   ? root.restedGaugeHeight + hintBlock
+                                                   : 10000
 
                             SpeechRateGauge {
                                 id: gauge
@@ -841,6 +894,7 @@ Page {
 
                 ColumnLayout {
                     id: sideColumn
+                    visible: root.sideColumnActive
                     Layout.fillWidth: !root.wideLayout
                     Layout.preferredWidth: root.wideLayout ? root.metricColumnWidth : 1
                     Layout.maximumWidth: root.wideLayout ? root.metricColumnWidth : -1

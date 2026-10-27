@@ -22,13 +22,13 @@ Page {
     readonly property real layoutWidth: Math.min(scrollView.availableWidth - AppScale.pagePadding * 2, 1120)
     readonly property bool wideLayout: layoutWidth >= 680
     readonly property int gaugeMode: settingsApi ? settingsApi.gaugeMode : 0
-    readonly property bool showSpeechRateTile: gaugeMode === 1
-                                                && (settingsApi ? settingsApi.showSpeechRateTile : true)
-    readonly property bool showArticulationRateTile: gaugeMode === 0
-                                                      && (settingsApi ? settingsApi.showArticulationRateTile : true)
-    readonly property bool showFillersTile: settingsApi ? settingsApi.showFillersTile : false
-    readonly property bool showPausesTile: settingsApi ? settingsApi.showPausesTile : true
-    readonly property bool showSpeechTile: settingsApi ? settingsApi.showSpeechTile : true
+    // A saved session is the result of a recording, so every card is shown.
+    // The Home switches only hide cards while recording and while Home is idle.
+    readonly property bool showSpeechRateTile: true
+    readonly property bool showArticulationRateTile: true
+    readonly property bool showFillersTile: true
+    readonly property bool showPausesTile: true
+    readonly property bool showSpeechTile: true
 
     function number(key, decimals) {
         return sessionData[key] !== undefined ? Number(sessionData[key]).toFixed(decimals) : "—"
