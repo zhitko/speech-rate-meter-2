@@ -32,7 +32,7 @@ All processing is local. The Android package requests only microphone access (`R
 | **Articulation** | Pace while speaking, with the gaps left out. Never below the speech rate | words per minute |
 | **Fillers** | How much some sounds are drawn out, such as a long “uh”. Not a count of words | percent |
 | **Pauses** | Length of the longer gaps. Not the total time spent silent | seconds |
-| **Speech** | Total time that counted as speech. While recording it advances every second. Silence before speech is detected is left out. A pause counts only up to Pause (s). From one minute the tile reads `1m 30s` | seconds |
+| **Speech** | Total time that counted as speech. The tile shows it after Stop, after Open File, and for a saved result. While recording the tile stays blank; the red badge shows elapsed time. Silence before speech is detected is left out. A pause counts only up to Pause (s). From one minute the tile reads `1m 30s` | seconds |
 
 Speech rate is vowels per minute scaled into words per minute (`K1`, default 0.41). With **Speech rate method** set to Direct (the default), that time runs from the first non-silent frame through the last, so silence before the first sound and after the last is left out. Legacy uses the whole buffer. Direct articulation removes measured pauses from that same span. With no such pauses the two direct rates are equal. Legacy articulation keeps the older estimate from the typical gap between vowel nuclei. Fillers are the excess of long vowel nuclei over the typical nucleus, shown as a percent of a calibrated range. The full formulas are in [docs/TECHNICAL_DESCRIPTION.md](docs/TECHNICAL_DESCRIPTION.md).
 
@@ -44,10 +44,10 @@ Speech rate is vowels per minute scaled into words per minute (`K1`, default 0.4
 
 Home is the only screen with the record button.
 
-- A **gauge** (240° arc, Slow / Average / Fast) shows the current pace. By default that is speech rate. Settings can switch it to articulation, or draw both paces as two arcs, with articulation on the outside. The marker sits between Slow and Fast (70 and 210 wpm by default). The printed number is the real value. While a session is recording, the arcs are hidden and a tempo chart takes their place. A point is added every analysis window (10 s by default), at the same median the arcs use, and the chart keeps a sliding window (5 min by default, **Chart window** in Settings). After Stop the arcs return with the averages and the chart stays above them. A halo around Start / Stop follows the microphone level.
+- A **gauge** (240° arc, Slow / Average / Fast) shows the current pace. By default that is speech rate. Settings can switch it to articulation, or draw both paces as two arcs, with articulation on the outside. The marker sits between Slow and Fast (70 and 210 wpm by default). The printed number is the real value, and it appears after Stop, after Open File, and for a saved result. While a session is recording, the arcs and the tempo chart are both on screen and the integers stay hidden. A point is added every analysis window (10 s by default), at the same median the arcs use, and the chart keeps a sliding window (5 min by default, **Chart window** in Settings). After Stop the arcs show the averages, the tile numbers appear, and the chart stays above the arcs. A halo around Start / Stop follows the microphone level.
 - Tiles beside it: the other pace (Articulation by default; hidden when the gauge draws both), Fillers, Pauses, and Speech.
 - A round **Start / Stop** button. While the session is on, a halo around it grows with the microphone level.
-- A status chip names the state (Ready, Listening, Too short, Measuring, Too short to save, Microphone blocked, and Mean values after Stop). During a session the gauge card gets a pulsing red outline and a red badge with the time since Start (`mm:ss`); other pages show it in the toolbar. The gauge is labeled with the pace it shows. Each tile has a one-line hint.
+- A status chip names the state (Ready, Listening, Too short, Measuring, Too short to save, Microphone blocked, and Mean values after Stop). During a session the gauge card gets a pulsing red outline and a red badge with the time since Start (`mm:ss`); other pages show it in the toolbar. The gauge is labeled with the pace it shows. Each Home tile has a short label under the value and no explanatory caption.
 
 On a wide or landscape window the gauge sits on the left and the tiles and button on the right. On a phone the button stays pinned to the bottom of the page.
 
@@ -66,7 +66,7 @@ An **Advanced** checkbox at the bottom of Measurement is not saved and turns off
 | Section | What you control |
 | --- | --- |
 | **General (always visible)** | UI language (EN/RU), light/dark/system theme, accent color (Blue/Green/Purple/Orange/Red), navigation menu, font size, delete user data |
-| **Measurement (always visible)** | Analysis window, updates per minute, chart window, while recording (tempo chart or arcs), gauge (speech rate, articulation rate, or both), use all readings, gauge median, pause length, phrasal-pause minimum, speech rate method (direct or legacy), articulation method (direct, legacy, or window), Detect speech automatically, Slow and Fast ends of the gauge |
+| **Measurement (always visible)** | Analysis window, updates per minute, chart window, gauge (speech rate, articulation rate, or both), use all readings, gauge median, pause length, phrasal-pause minimum, speech rate method (direct or legacy), articulation method (direct, legacy, or window), Detect speech automatically, Slow and Fast ends of the gauge |
 | **Advanced (hidden behind the checkbox)** | Keep recording files, voice-activity method and thresholds, calibration, intensity frame/shift/smooth, vowel-length limit, power-mean degree, coefficients K1–K5 and the filler range |
 
 **Detect speech automatically** measures background noise after Start, then waits for speech. A pause ends the phrase. When it is off, measuring starts when you press Start, a pause does not end the phrase, and the recording is saved in 15-second parts.

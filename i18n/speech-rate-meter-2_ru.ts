@@ -1214,38 +1214,13 @@
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="398"/>
-        <source>How many seconds of tempo the chart on Home keeps. Each live Home update adds a point. With Use all readings on, that point is the median of every reading since Start. With it off, the point is the gauge median, and the tip rests at zero when the arcs would. Older points slide off the left. When While recording is Tempo chart, Home shows this chart during a session. After Stop, and after Open File, the chart can appear with the arcs when there is a result. Range 30 to 1800 s, default 300 s (5 min).</source>
-        <translation>Сколько секунд темпа хранит график на главной. Каждое живое обновление главной добавляет точку. При включённом «Все значения» эта точка — медиана всех значений с момента «Старт». Если выключено, точка равна медиане шкалы, а кончик становится нулём, когда дуги были бы в покое. Более старые точки уходят влево. Если «Во время записи» — «График темпа», главная показывает этот график во время сеанса. После «Стоп» и после «Открыть файл» при наличии результата график может появиться вместе с дугами. Диапазон 30–1800 с, по умолчанию 300 с (5 мин).</translation>
+        <source>How many seconds of tempo the chart on Home keeps. Each live Home update adds a point. With Use all readings on, that point is the median of every reading since Start. With it off, the point is the gauge median, and the tip rests at zero when the arcs would. Older points slide off the left. Home shows this chart together with the arcs while recording, after Stop, and after Open File. Range 30 to 1800 s, default 300 s (5 min).</source>
+        <translation>Сколько секунд темпа хранит график на главной. Каждое живое обновление главной добавляет точку. При включённом «Все значения» эта точка — медиана всех значений с момента «Старт». Если выключено, точка равна медиане шкалы, а кончик становится нулём, когда дуги были бы в покое. Более старые точки уходят влево. Главная показывает этот график вместе с дугами во время записи, после «Стоп» и после «Открыть файл». Диапазон 30–1800 с, по умолчанию 300 с (5 мин).</translation>
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="411"/>
         <source>How much tempo the chart keeps. Older points slide off.</source>
         <translation>Сколько темпа хранит график. Старые точки уходят влево.</translation>
-    </message>
-    <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="415"/>
-        <source>While recording</source>
-        <translation>Во время записи</translation>
-    </message>
-    <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="416"/>
-        <source>What Home shows while a session is recording. Tempo chart: the live line chart. Arcs: the gauge arcs. After Stop, and after Open File, Home can show the chart and the arcs together when there is a result.</source>
-        <translation>Что показывает главная, пока идёт запись. График темпа — живая линия. Дуги — шкалы-дуги. После «Стоп» и после «Открыть файл» при наличии результата главная может показать график и дуги вместе.</translation>
-    </message>
-    <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="421"/>
-        <source>Tempo chart</source>
-        <translation>График темпа</translation>
-    </message>
-    <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="422"/>
-        <source>Arcs</source>
-        <translation>Дуги</translation>
-    </message>
-    <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="428"/>
-        <source>Tempo chart or arcs on Home while you record.</source>
-        <translation>График темпа или дуги на главной во время записи.</translation>
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="433"/>

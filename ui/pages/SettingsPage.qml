@@ -395,7 +395,7 @@ Page {
 
                         FieldLabel {
                             text: qsTr("Chart window (s)")
-                            help: qsTr("How many seconds of tempo the chart on Home keeps. Each live Home update adds a point. With Use all readings on, that point is the median of every reading since Start. With it off, the point is the gauge median, and the tip rests at zero when the arcs would. Older points slide off the left. When While recording is Tempo chart, Home shows this chart during a session. After Stop, and after Open File, the chart can appear with the arcs when there is a result. Range 30 to 1800 s, default 300 s (5 min).")
+                            help: qsTr("How many seconds of tempo the chart on Home keeps. Each live Home update adds a point. With Use all readings on, that point is the median of every reading since Start. With it off, the point is the gauge median, and the tip rests at zero when the arcs would. Older points slide off the left. Home shows this chart together with the arcs while recording, after Stop, and after Open File. Range 30 to 1800 s, default 300 s (5 min).")
                         }
                         SpinBox {
                             from: 30
@@ -409,23 +409,6 @@ Page {
                         }
                         Hint {
                             text: qsTr("How much tempo the chart keeps. Older points slide off.")
-                        }
-
-                        FieldLabel {
-                            text: qsTr("While recording")
-                            help: qsTr("What Home shows while a session is recording. Tempo chart: the live line chart. Arcs: the gauge arcs. After Stop, and after Open File, Home can show the chart and the arcs together when there is a result.")
-                        }
-                        SettingComboBox {
-                            selectedValue: settingsApi ? settingsApi.recordingView : 0
-                            model: [
-                                { name: qsTr("Tempo chart"), id: 0 },
-                                { name: qsTr("Arcs"), id: 1 }
-                            ]
-                            onActivated: if (settingsApi)
-                                settingsApi.recordingView = model[index].id
-                        }
-                        Hint {
-                            text: qsTr("Tempo chart or arcs on Home while you record.")
                         }
 
                         FieldLabel {

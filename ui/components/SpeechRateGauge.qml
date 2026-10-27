@@ -18,6 +18,9 @@ Item {
     property real maximum: 210
     // Without a value the arc stays empty and the readout shows a dash.
     property bool hasValue: true
+    // Home turns this off while recording. The arcs keep moving; the integers
+    // come back after Stop, Open File, and a saved result.
+    property bool showNumbers: true
     property string unit: qsTr("wpm")
     property color cardColor: Theme.surfaceContainerLow(Material.theme)
     // Live input meter. Home sets these while a session is open.
@@ -275,6 +278,7 @@ Item {
 
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
+            visible: !root.hasValue || root.showNumbers
             text: root.hasValue ? root.animatedValue.toFixed(0) : "– –"
             font.pixelSize: root.dual
                              ? Math.max(16, Math.min(30, root.innerRadius * 0.36))
@@ -299,7 +303,7 @@ Item {
 
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
-            visible: root.dual
+            visible: root.dual && (!root.hasValue || root.showNumbers)
             topPadding: 3
             text: root.hasValue ? root.animatedSecond.toFixed(0) : "– –"
             font.pixelSize: Math.max(16, Math.min(30, root.innerRadius * 0.36))
@@ -376,7 +380,7 @@ Item {
 
         Rectangle {
             anchors.horizontalCenter: parent.horizontalCenter
-            visible: !root.dual
+            visible: !root.dual && root.showNumbers
             implicitWidth: zoneText.implicitWidth + 24
             implicitHeight: zoneText.implicitHeight + 8
             radius: height / 2

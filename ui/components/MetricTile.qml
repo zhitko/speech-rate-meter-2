@@ -11,6 +11,9 @@ Rectangle {
     property string unit: ""
     property string hint: ""
     property color accent: Theme.primary(Material.theme)
+    // Home puts a smaller label under the value and leaves the caption off.
+    property bool labelAtBottom: false
+    property int labelPixelSize: 13
     // 0…1 draws a thin bar under the value; a negative value hides it.
     property real progress: -1
 
@@ -26,11 +29,13 @@ Rectangle {
     ColumnLayout {
         id: content
         anchors.fill: parent
-        anchors.margins: AppScale.isCompact ? 12 : 14
-        spacing: AppScale.isCompact ? 4 : 8
+        anchors.margins: root.labelAtBottom ? (AppScale.isCompact ? 8 : 10)
+                                             : (AppScale.isCompact ? 12 : 14)
+        spacing: root.labelAtBottom ? 4 : (AppScale.isCompact ? 4 : 8)
 
         RowLayout {
             Layout.fillWidth: true
+            visible: !root.labelAtBottom
             spacing: 8
 
             Rectangle {
@@ -53,7 +58,7 @@ Rectangle {
                 Layout.fillWidth: true
                 text: root.label
                 elide: Text.ElideRight
-                font.pixelSize: AppScale.fs(13)
+                font.pixelSize: AppScale.fs(root.labelPixelSize)
                 font.weight: Font.Medium
                 color: Theme.onSurfaceVariant(Material.theme)
             }
@@ -98,10 +103,42 @@ Rectangle {
             }
         }
 
-        // Tiles in a row share one height, so this keeps their hints level.
+        // Tiles in a row share one height, so the label or the hint stays level.
         Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
+        }
+
+        RowLayout {
+            Layout.fillWidth: true
+            visible: root.labelAtBottom
+            spacing: 6
+
+            Rectangle {
+                implicitWidth: 22
+                implicitHeight: 22
+                radius: Theme.shapeSmall
+                color: Qt.alpha(root.accent, 0.14)
+
+                Text {
+                    anchors.centerIn: parent
+                    text: root.icon
+                    font.family: Icons.familySolid
+                    font.weight: Font.Black
+                    font.pixelSize: AppScale.fs(11)
+                    color: root.accent
+                }
+            }
+
+            Text {
+                Layout.fillWidth: true
+                text: root.label
+                elide: Text.ElideRight
+                maximumLineCount: 1
+                font.pixelSize: AppScale.fs(root.labelPixelSize)
+                font.weight: Font.Medium
+                color: Theme.onSurfaceVariant(Material.theme)
+            }
         }
 
         Text {

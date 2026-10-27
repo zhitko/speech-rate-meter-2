@@ -39,8 +39,6 @@ struct AppSettings {
     // Tempo chart on Home. A point is stored on each live update.
     // The chart draws the last this many seconds. 30…1800.
     int tempoChartWindowSec = 300;
-    // While recording on Home: 0 tempo chart, 1 arcs. After Stop both can show.
-    int recordingView = 0;
     // Tempo chart. True: each point is the median of every live reading since Start.
     // False: each point is the gauge median. The arcs always use the gauge median.
     bool chartUseAllReadings = true;
