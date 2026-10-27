@@ -38,9 +38,6 @@ Page {
     readonly property real tempoTipArticulation: chartUseAllReadings ? lastTempoValue("articulationRate")
                                                     : (!sessionApi || gaugeAtRest ? 0 : sessionApi.gaugeArticulationRate)
     readonly property bool tempoTipActive: active && (hasResult || phase() === SessionApi.Measuring)
-    // 0 tempo chart, 1 arcs — what Home shows while recording.
-    readonly property int recordingView: settingsApi ? settingsApi.recordingView : 0
-    readonly property bool liveUsesChart: recordingView === 0
     // Session clock for the scrolling chart. tempoFreeze keeps the right edge
     // still after Stop so the line does not jump back to the last point.
     property real tempoNow: 0
@@ -54,14 +51,15 @@ Page {
         NumberAnimation { to: 0.25; duration: 700; easing.type: Easing.InOutSine }
         NumberAnimation { to: 1; duration: 700; easing.type: Easing.InOutSine }
     }
-    readonly property bool finishedTake: !active && (hasResult || tempoPoints.length > 0)
-    // While recording: chart or arcs from the setting. After a take: both.
-    // Idle with no result: the same view as While recording.
-    readonly property bool showTempoChart: active ? liveUsesChart
-                                                 : (finishedTake || liveUsesChart)
-    readonly property bool showGaugeArcs: active ? !liveUsesChart
-                                                : (finishedTake || !liveUsesChart)
-    readonly property bool chartAndGauge: showTempoChart && showGaugeArcs
+    // The chart and the arcs stay together: while recording, after Stop,
+    // after Open File, and while idle. There is no longer a choice between them.
+    readonly property bool showTempoChart: true
+    readonly property bool showGaugeArcs: true
+    readonly property bool chartAndGauge: true
+    // Integers in the arc centre and in the tiles appear after the session,
+    // after Open File, and for a saved result. While recording the arcs and
+    // the chart keep moving and the tiles hold a dash so the row does not jump.
+    readonly property bool showReadings: !active
     // A pace on the gauge is not repeated as a tile. Fillers stays off until chosen.
     readonly property bool showSpeechRateTile: gaugeMode === 1
                                                 && (settingsApi ? settingsApi.showSpeechRateTile : true)
@@ -82,10 +80,9 @@ Page {
     readonly property int metricColumns: wideLayout ? (AppScale.isShort && visibleMetricTiles >= 3 ? 2 : 1)
                                          : Math.max(1, Math.min(3, visibleMetricTiles))
     readonly property bool stackMetrics: !wideLayout && visibleMetricTiles > 0
-    // Stacked home: the tiles keep their natural height and the chart alone
-    // takes the rest of the screen down to the buttons.
-    readonly property bool stackedChartFills: stackMetrics && showTempoChart && !showGaugeArcs
-    readonly property real stackedChartHeight: Math.max(148, Math.min(200, viewportHeight * 0.26))
+    // The chart-and-arcs card takes the height left above the tiles, so both
+    // can extend when the captions under the tiles are gone.
+    readonly property bool cardFills: true
     readonly property bool gaugeAtRest: !sessionApi || (active && phase() !== SessionApi.Measuring)
     function lastTempoValue(key) {
         var pts = tempoPoints
@@ -123,13 +120,10 @@ Page {
     // Card margins (16 + 16), column spacing (8), hint bottom margin (4), and the
     // gauge top margin (28 minus the chip band the arc now fills).
     readonly property real gaugeSurround: 72 - chipBand + (gaugeHint.implicitHeight > 0 ? gaugeHint.implicitHeight : 0)
-    // Below this the arc ends collide with the center label. With the chart
-    // above them the arcs can sit lower; the chart has taken the top of the card.
-    readonly property real gaugeFloor: chartAndGauge ? 156 : 200
-    // Fixed slice of the card for the chart once the arcs are back.
-    readonly property real finishedChartHeight: chartAndGauge
-                                                 ? Math.max(148, Math.min(210, viewportHeight * 0.28))
-                                                 : 0
+    // Below this the arc ends collide with the center label. The chart sits
+    // above the arcs, and both grow into whatever height the card has left.
+    readonly property real gaugeFloor: 156
+    readonly property real chartMinHeight: 148
     readonly property real gaugeRoom: viewportHeight - AppScale.pagePadding * 2 - 4 - gaugeSurround
     // The legacy caps were measured with the arc below the chip. gaugeRoom
     // already includes the reclaimed band, so it is not added a second time.
@@ -143,17 +137,9 @@ Page {
         var content = byWidth * 1.66 + labelSpace + 4
         return Math.min(fittedGaugeHeight, Math.max(gaugeFloor, content))
     }
-    readonly property real phoneGaugeHeight: gaugeContentHeight(layoutWidth - 32
-                                                                + 2 * (AppScale.pagePadding + 10))
-    // While recording the chart uses the space the arcs had. After Stop the
-    // arcs keep what is left under the chart.
-    readonly property real liveChartHeight: Math.max(150,
-                                                      (wideLayout ? fittedGaugeHeight : phoneGaugeHeight) - 24)
-    readonly property real pairedGaugeHeight: chartAndGauge
-                                               ? Math.max(gaugeFloor,
-                                                          (wideLayout ? fittedGaugeHeight : phoneGaugeHeight)
-                                                          - finishedChartHeight)
-                                               : 0
+    // Preferred heights of the chart and the arcs stay at the floor. fillHeight
+    // then gives a tall card to both, and a short window does not scroll just
+    // because a preferred size was large.
     // Wide windows stack the value tiles in one column. The column stays only
     // as wide as those tiles and the Start / Open File controls, and the
     // tempo chart takes the rest of the row.
@@ -642,13 +628,13 @@ Page {
                 id: layout
                 width: root.layoutWidth
                 x: (parent.width - scrollView.effectiveScrollBarWidth - width) / 2
-                height: root.stackedChartFills
+                height: root.cardFills
                         ? Math.max(implicitHeight, parent.height - AppScale.pagePadding * 2)
                         : implicitHeight
                 anchors.verticalCenter: parent.verticalCenter
                 columns: root.wideLayout ? 2 : 1
                 columnSpacing: AppScale.pageSpacing
-                rowSpacing: AppScale.pageSpacing
+                rowSpacing: root.wideLayout ? AppScale.pageSpacing : 12
 
                 Rectangle {
                     id: gaugeCard
@@ -656,8 +642,15 @@ Page {
                     Layout.preferredWidth: root.wideLayout
                                             ? Math.max(1, root.layoutWidth - root.metricColumnWidth)
                                             : 1
-                    Layout.fillHeight: root.wideLayout || root.stackedChartFills
+                    Layout.fillHeight: root.cardFills
                     Layout.alignment: Qt.AlignTop
+                    // A wide window puts the summary beside this card. Without a
+                    // cap the card would grow with that column and the arcs would
+                    // run off the bottom of the screen. The page still scrolls
+                    // when the summary is taller than the window.
+                    Layout.maximumHeight: !root.wideLayout ? -1
+                            : Math.max(implicitHeight,
+                                       root.viewportHeight - AppScale.pagePadding * 2)
                     implicitHeight: gaugeColumn.implicitHeight + 32
                     radius: Theme.shapeExtraLarge
                     color: Theme.surfaceContainerLow(Material.theme)
@@ -690,6 +683,16 @@ Page {
                                     color: root.phaseColor()
                                 }
                             }
+                        }
+
+                        Text {
+                            Layout.alignment: Qt.AlignVCenter
+                            // Same string as the chart title, so the Russian
+                            // translation Vladimir already wrote is reused.
+                            text: qsTranslate("TempoChart", "Tempo")
+                            font.pixelSize: AppScale.fs(12)
+                            font.weight: Font.DemiBold
+                            color: Theme.onSurfaceVariant(Material.theme)
                         }
 
                         Item { Layout.fillWidth: true }
@@ -734,25 +737,21 @@ Page {
                         id: gaugeColumn
                         anchors.fill: parent
                         anchors.margins: 16
-                        spacing: root.chartAndGauge ? 8 : 0
+                        spacing: 4
 
                         TempoChart {
                             visible: root.showTempoChart
+                            compactHeader: true
                             Layout.fillWidth: true
-                            Layout.topMargin: 36
-                            Layout.fillHeight: (root.wideLayout || root.stackedChartFills)
-                                               && root.showTempoChart && !root.showGaugeArcs
-                            Layout.preferredHeight: !root.showTempoChart ? 0
-                                                   : (root.chartAndGauge ? root.finishedChartHeight
-                                                      : (root.stackMetrics ? root.stackedChartHeight
-                                                                           : root.liveChartHeight))
-                            Layout.minimumHeight: !root.showTempoChart ? 0
-                                                   : (root.chartAndGauge ? root.finishedChartHeight
-                                                      : (root.stackMetrics ? root.stackedChartHeight : 140))
-                            Layout.maximumHeight: !root.showTempoChart ? 0
-                                                   : ((root.wideLayout || root.stackedChartFills) && !root.showGaugeArcs
-                                                      ? 10000
-                                                      : Layout.preferredHeight)
+                            // Clears the phase chip, which sits over this column.
+                            // The Tempo label lives in that chip row, so the plot
+                            // can start as soon as the chip ends.
+                            Layout.topMargin: 32
+                            Layout.fillHeight: true
+                            Layout.verticalStretchFactor: 4
+                            Layout.preferredHeight: root.chartMinHeight
+                            Layout.minimumHeight: root.chartMinHeight
+                            Layout.maximumHeight: 10000
                             points: root.tempoPoints
                             windowSec: root.tempoWindowSec
                             sampleInterval: root.tempoSampleSec
@@ -776,18 +775,13 @@ Page {
                             id: gaugeSlot
                             visible: root.showGaugeArcs
                             Layout.fillWidth: true
-                            Layout.fillHeight: root.wideLayout
-                            Layout.topMargin: root.chartAndGauge ? 0 : (28 - root.chipBand)
-                            readonly property real hintBlock: 8 + gaugeHint.implicitHeight + 4
-                            readonly property real gaugeBudget: root.chartAndGauge
-                                                                ? root.pairedGaugeHeight
-                                                                : (root.wideLayout ? root.fittedGaugeHeight
-                                                                                   : root.phoneGaugeHeight)
-                            Layout.preferredHeight: gaugeBudget + hintBlock
-                            Layout.minimumHeight: (root.wideLayout && root.chartAndGauge)
-                                                   ? root.gaugeFloor + hintBlock
-                                                   : Layout.preferredHeight
-                            Layout.maximumHeight: root.wideLayout ? 10000 : Layout.preferredHeight
+                            Layout.fillHeight: true
+                            Layout.verticalStretchFactor: 5
+                            Layout.topMargin: 0
+                            readonly property real hintBlock: 4 + gaugeHint.implicitHeight + 2
+                            Layout.preferredHeight: root.gaugeFloor + hintBlock
+                            Layout.minimumHeight: root.gaugeFloor + hintBlock
+                            Layout.maximumHeight: 10000
 
                             SpeechRateGauge {
                                 id: gauge
@@ -826,16 +820,17 @@ Page {
                                 cardColor: gaugeCard.color
                                 micActive: root.active
                                 micLevel: sessionApi ? sessionApi.audioLevel : 0
+                                showNumbers: root.showReadings
                             }
 
                             Label {
                                 id: gaugeHint
                                 width: parent.width
-                                y: gauge.y + gauge.height + 8
+                                y: gauge.y + gauge.height + 4
                                 horizontalAlignment: Text.AlignHCenter
                                 wrapMode: Text.Wrap
                                 text: root.hintText()
-                                font.pixelSize: AppScale.fs(14)
+                                font.pixelSize: AppScale.fs(12)
                                 color: root.phase() === SessionApi.MicDenied
                                        ? Theme.error(Material.theme)
                                        : Theme.onSurfaceVariant(Material.theme)
@@ -905,8 +900,9 @@ Page {
                             visible: root.showSpeechRateTile
                             icon: Icons.faGaugeHigh
                             label: qsTr("Speech rate")
-                            hint: qsTr("Overall pace, pauses included")
-                            value: !root.hasResult ? "—" : sessionApi.speechRate.toFixed(0)
+                            labelAtBottom: true
+                            labelPixelSize: 11
+                            value: root.showReadings && root.hasResult ? sessionApi.speechRate.toFixed(0) : "—"
                             unit: qsTr("wpm")
                             accent: Theme.primary(Material.theme)
                         }
@@ -918,8 +914,9 @@ Page {
                             visible: root.showArticulationRateTile
                             icon: Icons.faCommentDots
                             label: qsTr("Articulation")
-                            hint: qsTr("Pace while speaking, gaps left out")
-                            value: !root.hasResult ? "—" : sessionApi.articulationRate.toFixed(0)
+                            labelAtBottom: true
+                            labelPixelSize: 11
+                            value: root.showReadings && root.hasResult ? sessionApi.articulationRate.toFixed(0) : "—"
                             unit: qsTr("wpm")
                             accent: Theme.primary(Material.theme)
                         }
@@ -931,10 +928,11 @@ Page {
                             visible: root.showFillersTile
                             icon: Icons.faWaveSquare
                             label: qsTr("Fillers")
-                            hint: qsTr("Drawn-out sounds, not words")
-                            value: root.hasResult ? (root.fillerFraction() * 100).toFixed(0) : "—"
+                            labelAtBottom: true
+                            labelPixelSize: 11
+                            value: root.showReadings && root.hasResult ? (root.fillerFraction() * 100).toFixed(0) : "—"
                             unit: "%"
-                            progress: root.hasResult ? root.fillerFraction() : 0
+                            progress: root.showReadings && root.hasResult ? root.fillerFraction() : 0
                             accent: Theme.tertiary(Material.theme)
                         }
                         MetricTile {
@@ -945,8 +943,9 @@ Page {
                             visible: root.showPausesTile
                             icon: Icons.faPause
                             label: qsTr("Pauses")
-                            hint: qsTr("Longer gaps, not all silence")
-                            value: root.hasResult ? sessionApi.phrasePauses.toFixed(2) : "—"
+                            labelAtBottom: true
+                            labelPixelSize: 11
+                            value: root.showReadings && root.hasResult ? sessionApi.phrasePauses.toFixed(2) : "—"
                             unit: qsTr("sec")
                             accent: Theme.secondary(Material.theme)
                         }
@@ -958,15 +957,16 @@ Page {
                             visible: root.showSpeechTile
                             icon: Icons.faStopwatch
                             label: qsTr("Speech")
-                            hint: qsTr("Total time counted as speech")
+                            labelAtBottom: true
+                            labelPixelSize: 11
                             value: {
-                                if (!sessionApi || !(root.active || root.hasResult || sessionApi.speechDuration > 0))
+                                if (!root.showReadings || !sessionApi || !(root.hasResult || sessionApi.speechDuration > 0))
                                     return "—"
                                 var host = ApplicationWindow.window
                                 return host ? host.speechDurationText(sessionApi.speechDuration) : "—"
                             }
                             unit: {
-                                if (!sessionApi || !(root.active || root.hasResult || sessionApi.speechDuration > 0))
+                                if (!root.showReadings || !sessionApi || !(root.hasResult || sessionApi.speechDuration > 0))
                                     return ""
                                 var host = ApplicationWindow.window
                                 return host ? host.speechDurationUnit(sessionApi.speechDuration) : ""

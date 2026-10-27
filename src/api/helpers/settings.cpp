@@ -173,7 +173,10 @@ Settings::loadSettings()
     settings.analysisWindowSec = clampAnalysisWindowSec(qsettings.value("analysisWindowSec", 10).toInt());
     settings.updatesPerMinute = clampUpdatesPerMinute(qsettings.value("updatesPerMinute", 60).toInt());
     settings.tempoChartWindowSec = std::clamp(qsettings.value("tempoChartWindowSec", 300).toInt(), 30, 1800);
-    settings.recordingView = std::clamp(qsettings.value("recordingView", 0).toInt(), 0, 1);
+    // General/recordingView (0 chart, 1 arcs) used to pick the live Home view.
+    // Home now always shows both. Read the key so an older file still loads,
+    // then drop it on the next save.
+    (void)qsettings.value(QStringLiteral("recordingView"));
     settings.chartUseAllReadings = qsettings.value("chartUseAllReadings", true).toBool();
     settings.gaugeAverageCount = std::clamp(qsettings.value("gaugeAverageCount", 3).toInt(), 1, 30);
     settings.gaugeMode = std::clamp(qsettings.value("gaugeMode", 0).toInt(), 0, 2);
@@ -263,7 +266,7 @@ void Settings::saveSettings(const AppSettings& settings)
     qsettings.setValue("analysisWindowSec", settings.analysisWindowSec);
     qsettings.setValue("updatesPerMinute", settings.updatesPerMinute);
     qsettings.setValue("tempoChartWindowSec", settings.tempoChartWindowSec);
-    qsettings.setValue("recordingView", settings.recordingView);
+    qsettings.remove(QStringLiteral("recordingView"));
     qsettings.setValue("chartUseAllReadings", settings.chartUseAllReadings);
     qsettings.setValue("gaugeAverageCount", settings.gaugeAverageCount);
     qsettings.setValue("gaugeMode", settings.gaugeMode);

@@ -1064,31 +1064,6 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="415"/>
-        <source>While recording</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="416"/>
-        <source>What Home shows while a session is recording. Tempo chart: the live line chart. Arcs: the gauge arcs. After Stop, and after Open File, Home can show the chart and the arcs together when there is a result.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="421"/>
-        <source>Tempo chart</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="422"/>
-        <source>Arcs</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../ui/pages/SettingsPage.qml" line="428"/>
-        <source>Tempo chart or arcs on Home while you record.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <location filename="../ui/pages/SettingsPage.qml" line="432"/>
         <source>Pause (s)</source>
         <translation type="unfinished"></translation>
@@ -1404,7 +1379,7 @@
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="398"/>
-        <source>How many seconds of tempo the chart on Home keeps. Each live Home update adds a point. With Use all readings on, that point is the median of every reading since Start. With it off, the point is the gauge median, and the tip rests at zero when the arcs would. Older points slide off the left. When While recording is Tempo chart, Home shows this chart during a session. After Stop, and after Open File, the chart can appear with the arcs when there is a result. Range 30 to 1800 s, default 300 s (5 min).</source>
+        <source>How many seconds of tempo the chart on Home keeps. Each live Home update adds a point. With Use all readings on, that point is the median of every reading since Start. With it off, the point is the gauge median, and the tip rests at zero when the arcs would. Older points slide off the left. Home shows this chart together with the arcs while recording, after Stop, and after Open File. Range 30 to 1800 s, default 300 s (5 min).</source>
         <translation type="unfinished"></translation>
     </message>
     <message>

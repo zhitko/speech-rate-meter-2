@@ -34,9 +34,14 @@ Item {
     readonly property real headerArticulation: tipActive ? tipArticulation
                                                          : (lastPoint ? Number(lastPoint.articulationRate) : NaN)
     readonly property bool hasHeader: tipActive || !!lastPoint
-    // After Stop the arcs show the averaged pace. The last chart point is a
-    // different number, so the header labels stay only while recording.
-    readonly property bool showHeaderValues: live && hasHeader
+    // Pace figures stay off the chart. While recording the line moves
+    // without numbers. After Stop the arc centre shows the result, which is
+    // a different number from the last chart point, so the header does not
+    // repeat it.
+    readonly property bool showHeaderValues: false
+    // Home draws the Tempo title in the card's chip row and gives the plot
+    // the header's height.
+    property bool compactHeader: false
     readonly property int paintTheme: Material.theme
     // Same green / yellow as the Slow and Average gauge arcs.
     readonly property color articulationColor: Theme.zoneColor(0, paintTheme)
@@ -117,7 +122,9 @@ Item {
     Accessible.description: {
         if (waiting)
             return waitingTitle.text + " " + waitingBody.text
-        if (!showHeaderValues)
+        // The figures are not painted while recording. A screen reader still
+        // hears the latest pace, because the moving line is not announced.
+        if (!(live && hasHeader))
             return plotted.length === 0 ? qsTr("No tempo yet") : ""
         var parts = []
         if (showArticulation)
@@ -155,6 +162,8 @@ Item {
         anchors.right: parent.right
         anchors.top: parent.top
         spacing: 8
+        visible: !root.compactHeader
+        height: root.compactHeader ? 0 : implicitHeight
 
         Rectangle {
             implicitWidth: 28
@@ -283,7 +292,7 @@ Item {
     Canvas {
         id: canvas
         anchors.top: header.bottom
-        anchors.topMargin: 12
+        anchors.topMargin: root.compactHeader ? 0 : 12
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: captionItem.top

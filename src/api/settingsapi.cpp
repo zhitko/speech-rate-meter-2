@@ -335,19 +335,6 @@ void SettingsApi::setTempoChartWindowSec(int seconds)
     emit tempoChartWindowSecChanged();
 }
 
-int SettingsApi::recordingView() const
-{
-    return m_settings.recordingView;
-}
-
-void SettingsApi::setRecordingView(int view)
-{
-    if (!assignIfChanged(m_settings.recordingView, std::clamp(view, 0, 1)))
-        return;
-    save();
-    emit recordingViewChanged();
-}
-
 bool SettingsApi::chartUseAllReadings() const
 {
     return m_settings.chartUseAllReadings;
@@ -700,7 +687,6 @@ void SettingsApi::load()
     emit analysisWindowSecChanged();
     emit updatesPerMinuteChanged();
     emit tempoChartWindowSecChanged();
-    emit recordingViewChanged();
     emit chartUseAllReadingsChanged();
     emit gaugeAverageCountChanged();
     emit gaugeModeChanged();
