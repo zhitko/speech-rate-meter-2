@@ -442,14 +442,23 @@ Item {
     readonly property var zoneColorsLight: ["#1A4FE0", "#0E7C36", "#D32722"]
     readonly property var zoneColorsDark: ["#6B96FF", "#3DDE6A", "#FF5C48"]
     // Bright anchors for the pace arc and the tempo curves.
-    // Light: saturated blue, saturated green, then yellow → orange → red.
+    // Each zone blends across its own third: deep blue to bright blue,
+    // deep green to yellow-green, then yellow → orange → red.
     readonly property color paceSlowLight: "#1A4FE0"
+    readonly property color paceSlowDeepLight: "#0C2F9C"
+    readonly property color paceSlowBrightLight: "#6A9BFF"
     readonly property color paceMidLight: "#1BB34A"
+    readonly property color paceMidDeepLight: "#0B6B2E"
+    readonly property color paceMidBrightLight: "#C6DE45"
     readonly property color paceYellowLight: "#F0C400"
     readonly property color paceOrangeLight: "#F07800"
     readonly property color paceFastLight: "#E0312B"
     readonly property color paceSlowDark: "#6B96FF"
+    readonly property color paceSlowDeepDark: "#3A62D6"
+    readonly property color paceSlowBrightDark: "#A9C7FF"
     readonly property color paceMidDark: "#3DDE6A"
+    readonly property color paceMidDeepDark: "#149448"
+    readonly property color paceMidBrightDark: "#C8F06A"
     readonly property color paceYellowDark: "#FFE14A"
     readonly property color paceOrangeDark: "#FF9A2E"
     readonly property color paceFastDark: "#FF5C48"
@@ -471,12 +480,22 @@ Item {
                        c1.g + (c2.g - c1.g) * u,
                        c1.b + (c2.b - c1.b) * u, 1);
     }
-    // t is 0 at the slow end and 1 at the fast end. Blue holds through Slow,
-    // green through most of Average, then a clear yellow-to-red gradient
-    // across Fast.
+    // t is 0 at the slow end and 1 at the fast end. Slow and Average each
+    // blend across their third. Fast keeps the yellow-to-red gradient.
     function paceColor(t, theme) {
         let dark = theme === Material.Dark;
         let x = Math.max(0, Math.min(1, t));
+        if (x < 1 / 3) {
+            let deep = dark ? paceSlowDeepDark : paceSlowDeepLight;
+            let bright = dark ? paceSlowBrightDark : paceSlowBrightLight;
+            return mixColor(deep, bright, x / (1 / 3));
+        }
+        if (x < 2 / 3) {
+            let deep = dark ? paceMidDeepDark : paceMidDeepLight;
+            let bright = dark ? paceMidBrightDark : paceMidBrightLight;
+            return mixColor(deep, bright, (x - 1 / 3) / (1 / 3));
+        }
+        // Same yellow → orange → red the Fast arc already used.
         let slow = dark ? paceSlowDark : paceSlowLight;
         let mid = dark ? paceMidDark : paceMidLight;
         let yellow = dark ? paceYellowDark : paceYellowLight;

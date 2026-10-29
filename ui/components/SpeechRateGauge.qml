@@ -149,61 +149,39 @@ Item {
                        bg.b + (c.b - bg.b) * a, 1)
     }
 
-    // Slow and Average are flat saturated colors. Fast is yellow to red, drawn
-    // as short flat strokes so the blend stays even. A conical stroke gradient
-    // ran the wrong way around this arc.
-    component SolidArc: ShapePath {
-        id: arc
-        required property var gauge
-        property real ringRadius: gauge.radius
-        property real ringStroke: gauge.stroke
-        property real arcStart: 0
-        property real arcSweep: 0
-        property color arcColor: "transparent"
-        fillColor: "transparent"
-        strokeColor: arcSweep > 0.25 ? arcColor : "transparent"
-        strokeWidth: ringStroke
-        capStyle: ShapePath.RoundCap
-
-        PathAngleArc {
-            centerX: arc.gauge.cx
-            centerY: arc.gauge.cy
-            radiusX: arc.ringRadius
-            radiusY: arc.ringRadius
-            startAngle: arc.arcStart
-            sweepAngle: Math.max(0.01, arc.arcSweep)
-        }
-    }
-
-    // One step of the Fast zone. `filled` covers up to the marker; the track
-    // is the faint remainder. Opaque steps overlap a little so the joins do
-    // not show. The faint track does not, or the overlaps would go dark.
-    component FastSlice: ShapePath {
+    // One step of a zone. Short flat strokes stand in for a stroke gradient,
+    // which ran the wrong way around this arc. `filled` covers up to the
+    // marker; the track is the faint remainder. Steps overlap a little so
+    // the joins do not show.
+    component ZoneSlice: ShapePath {
         id: slice
+        property int zone: 0
         property int step: 0
         property int steps: 16
         property bool inner: false
         property bool filled: false
         property var gauge: root
         readonly property bool live: !inner || gauge.dual
-        readonly property real z0: inner ? gauge.innerSegmentStart(2) : gauge.segmentStart(2)
+        readonly property real z0: inner ? gauge.innerSegmentStart(zone) : gauge.segmentStart(zone)
         readonly property real zoneSweep: inner ? gauge.innerSegmentSweep : gauge.segmentSweep
         readonly property real sliceSweep: zoneSweep / steps
         readonly property real a0: z0 + step * sliceSweep
         readonly property real a1: z0 + (step + 1) * sliceSweep
         readonly property real valueEnd: inner
-                                          ? gauge.innerSegmentStart(2) + (gauge.dual && gauge.hasValue ? gauge.innerFilledSweep(2) : 0)
-                                          : gauge.segmentStart(2) + (gauge.hasValue ? gauge.filledSweep(2) : 0)
+                                          ? gauge.innerSegmentStart(zone) + (gauge.dual && gauge.hasValue ? gauge.innerFilledSweep(zone) : 0)
+                                          : gauge.segmentStart(zone) + (gauge.hasValue ? gauge.filledSweep(zone) : 0)
         readonly property real rawFrom: filled ? a0 : Math.max(a0, valueEnd)
         readonly property real rawTo: filled ? Math.min(a1, valueEnd) : a1
-        // Overlap neighbouring steps. The track is mixed onto the card, not
-        // drawn translucent, so an overlap does not turn into a dark rib.
-        readonly property real from: rawFrom - (rawFrom > z0 + 0.3 ? 0.9 : 0)
-        readonly property real to: rawTo + (rawTo < z0 + zoneSweep - 0.3 ? 0.9 : 0)
+        // Overlap neighbouring steps only when this step actually has ink.
+        // Extending an empty filled step paints a round cap, which shows up
+        // as a dot at the start of a zone the marker has not reached.
+        readonly property bool hasInk: rawTo - rawFrom > 0.25
+        readonly property real from: hasInk ? rawFrom - (rawFrom > z0 + 0.3 ? 0.9 : 0) : rawFrom
+        readonly property real to: hasInk ? rawTo + (rawTo < z0 + zoneSweep - 0.3 ? 0.9 : 0) : rawFrom
         readonly property real drawn: to - from
         readonly property real tee: {
             var mid = (Math.max(from, a0) + Math.min(to, a1)) * 0.5
-            return Math.max(0, Math.min(1, (2 + (mid - z0) / Math.max(1, zoneSweep)) / 3))
+            return Math.max(0, Math.min(1, (zone + (mid - z0) / Math.max(1, zoneSweep)) / 3))
         }
         readonly property bool roundEnd: step === 0 || step === steps - 1
                                          || (filled && to < a1 - 0.4)
@@ -228,61 +206,54 @@ Item {
         anchors.fill: parent
         preferredRendererType: Shape.CurveRenderer
 
-        SolidArc { gauge: root; arcStart: root.segmentStart(0); arcSweep: root.segmentSweep; arcColor: Qt.alpha(Theme.paceAnchor(0, root.paintTheme), 0.28) }
-        SolidArc { gauge: root; arcStart: root.segmentStart(1); arcSweep: root.segmentSweep; arcColor: Qt.alpha(Theme.paceAnchor(1, root.paintTheme), 0.28) }
-        FastSlice { step: 0 } FastSlice { step: 1 } FastSlice { step: 2 } FastSlice { step: 3 }
-        FastSlice { step: 4 } FastSlice { step: 5 } FastSlice { step: 6 } FastSlice { step: 7 }
-        FastSlice { step: 8 } FastSlice { step: 9 } FastSlice { step: 10 } FastSlice { step: 11 }
-        FastSlice { step: 12 } FastSlice { step: 13 } FastSlice { step: 14 } FastSlice { step: 15 }
-        SolidArc { gauge: root; arcStart: root.segmentStart(0); arcSweep: root.hasValue ? root.filledSweep(0) : 0; arcColor: Theme.paceAnchor(0, root.paintTheme) }
-        SolidArc { gauge: root; arcStart: root.segmentStart(1); arcSweep: root.hasValue ? root.filledSweep(1) : 0; arcColor: Theme.paceAnchor(1, root.paintTheme) }
-        FastSlice { step: 0; filled: true } FastSlice { step: 1; filled: true }
-        FastSlice { step: 2; filled: true } FastSlice { step: 3; filled: true }
-        FastSlice { step: 4; filled: true } FastSlice { step: 5; filled: true }
-        FastSlice { step: 6; filled: true } FastSlice { step: 7; filled: true }
-        FastSlice { step: 8; filled: true } FastSlice { step: 9; filled: true }
-        FastSlice { step: 10; filled: true } FastSlice { step: 11; filled: true }
-        FastSlice { step: 12; filled: true } FastSlice { step: 13; filled: true }
-        FastSlice { step: 14; filled: true } FastSlice { step: 15; filled: true }
-
-        SolidArc {
-            gauge: root; ringRadius: root.innerRadius; ringStroke: root.innerStroke
-            arcStart: root.innerSegmentStart(0); arcSweep: root.dual ? root.innerSegmentSweep : 0
-            arcColor: Qt.alpha(Theme.paceAnchor(0, root.paintTheme), 0.28)
-        }
-        SolidArc {
-            gauge: root; ringRadius: root.innerRadius; ringStroke: root.innerStroke
-            arcStart: root.innerSegmentStart(1); arcSweep: root.dual ? root.innerSegmentSweep : 0
-            arcColor: Qt.alpha(Theme.paceAnchor(1, root.paintTheme), 0.28)
-        }
-        FastSlice { step: 0; inner: true } FastSlice { step: 1; inner: true }
-        FastSlice { step: 2; inner: true } FastSlice { step: 3; inner: true }
-        FastSlice { step: 4; inner: true } FastSlice { step: 5; inner: true }
-        FastSlice { step: 6; inner: true } FastSlice { step: 7; inner: true }
-        FastSlice { step: 8; inner: true } FastSlice { step: 9; inner: true }
-        FastSlice { step: 10; inner: true } FastSlice { step: 11; inner: true }
-        FastSlice { step: 12; inner: true } FastSlice { step: 13; inner: true }
-        FastSlice { step: 14; inner: true } FastSlice { step: 15; inner: true }
-        SolidArc {
-            gauge: root; ringRadius: root.innerRadius; ringStroke: root.innerStroke
-            arcStart: root.innerSegmentStart(0)
-            arcSweep: root.dual && root.hasValue ? root.innerFilledSweep(0) : 0
-            arcColor: Theme.paceAnchor(0, root.paintTheme)
-        }
-        SolidArc {
-            gauge: root; ringRadius: root.innerRadius; ringStroke: root.innerStroke
-            arcStart: root.innerSegmentStart(1)
-            arcSweep: root.dual && root.hasValue ? root.innerFilledSweep(1) : 0
-            arcColor: Theme.paceAnchor(1, root.paintTheme)
-        }
-        FastSlice { step: 0; inner: true; filled: true } FastSlice { step: 1; inner: true; filled: true }
-        FastSlice { step: 2; inner: true; filled: true } FastSlice { step: 3; inner: true; filled: true }
-        FastSlice { step: 4; inner: true; filled: true } FastSlice { step: 5; inner: true; filled: true }
-        FastSlice { step: 6; inner: true; filled: true } FastSlice { step: 7; inner: true; filled: true }
-        FastSlice { step: 8; inner: true; filled: true } FastSlice { step: 9; inner: true; filled: true }
-        FastSlice { step: 10; inner: true; filled: true } FastSlice { step: 11; inner: true; filled: true }
-        FastSlice { step: 12; inner: true; filled: true } FastSlice { step: 13; inner: true; filled: true }
-        FastSlice { step: 14; inner: true; filled: true } FastSlice { step: 15; inner: true; filled: true }
+        ZoneSlice { zone: 0; step: 0 } ZoneSlice { zone: 0; step: 1 } ZoneSlice { zone: 0; step: 2 } ZoneSlice { zone: 0; step: 3 }
+        ZoneSlice { zone: 0; step: 4 } ZoneSlice { zone: 0; step: 5 } ZoneSlice { zone: 0; step: 6 } ZoneSlice { zone: 0; step: 7 }
+        ZoneSlice { zone: 0; step: 8 } ZoneSlice { zone: 0; step: 9 } ZoneSlice { zone: 0; step: 10 } ZoneSlice { zone: 0; step: 11 }
+        ZoneSlice { zone: 0; step: 12 } ZoneSlice { zone: 0; step: 13 } ZoneSlice { zone: 0; step: 14 } ZoneSlice { zone: 0; step: 15 }
+        ZoneSlice { zone: 1; step: 0 } ZoneSlice { zone: 1; step: 1 } ZoneSlice { zone: 1; step: 2 } ZoneSlice { zone: 1; step: 3 }
+        ZoneSlice { zone: 1; step: 4 } ZoneSlice { zone: 1; step: 5 } ZoneSlice { zone: 1; step: 6 } ZoneSlice { zone: 1; step: 7 }
+        ZoneSlice { zone: 1; step: 8 } ZoneSlice { zone: 1; step: 9 } ZoneSlice { zone: 1; step: 10 } ZoneSlice { zone: 1; step: 11 }
+        ZoneSlice { zone: 1; step: 12 } ZoneSlice { zone: 1; step: 13 } ZoneSlice { zone: 1; step: 14 } ZoneSlice { zone: 1; step: 15 }
+        ZoneSlice { zone: 2; step: 0 } ZoneSlice { zone: 2; step: 1 } ZoneSlice { zone: 2; step: 2 } ZoneSlice { zone: 2; step: 3 }
+        ZoneSlice { zone: 2; step: 4 } ZoneSlice { zone: 2; step: 5 } ZoneSlice { zone: 2; step: 6 } ZoneSlice { zone: 2; step: 7 }
+        ZoneSlice { zone: 2; step: 8 } ZoneSlice { zone: 2; step: 9 } ZoneSlice { zone: 2; step: 10 } ZoneSlice { zone: 2; step: 11 }
+        ZoneSlice { zone: 2; step: 12 } ZoneSlice { zone: 2; step: 13 } ZoneSlice { zone: 2; step: 14 } ZoneSlice { zone: 2; step: 15 }
+        ZoneSlice { zone: 0; step: 0; filled: true } ZoneSlice { zone: 0; step: 1; filled: true } ZoneSlice { zone: 0; step: 2; filled: true } ZoneSlice { zone: 0; step: 3; filled: true }
+        ZoneSlice { zone: 0; step: 4; filled: true } ZoneSlice { zone: 0; step: 5; filled: true } ZoneSlice { zone: 0; step: 6; filled: true } ZoneSlice { zone: 0; step: 7; filled: true }
+        ZoneSlice { zone: 0; step: 8; filled: true } ZoneSlice { zone: 0; step: 9; filled: true } ZoneSlice { zone: 0; step: 10; filled: true } ZoneSlice { zone: 0; step: 11; filled: true }
+        ZoneSlice { zone: 0; step: 12; filled: true } ZoneSlice { zone: 0; step: 13; filled: true } ZoneSlice { zone: 0; step: 14; filled: true } ZoneSlice { zone: 0; step: 15; filled: true }
+        ZoneSlice { zone: 1; step: 0; filled: true } ZoneSlice { zone: 1; step: 1; filled: true } ZoneSlice { zone: 1; step: 2; filled: true } ZoneSlice { zone: 1; step: 3; filled: true }
+        ZoneSlice { zone: 1; step: 4; filled: true } ZoneSlice { zone: 1; step: 5; filled: true } ZoneSlice { zone: 1; step: 6; filled: true } ZoneSlice { zone: 1; step: 7; filled: true }
+        ZoneSlice { zone: 1; step: 8; filled: true } ZoneSlice { zone: 1; step: 9; filled: true } ZoneSlice { zone: 1; step: 10; filled: true } ZoneSlice { zone: 1; step: 11; filled: true }
+        ZoneSlice { zone: 1; step: 12; filled: true } ZoneSlice { zone: 1; step: 13; filled: true } ZoneSlice { zone: 1; step: 14; filled: true } ZoneSlice { zone: 1; step: 15; filled: true }
+        ZoneSlice { zone: 2; step: 0; filled: true } ZoneSlice { zone: 2; step: 1; filled: true } ZoneSlice { zone: 2; step: 2; filled: true } ZoneSlice { zone: 2; step: 3; filled: true }
+        ZoneSlice { zone: 2; step: 4; filled: true } ZoneSlice { zone: 2; step: 5; filled: true } ZoneSlice { zone: 2; step: 6; filled: true } ZoneSlice { zone: 2; step: 7; filled: true }
+        ZoneSlice { zone: 2; step: 8; filled: true } ZoneSlice { zone: 2; step: 9; filled: true } ZoneSlice { zone: 2; step: 10; filled: true } ZoneSlice { zone: 2; step: 11; filled: true }
+        ZoneSlice { zone: 2; step: 12; filled: true } ZoneSlice { zone: 2; step: 13; filled: true } ZoneSlice { zone: 2; step: 14; filled: true } ZoneSlice { zone: 2; step: 15; filled: true }
+        ZoneSlice { zone: 0; step: 0; inner: true } ZoneSlice { zone: 0; step: 1; inner: true } ZoneSlice { zone: 0; step: 2; inner: true } ZoneSlice { zone: 0; step: 3; inner: true }
+        ZoneSlice { zone: 0; step: 4; inner: true } ZoneSlice { zone: 0; step: 5; inner: true } ZoneSlice { zone: 0; step: 6; inner: true } ZoneSlice { zone: 0; step: 7; inner: true }
+        ZoneSlice { zone: 0; step: 8; inner: true } ZoneSlice { zone: 0; step: 9; inner: true } ZoneSlice { zone: 0; step: 10; inner: true } ZoneSlice { zone: 0; step: 11; inner: true }
+        ZoneSlice { zone: 0; step: 12; inner: true } ZoneSlice { zone: 0; step: 13; inner: true } ZoneSlice { zone: 0; step: 14; inner: true } ZoneSlice { zone: 0; step: 15; inner: true }
+        ZoneSlice { zone: 1; step: 0; inner: true } ZoneSlice { zone: 1; step: 1; inner: true } ZoneSlice { zone: 1; step: 2; inner: true } ZoneSlice { zone: 1; step: 3; inner: true }
+        ZoneSlice { zone: 1; step: 4; inner: true } ZoneSlice { zone: 1; step: 5; inner: true } ZoneSlice { zone: 1; step: 6; inner: true } ZoneSlice { zone: 1; step: 7; inner: true }
+        ZoneSlice { zone: 1; step: 8; inner: true } ZoneSlice { zone: 1; step: 9; inner: true } ZoneSlice { zone: 1; step: 10; inner: true } ZoneSlice { zone: 1; step: 11; inner: true }
+        ZoneSlice { zone: 1; step: 12; inner: true } ZoneSlice { zone: 1; step: 13; inner: true } ZoneSlice { zone: 1; step: 14; inner: true } ZoneSlice { zone: 1; step: 15; inner: true }
+        ZoneSlice { zone: 2; step: 0; inner: true } ZoneSlice { zone: 2; step: 1; inner: true } ZoneSlice { zone: 2; step: 2; inner: true } ZoneSlice { zone: 2; step: 3; inner: true }
+        ZoneSlice { zone: 2; step: 4; inner: true } ZoneSlice { zone: 2; step: 5; inner: true } ZoneSlice { zone: 2; step: 6; inner: true } ZoneSlice { zone: 2; step: 7; inner: true }
+        ZoneSlice { zone: 2; step: 8; inner: true } ZoneSlice { zone: 2; step: 9; inner: true } ZoneSlice { zone: 2; step: 10; inner: true } ZoneSlice { zone: 2; step: 11; inner: true }
+        ZoneSlice { zone: 2; step: 12; inner: true } ZoneSlice { zone: 2; step: 13; inner: true } ZoneSlice { zone: 2; step: 14; inner: true } ZoneSlice { zone: 2; step: 15; inner: true }
+        ZoneSlice { zone: 0; step: 0; inner: true; filled: true } ZoneSlice { zone: 0; step: 1; inner: true; filled: true } ZoneSlice { zone: 0; step: 2; inner: true; filled: true } ZoneSlice { zone: 0; step: 3; inner: true; filled: true }
+        ZoneSlice { zone: 0; step: 4; inner: true; filled: true } ZoneSlice { zone: 0; step: 5; inner: true; filled: true } ZoneSlice { zone: 0; step: 6; inner: true; filled: true } ZoneSlice { zone: 0; step: 7; inner: true; filled: true }
+        ZoneSlice { zone: 0; step: 8; inner: true; filled: true } ZoneSlice { zone: 0; step: 9; inner: true; filled: true } ZoneSlice { zone: 0; step: 10; inner: true; filled: true } ZoneSlice { zone: 0; step: 11; inner: true; filled: true }
+        ZoneSlice { zone: 0; step: 12; inner: true; filled: true } ZoneSlice { zone: 0; step: 13; inner: true; filled: true } ZoneSlice { zone: 0; step: 14; inner: true; filled: true } ZoneSlice { zone: 0; step: 15; inner: true; filled: true }
+        ZoneSlice { zone: 1; step: 0; inner: true; filled: true } ZoneSlice { zone: 1; step: 1; inner: true; filled: true } ZoneSlice { zone: 1; step: 2; inner: true; filled: true } ZoneSlice { zone: 1; step: 3; inner: true; filled: true }
+        ZoneSlice { zone: 1; step: 4; inner: true; filled: true } ZoneSlice { zone: 1; step: 5; inner: true; filled: true } ZoneSlice { zone: 1; step: 6; inner: true; filled: true } ZoneSlice { zone: 1; step: 7; inner: true; filled: true }
+        ZoneSlice { zone: 1; step: 8; inner: true; filled: true } ZoneSlice { zone: 1; step: 9; inner: true; filled: true } ZoneSlice { zone: 1; step: 10; inner: true; filled: true } ZoneSlice { zone: 1; step: 11; inner: true; filled: true }
+        ZoneSlice { zone: 1; step: 12; inner: true; filled: true } ZoneSlice { zone: 1; step: 13; inner: true; filled: true } ZoneSlice { zone: 1; step: 14; inner: true; filled: true } ZoneSlice { zone: 1; step: 15; inner: true; filled: true }
+        ZoneSlice { zone: 2; step: 0; inner: true; filled: true } ZoneSlice { zone: 2; step: 1; inner: true; filled: true } ZoneSlice { zone: 2; step: 2; inner: true; filled: true } ZoneSlice { zone: 2; step: 3; inner: true; filled: true }
+        ZoneSlice { zone: 2; step: 4; inner: true; filled: true } ZoneSlice { zone: 2; step: 5; inner: true; filled: true } ZoneSlice { zone: 2; step: 6; inner: true; filled: true } ZoneSlice { zone: 2; step: 7; inner: true; filled: true }
+        ZoneSlice { zone: 2; step: 8; inner: true; filled: true } ZoneSlice { zone: 2; step: 9; inner: true; filled: true } ZoneSlice { zone: 2; step: 10; inner: true; filled: true } ZoneSlice { zone: 2; step: 11; inner: true; filled: true }
+        ZoneSlice { zone: 2; step: 12; inner: true; filled: true } ZoneSlice { zone: 2; step: 13; inner: true; filled: true } ZoneSlice { zone: 2; step: 14; inner: true; filled: true } ZoneSlice { zone: 2; step: 15; inner: true; filled: true }
     }
 
     Repeater {

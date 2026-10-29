@@ -145,32 +145,15 @@ Page {
     readonly property real gaugeRoom: viewportHeight - AppScale.pagePadding * 2 - 4 - gaugeSurround
     // The legacy caps were measured with the arc below the chip. gaugeRoom
     // already includes the reclaimed band, so it is not added a second time.
-    // After Stop, Open File, and any result already on screen, the chart and
-    // the arcs grow. Recording, and Home before anything has been measured,
-    // keep the sizes this layout had before. One size for both states would
-    // either shrink the live chart, which already takes the leftover page, or
-    // push the pinned Stop button. The page scrolls when the larger result
-    // does not fit.
-    readonly property real resultScale: (!active && hasResult) ? 1.4 : 1
-    // The card already fills the page above the tiles. Growing that whole
-    // slot by 1.4 made the chart and the arcs nearly twice as tall and pushed
-    // the arc-end numbers under the footer. Scale the chart and the gauge
-    // from the fitted result size instead. See chartResultHeight / gaugeResultHeight.
+    // Stop, Open File, and a result already on screen keep this size. The
+    // chart and the arcs do not grow or shrink when the result cards appear.
+    // Those cards sit beside the card or under it, and the page scrolls.
     readonly property real naturalGaugeHeight: {
-        var base = Math.min(legacyGaugeHeight * 1.5 + chipBand,
-                             Math.max(legacyGaugeHeight + chipBand, gaugeRoom))
-        return base * resultScale
+        return Math.min(legacyGaugeHeight * 1.5 + chipBand,
+                         Math.max(legacyGaugeHeight + chipBand, gaugeRoom))
     }
-    // Height the gauge card fills when the page is exactly the window.
-    // Results ask for 1.4× that, so both the chart and the arcs grow and the
-    // page scrolls instead of squeezing them back to the old size.
-    readonly property real unscaledCardSlot: {
-        var pad = AppScale.pagePadding * 2
-        if (wideLayout)
-            return Math.max(280, viewportHeight - pad)
-        var side = sideColumnActive ? sideColumn.implicitHeight + 12 : 0
-        return Math.max(280, viewportHeight - pad - side)
-    }
+    // Height the gauge card fills while recording. Results use the same slot.
+    readonly property real recordingCardHeight: Math.max(280, viewportHeight - AppScale.pagePadding * 2)
     // Phone column width is known up front. Wide cards are not: the tiles can
     // take more than their share, so that height is measured from the real width.
     function gaugeContentHeight(gaugeWidth) {
@@ -183,13 +166,18 @@ Page {
     // short window does not scroll just because a preferred size was large.
     // fillHeight then shares whatever height is left. With those cards hidden,
     // expandedChartHeight gives the leftover page to the tempo chart.
-    // Wide windows stack the value tiles in one column. The column stays only
-    // as wide as those tiles and the Start / Open File controls, and the
-    // tempo chart takes the rest of the row.
-    // With the value cards hidden the column is only the buttons, so the
-    // chart keeps the width those cards used to take.
-    readonly property real metricColumnWidth: (visibleMetricTiles > 0 || wholeRecordingShown)
-                                               ? Math.max(280, sideColumn.implicitWidth)
+    // On a wide window the button column keeps the Listen and Open File slots
+    // while recording, and the result cards use that same width. The chart
+    // does not give up width when those cards appear.
+    readonly property real controlsColumnWidth: {
+        if (!wideLayout)
+            return 0
+        var item = recordLoader.item
+        var reserved = item && item.reservedWidth ? item.reservedWidth : 0
+        var button = (AppScale.isShort ? 80 : 96) * 1.5
+        return Math.max(button, reserved)
+    }
+    readonly property real metricColumnWidth: wideLayout ? controlsColumnWidth
                                                : Math.max(1, sideColumn.implicitWidth)
     // Height of the arc at this width, before it is asked to fill the page.
     function gaugeArcHeight(gaugeWidth) {
@@ -206,20 +194,18 @@ Page {
         var cap = Math.max(gaugeFloor, viewportHeight * (wideLayout ? 0.46 : 0.34))
         return Math.min(gaugeArcHeight(gaugeWidth), cap)
     }
-    // When the value cards are hidden, the tempo chart takes the page height
-    // the cards no longer use. The gauge stays the size of its arc.
+    // The tempo chart takes the page height the value cards no longer use
+    // while recording. A result keeps that height; the cards scroll instead
+    // of borrowing it. The gauge stays the size of its arc.
     readonly property real expandedChartHeight: {
-        if (!metricCardsHidden)
-            return chartMinHeight
-        var sideH = sideColumnActive && !wideLayout
+        var sideH = metricCardsHidden && sideColumnActive && !wideLayout
                     ? sideColumn.implicitHeight + 12
                     : 0
         var chrome = AppScale.pagePadding * 2 + 104
         return Math.max(chartMinHeight, viewportHeight - restedGaugeHeight - sideH - chrome)
     }
     readonly property real fittedGaugeHeight: {
-        // A result is allowed to scroll. Do not shrink it back to the window.
-        if (resultScale > 1 || !fitNavigation || cardsBelowGauge)
+        if (!fitNavigation || cardsBelowGauge)
             return naturalGaugeHeight
         // A few spare pixels keep rounding from bringing the scrollbar back.
         var budget = viewportHeight - AppScale.pagePadding * 2 - 8
@@ -414,10 +400,18 @@ Page {
             readonly property real gap: AppScale.isCompact ? 12 : 20
             readonly property bool showListen: !!sessionApi && !root.active && sessionApi.listenFiles.length > 0
             readonly property bool showOpenFile: !!sessionApi && sessionApi.openFileAvailable && !root.active
-            readonly property real listenSpan: showListen ? listenColumn.width + gap : 0
-            readonly property real openSpan: showOpenFile ? openFileColumn.width + gap : 0
-            readonly property real sideSpan: Math.max(listenSpan, openSpan)
-            implicitWidth: centerColumn.implicitWidth + sideSpan * 2
+            // Slots stay in the row on a wide window even while Listen and Open
+            // File are hidden, so Stop and the chart do not shift when a result
+            // opens. A phone footer only takes the width of the buttons on screen.
+            readonly property real listenSlot: listenColumn.width + gap
+            readonly property real openSlot: (sessionApi && sessionApi.openFileAvailable)
+                                              ? openFileColumn.width + gap : 0
+            readonly property real sideSpan: Math.max(showListen ? listenSlot : 0,
+                                                       showOpenFile ? openSlot : 0)
+            readonly property real reservedWidth: centerColumn.implicitWidth
+                                                   + Math.max(listenSlot, openSlot) * 2
+            implicitWidth: root.wideLayout ? reservedWidth
+                                            : centerColumn.implicitWidth + sideSpan * 2
             implicitHeight: Math.max(centerColumn.implicitHeight,
                                      showListen ? listenColumn.implicitHeight : 0,
                                      showOpenFile ? openFileColumn.implicitHeight : 0)
@@ -718,23 +712,11 @@ Page {
                                             : 1
                     Layout.fillHeight: root.cardFills
                     Layout.alignment: Qt.AlignTop
-                    // A straight 1.4× of this slot made the phone chart and arcs
-                    // nearly twice as tall and hid the numbers under the arc ends.
-                    // 1.22× on a phone keeps that growth near 1.4× and leaves
-                    // 70 / 210 above the footer. A wide window is only a little
-                    // taller than the screen, so 1100×800 still shows the arc.
-                    Layout.minimumHeight: root.resultScale > 1
-                                          ? root.unscaledCardSlot * (root.wideLayout ? 1.05 : 1.22) : 0
-                    // A wide window puts the summary beside this card. Without a
-                    // cap the card would grow with that column and the arcs would
-                    // run off the bottom of the screen. The page still scrolls
-                    // when the summary is taller than the window. A result lifts
-                    // that cap so the chart and the arcs can grow.
-                    Layout.maximumHeight: !root.wideLayout ? -1
-                            : Math.max(implicitHeight,
-                                       root.resultScale > 1
-                                           ? root.unscaledCardSlot * 1.05
-                                           : root.viewportHeight - AppScale.pagePadding * 2)
+                    // Same slot while recording and after a result. The result
+                    // cards do not resize this card; the page scrolls for them.
+                    // A wide summary beside the card cannot stretch the arcs.
+                    Layout.minimumHeight: root.recordingCardHeight
+                    Layout.maximumHeight: root.recordingCardHeight
                     implicitHeight: gaugeColumn.implicitHeight + 32
                     radius: Theme.shapeExtraLarge
                     color: Theme.surfaceContainerLow(Material.theme)
@@ -833,7 +815,7 @@ Page {
                             // can start as soon as the chip ends.
                             Layout.topMargin: 32
                             Layout.fillHeight: true
-                            Layout.verticalStretchFactor: root.metricCardsHidden ? 8 : 4
+                            Layout.verticalStretchFactor: 8
                             Layout.preferredHeight: root.expandedChartHeight
                             Layout.minimumHeight: root.chartMinHeight
                             Layout.maximumHeight: 10000
@@ -860,26 +842,15 @@ Page {
                             id: gaugeSlot
                             visible: root.showGaugeArcs
                             Layout.fillWidth: true
-                            Layout.fillHeight: !root.metricCardsHidden
-                            // Stretch is ignored unless the slot is filling. While
-                            // the value cards are hidden the slot is a fixed cap.
-                            Layout.verticalStretchFactor: root.metricCardsHidden ? 0 : 5
+                            // The arc keeps the recording cap after Stop and
+                            // Open File. It does not grow into a result card.
+                            Layout.fillHeight: false
+                            Layout.verticalStretchFactor: 0
                             Layout.topMargin: 0
                             readonly property real hintBlock: 4 + gaugeHint.implicitHeight + 2
-                            // With the value cards hidden the arc is a fixed cap.
-                            // A result multiplies that cap; recording leaves it.
-                            // With the cards showing, the taller result card shares
-                            // the extra height, so the cap itself stays put.
-                            readonly property real slotScale: root.metricCardsHidden ? root.resultScale : 1
-                            Layout.preferredHeight: ((root.metricCardsHidden || root.cardsBelowGauge
-                                                      ? root.restedGaugeHeight : root.gaugeFloor) * slotScale) + hintBlock
-                            Layout.minimumHeight: ((root.cardsBelowGauge ? root.restedGaugeHeight
-                                                    : (root.metricCardsHidden
-                                                       ? root.restedGaugeHeight * root.resultScale
-                                                       : root.gaugeFloor))) + hintBlock
-                            Layout.maximumHeight: root.metricCardsHidden
-                                                   ? root.restedGaugeHeight * root.resultScale + hintBlock
-                                                   : 10000
+                            Layout.preferredHeight: root.restedGaugeHeight + hintBlock
+                            Layout.minimumHeight: root.restedGaugeHeight + hintBlock
+                            Layout.maximumHeight: root.restedGaugeHeight + hintBlock
 
                             SpeechRateGauge {
                                 id: gauge
@@ -1083,6 +1054,7 @@ Page {
                     }
 
                     Loader {
+                        id: recordLoader
                         Layout.fillWidth: true
                         active: root.wideLayout
                         visible: active

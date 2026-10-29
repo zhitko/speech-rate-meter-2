@@ -53,19 +53,15 @@ Item {
     readonly property color boundaryColor: paintTheme === Material.Dark
                                            ? Qt.rgba(0.93, 0.94, 0.96, 0.62)
                                            : Qt.rgba(0.13, 0.16, 0.22, 0.55)
-    // Same Slow / Average / Fast washes as the gauge, softer on the chart.
-    // Fast runs from yellow at the medium border to red at the top.
-    readonly property color zoneSlow: Qt.alpha(Theme.paceAnchor(0, paintTheme), 0.13)
-    readonly property color zoneAverage: Qt.alpha(Theme.paceAnchor(1, paintTheme), 0.13)
-    readonly property color zoneFast: Qt.alpha(Theme.paceAnchor(2, paintTheme), 0.16)
-    readonly property color zoneFastStart: Qt.alpha(paintTheme === Material.Dark
-                                                     ? Theme.paceYellowDark
-                                                     : Theme.paceYellowLight, 0.14)
     readonly property string slowLabel: qsTr("slow")
     readonly property string mediumLabel: qsTr("medium")
     readonly property string fastLabel: qsTr("fast")
     readonly property real paceLineWidth: 4
     readonly property string chartIcon: gaugeMode === 1 ? Icons.faCommentDots : Icons.faGaugeHigh
+    // Left inset of the colored plot. Zone words sit in this gutter, and the
+    // plot runs to the canvas edge, so overlays centered on the canvas sit
+    // left of the bands.
+    readonly property real zoneGutter: AppScale.fs(11) + 16
 
     readonly property real dataEnd: {
         var all = points
@@ -163,10 +159,6 @@ Item {
     onLineColorChanged: canvas.requestPaint()
     onAxisColorChanged: canvas.requestPaint()
     onLabelColorChanged: canvas.requestPaint()
-    onZoneSlowChanged: canvas.requestPaint()
-    onZoneAverageChanged: canvas.requestPaint()
-    onZoneFastChanged: canvas.requestPaint()
-    onZoneFastStartChanged: canvas.requestPaint()
     onBoundaryColorChanged: canvas.requestPaint()
     onSlowLabelChanged: canvas.requestPaint()
     onMediumLabelChanged: canvas.requestPaint()
@@ -256,8 +248,10 @@ Item {
     }
 
     Text {
-        anchors.centerIn: canvas
-        width: Math.max(0, canvas.width - 32)
+        anchors.horizontalCenter: canvas.horizontalCenter
+        anchors.verticalCenter: canvas.verticalCenter
+        anchors.horizontalCenterOffset: root.zoneGutter / 2
+        width: Math.max(0, canvas.width - root.zoneGutter - 32)
         visible: !root.waiting && root.plotted.length === 0 && !root.tipActive
         text: qsTr("No tempo yet")
         horizontalAlignment: Text.AlignHCenter
@@ -267,8 +261,10 @@ Item {
     }
 
     Column {
-        anchors.centerIn: canvas
-        width: Math.max(0, canvas.width - 32)
+        anchors.horizontalCenter: canvas.horizontalCenter
+        anchors.verticalCenter: canvas.verticalCenter
+        anchors.horizontalCenterOffset: root.zoneGutter / 2
+        width: Math.max(0, canvas.width - root.zoneGutter - 32)
         visible: root.waiting
         spacing: 6
         z: 1
@@ -303,6 +299,10 @@ Item {
                        root.firstReadingWholeSec)
             color: Theme.onSurfaceVariant(Material.theme)
             font.pixelSize: AppScale.fs(14)
+            // The column is centered on the plot, which lands this line on
+            // the medium/slow border. Shift it clear of that line, into the
+            // slow band.
+            transform: Translate { y: Math.round(font.pixelSize * 2.2) }
         }
     }
 
@@ -341,7 +341,7 @@ Item {
             var labelSize = AppScale.fs(11)
             ctx.font = labelSize + "px sans-serif"
             // Rotated zone words are only as wide as the font is tall.
-            var gutter = labelSize + 16
+            var gutter = root.zoneGutter
             var left = gutter
             var top = 8
             var bottom = labelSize + 10
@@ -355,17 +355,21 @@ Item {
                 return top + (1 - (value - yMin) / valueSpan) * plotHeight
             }
 
-            // Horizontal bands match gauge arcs: Fast (top), Average, Slow (bottom).
+            // Horizontal bands match the gauge: each zone blends across its
+            // third. Fast is the top band, Slow the bottom.
             var bandH = plotHeight / 3
-            var fastGrad = ctx.createLinearGradient(0, top + bandH, 0, top)
-            fastGrad.addColorStop(0, root.zoneFastStart)
-            fastGrad.addColorStop(1, root.zoneFast)
-            ctx.fillStyle = fastGrad
-            ctx.fillRect(left, top, plotWidth, bandH)
-            ctx.fillStyle = root.zoneAverage
-            ctx.fillRect(left, top + bandH, plotWidth, bandH)
-            ctx.fillStyle = root.zoneSlow
-            ctx.fillRect(left, top + 2 * bandH, plotWidth, plotHeight - 2 * bandH)
+            for (var zone = 0; zone < 3; ++zone) {
+                var yTop = top + (2 - zone) * bandH
+                var yBot = zone === 0 ? top + plotHeight : yTop + bandH
+                var wash = ctx.createLinearGradient(0, yBot, 0, yTop)
+                var stops = 4
+                for (var stop = 0; stop <= stops; ++stop) {
+                    var u = stop / stops
+                    wash.addColorStop(u, Qt.alpha(Theme.paceColor((zone + u) / 3, root.paintTheme), 0.16))
+                }
+                ctx.fillStyle = wash
+                ctx.fillRect(left, yTop, plotWidth, Math.max(1, yBot - yTop))
+            }
 
             // Thin lines at both ends and at the two borders between zones.
             ctx.strokeStyle = root.boundaryColor
