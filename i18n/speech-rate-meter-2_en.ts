@@ -1117,7 +1117,7 @@
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="528"/>
-        <source>On: recording waits for speech. A phrase starts at the first speech frame and ends at a pause of the Pause length. Off: recording starts at once and is cut into 15-second parts, with no speech detection. The detection method and thresholds are in the Speech detection stage, shown with Advanced on.</source>
+        <source>On: recording waits for speech. A phrase starts at the first speech frame and ends at a pause of the Pause length. Off: recording starts at once and is cut into 15-second parts, with no speech detection. The detection method and thresholds are in the Speech detection stage, shown when Additional is on.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>

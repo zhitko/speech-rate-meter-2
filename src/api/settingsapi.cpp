@@ -118,6 +118,11 @@ bool SettingsApi::showNavigationMenu() const
     return m_settings.showNavigationMenu;
 }
 
+int SettingsApi::preset() const
+{
+    return m_settings.preset;
+}
+
 void SettingsApi::setShowNavigationMenu(bool showNavigationMenu)
 {
     if (!assignIfChanged(m_settings.showNavigationMenu, showNavigationMenu))
@@ -661,17 +666,55 @@ void SettingsApi::setFillerMax(double value)
     emit fillerMaxChanged();
 }
 
+void SettingsApi::setPreset(int preset)
+{
+    preset = preset == 1 ? 1 : 0;
+    AppSettings loaded;
+    if (!Settings::readPreset(preset, &loaded)) {
+        LOG_WARNING() << "Could not read preset" << preset;
+        emit presetChanged();
+        return;
+    }
+    // Appearance, saved recordings, and a room calibration stay.
+    // The preset replaces the measurement and formula values.
+    loaded.language = m_settings.language;
+    loaded.languageTitle = m_settings.languageTitle;
+    loaded.theme = m_settings.theme;
+    loaded.fontSizeMultiplier = m_settings.fontSizeMultiplier;
+    loaded.primaryColor = m_settings.primaryColor;
+    loaded.showNavigationMenu = m_settings.showNavigationMenu;
+    loaded.keepRecordingFiles = m_settings.keepRecordingFiles;
+    loaded.vadCalibrationDurationMs = m_settings.vadCalibrationDurationMs;
+    loaded.vadMethod = m_settings.vadMethod;
+    loaded.vadThreshold = m_settings.vadThreshold;
+    loaded.autoCorrThreshold = m_settings.autoCorrThreshold;
+    loaded.autoCorrThresholdK = m_settings.autoCorrThresholdK;
+    loaded.autoCorrMinF0 = m_settings.autoCorrMinF0;
+    loaded.autoCorrMaxF0 = m_settings.autoCorrMaxF0;
+    loaded.autoCorrEnergyThreshold = m_settings.autoCorrEnergyThreshold;
+    loaded.preset = preset;
+    m_settings = loaded;
+    save();
+    publish();
+}
+
 void SettingsApi::load()
 {
     m_settings = Settings::loadSettings();
     updateTranslator();
     applyFont();
+    publish();
+}
+
+void SettingsApi::publish()
+{
     emit languageChanged();
     emit languageTitleChanged();
     emit themeChanged();
     emit fontSizeMultiplierChanged();
     emit primaryColorChanged();
     emit showNavigationMenuChanged();
+    emit presetChanged();
     emit autoStopRecordingChanged();
     emit autoCalibrateChanged();
     emit keepRecordingFilesChanged();

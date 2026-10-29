@@ -60,17 +60,19 @@ Opening a row repeats the session averages under a **Mean values** label, then t
 
 ### 3. Settings
 
-An **Advanced** checkbox at the bottom of Measurement is not saved and turns off when you leave the app. With Advanced off, only the everyday controls are shown.
+An **Additional** switch under General is not saved and turns off when you leave the app. With it off, only General is shown.
 
 | Section | What you control |
 | --- | --- |
-| **General (always visible)** | UI language (EN/RU), light/dark/system theme, accent color (Blue/Green/Purple/Orange/Red), navigation menu, font size, delete user data |
-| **Measurement (always visible)** | Analysis window, updates per minute, chart window, gauge (speech rate, articulation rate, or both), use all readings, gauge median, pause length, phrasal-pause minimum, speech rate method (direct or legacy), articulation method (direct, legacy, or window), Detect speech automatically, Slow and Fast ends of the gauge |
-| **Advanced (hidden behind the checkbox)** | Keep recording files, voice-activity method and thresholds, calibration, intensity frame/shift/smooth, vowel-length limit, power-mean degree, coefficients K1–K5 and the filler range |
+| **General (always visible)** | UI language (EN/RU), light/dark/system theme, accent color (Blue/Green/Purple/Orange/Red), navigation menu, font size, mode preset (Standard or Fast), delete user data |
+| **Measurement (inside Additional)** | Analysis window, updates per minute, chart window, gauge (speech rate, articulation rate, or both), use all readings, gauge median, pause length, phrasal-pause minimum, speech rate method (direct or legacy), articulation method (direct, legacy, or window), session summary, Detect speech automatically, tile switches, Slow and Fast ends of the gauge |
+| **Also inside Additional** | Keep recording files, voice-activity method and thresholds, calibration, intensity frame/shift/smooth, vowel-length limit, power-mean degree, coefficients K1–K5 and the filler range |
+
+**Mode** chooses a preset. Standard restores the shipped `settings.ini` (60 s analysis window, 12 updates a minute). Fast restores `settings_fast.ini` (5 s window, 120 updates a minute). Language, theme, color, font size, the navigation bar, Keep recording files, and speech-detection thresholds stay as they are.
 
 **Detect speech automatically** measures background noise after Start, then waits for speech. A pause ends the phrase. When it is off, measuring starts when you press Start, a pause does not end the phrase, and the recording is saved in 15-second parts.
 
-**Keep recording files** (Advanced, off by default) leaves each phrase as a WAV in `data/records` after you leave the app. Off deletes those files when you leave the app. Until then, **Listen** on Home can play them.
+**Keep recording files** (Additional, off by default) leaves each phrase as a WAV in `data/records` after you leave the app. Off deletes those files when you leave the app. Until then, **Listen** on Home can play them.
 
 **Delete user data** removes saved sessions and any recording files still kept in `data/records`. Settings are kept.
 
@@ -107,7 +109,7 @@ Settings take effect on the next phrase. The in-app [User Guide](docs/user_guide
 ```
 Home
 ├── Start / Stop session
-│   └── (Advanced) Details — intermediate vowel and gap statistics
+│   └── (Additional) Details — intermediate vowel and gap statistics
 ├── History
 │   └── [session] → five metric charts
 ├── Settings

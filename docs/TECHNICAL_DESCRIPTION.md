@@ -16,7 +16,7 @@ One job is on screen at a time. A drawer (and the bottom bar, when that setting 
 | --- | --- |
 | Home | Start or stop a session, and read the session so far. |
 | History | Past sessions. A row opens that session’s charts. |
-| Settings | Phrase length and appearance. Calibration and coefficients stay behind Advanced. |
+| Settings | Appearance and the mode preset. Measurement, calibration, and coefficients stay behind Additional. |
 | User Guide | How to record. |
 | Privacy Policy | What stays on the device. |
 | Open-source licences | Bundled components. |
@@ -51,7 +51,7 @@ Home, from top to bottom:
 
 The layout follows the window. When the page is at least 720 px wide, or landscape and at least 560 px wide, the gauge card is on the left and the button is on the right. Otherwise everything is one column and the button is pinned to the bottom of the page, so it stays reachable on a phone while the rest scrolls. With Show Navigation Menu on, the gauge shortens so the gauge and the button fit the page; the column scrolls only when the window is still too short. The arcs are about one and a half times the previous size when the page has the room, and they stay within the width and the space above the pinned button on a shorter screen. After Stop, after Open File, and on a saved result, the tempo chart and the arcs stay the size they have while recording. The result cards sit beside that card or under it, and the page scrolls when they do not fit. The zone words and the numbers under the arc ends stay the same size. Content is capped at 1120 px wide and centered.
 
-Details is inside Advanced. It opens the intermediate statistics in section 7. While recording those statistics are the analysis window. After Stop they are the joined vowel and gap collection, except Filler score, which is the same duration-weighted mean as the Fillers tile. Open File uses the opened file. There is no Save button.
+Details is inside Additional. It opens the intermediate statistics in section 7. While recording those statistics are the analysis window. After Stop they are the joined vowel and gap collection, except Filler score, which is the same duration-weighted mean as the Fillers tile. Open File uses the opened file. There is no Save button.
 
 ### 1.2 Recording
 
@@ -574,7 +574,7 @@ The on-screen label is `percent` as an integer followed by ` %`. There is no fil
 
 ## 7. Details screen
 
-Shown only from the recorder, and only while Advanced is checked. Same collection Home is showing: the session since Start, or the opened file.
+Shown only from the recorder, and only while Additional is on. Same collection Home is showing: the session since Start, or the opened file.
 
 | Label | Value | Format |
 | --- | --- | --- |
@@ -611,7 +611,7 @@ kurtosis = mean(z^4) - 3                    # excess kurtosis
 
 Stored in `settings.ini` beside the executable (desktop) or in application-local data (Android), INI format. The file is read only when the root key `date_v3` exists. Until the user changes something, every value below is the in-code default and the file may be absent. The first save writes `date_v3` as an empty `QDate`, which is enough to make later launches load the file. General application and recorder values are under the `[General]` group; analysis coefficients retain their named groups.
 
-Advanced is a process-global boolean, shown as a checkbox labeled Advanced at the bottom of Measurement. It is not written to the INI and resets to off on restart. When it is off, Settings shows General, the phrase controls (including Detect speech automatically), the gauge (which pace it draws, its range, and its median), and the tile switches. The checkbox’s own note says it turns off when you leave the app. Show Navigation Menu, in General, shows Home, History, and Settings along the bottom; the toolbar menu button stays. Coefficients, filler calibration, signal-processing parameters, voice-activity calibration, and Keep recording files are hidden, not reset.
+Additional is a process-global boolean, shown as a switch under General. It is not written to the INI and resets to off on restart. When it is off, Settings shows General only: language, theme, color, font size, the navigation bar, Mode, and Delete user data. Measurement and the numbered stage cards are hidden, not reset. The switch’s note says it turns off when you leave the app. Show Navigation Menu, in General, shows Home, History, and Settings along the bottom; the toolbar menu button stays. Mode (`General/preset`) is 0 or 1. 0 restores the shipped standard preset, the bundled `settings.ini`: analysis window 60 s and 12 updates a minute. 1 restores `settings_fast.ini`: analysis window 5 s and 120 updates a minute. Choosing the current mode again reloads that file. Language, theme, color, font size, the navigation bar, Keep recording files, and the speech-detection thresholds are kept. The live file remains `settings.ini`.
 
 Everyday labels use plain units. Silence Duration is edited in seconds and stored as milliseconds.
 
@@ -642,7 +642,7 @@ General (language, theme, color, font size, navigation bar) stays visible. Delet
 
 Double-valued settings are edited as a spin box with 2 decimal places (internal integer = value × 100) and stored as the real coefficient.
 
-With Advanced on, **Keep recording files** (`General/keepRecordingFiles`, default off) is shown above the numbered cards. On leaves each phrase’s WAV in `data/records` after the application closes. Off deletes those WAV files when the application closes. The pending sidecar is removed after a successful save either way. The other extra settings are numbered cards in the order a phrase is processed. Each card names its stage and says in one line what it does:
+With Additional on, **Keep recording files** (`General/keepRecordingFiles`, default off) is shown above the numbered cards. On leaves each phrase’s WAV in `data/records` after the application closes. Off deletes those WAV files when the application closes. The pending sidecar is removed after a successful save either way. The other extra settings are numbered cards in the order a phrase is processed. Each card names its stage and says in one line what it does:
 
 | Stage | Card | Settings |
 | --- | --- | --- |
@@ -652,12 +652,12 @@ With Advanced on, **Keep recording files** (`General/keepRecordingFiles`, defaul
 | 4 | Statistics | Long-sound weight (section 6.1). 1 treats every sound equally. A higher number makes long sounds count more. |
 | 5 | Metrics | Speech-rate scale, Articulation scale, Window scale, Pause scale, Filler scale, Low filler score, High filler score (sections 6.2–6.5). |
 
-| UI label | Symbol | Default | INI key | Visible without Advanced |
+| UI label | Symbol | Default | INI key | Visible while Additional is off |
 | --- | --- | --- | --- | --- |
 | Long-sound weight | `d` | 3 | `speechRate/MeanValueDegry` | no. Labeled Long-sound weight. |
 | Speech-rate scale | `K1` | 0.41 | `speechRate/K1` | no |
-| Min RS | `MinRS` | 70 | `speechRate/Min` | yes, labeled Slow. Also copies to articulation min. |
-| Max RS | `MaxRS` | 210 | `speechRate/Max` | yes, labeled Fast. Also copies to articulation max. |
+| Min RS | `MinRS` | 70 | `speechRate/Min` | no. Labeled Slow, under Additional. Also copies to articulation min. |
+| Max RS | `MaxRS` | 210 | `speechRate/Max` | no. Labeled Fast, under Additional. Also copies to articulation max. |
 | Articulation scale | `K2` | 1.2 | `articulationRate/K2` | no |
 | Window scale | `K5` | 0.71 | `articulationRate/K5` | no. Window articulation only. A missing stored value is read as 0.71. |
 | Pause scale | `K3` | 0.30 | `meanPauses/Max` | no |
@@ -669,7 +669,7 @@ With Advanced on, **Keep recording files** (`General/keepRecordingFiles`, defaul
 | Low filler score | `F_min` | 120 | `fillerSounds/Min` | no |
 | High filler score | `F_max` | 240 | `fillerSounds/Max` | no |
 
-The Measurement card (Analysis window, Updates per minute, Gauge, Use all readings, Gauge median, Pause, Detect speech automatically, Slow, Fast) is always visible. It is not hidden with Advanced, and its values are not speech-rate coefficients. Silence Duration (`General/autoStopSilenceDuration` = 2000) is the pause that closes a phrase. The segment length limits are fixed (section 1.2). Older INI files may still hold `metricAverageCount`, `minRecordingTimeMs`, and `maxRecordingTimeMs`; they are ignored and removed on the next save.
+The Measurement card (Analysis window, Updates per minute, Gauge, Use all readings, Gauge median, Pause, Detect speech automatically, Slow, Fast) is shown only while Additional is on. Its values are not speech-rate coefficients. Silence Duration (`General/autoStopSilenceDuration` = 2000) is the pause that closes a phrase. The segment length limits are fixed (section 1.2). Older INI files may still hold `metricAverageCount`, `minRecordingTimeMs`, and `maxRecordingTimeMs`; they are ignored and removed on the next save.
 
 Also present in the config object but not on this screen, and not used by the headline path:
 
@@ -801,5 +801,5 @@ Do not implement these for behavioral parity:
 8. Even-count medians use integer division.
 9. Published `R_s` follows `speechRateMethod` and published `R_a` follows `articulationMethod` (section 6, including the floor that keeps Direct and Legacy articulation at or above the published speech rate; Window is not raised). `P` and `F` match section 6, including the filler remap onto 120…240 → 0…100%.
 10. The gauge clamps each marker to Min/Max RS; printed wpm and the pause do not. Gauge selects speech rate, articulation rate, or both arcs. Filler is clamped before percent conversion.
-11. Settings defaults and the Advanced visibility rules match section 9. Advanced itself is not persisted.
+11. Settings defaults and the Additional visibility rules match section 9. Additional itself is not persisted.
 12. Each recording session is a JSON file of its kept segments, without audio, plus each change Home showed from Start to Stop. History lists sessions with the five metrics recomputed on all kept phrases together. Opening a session shows those values and one chart per metric against the times the numbers changed.

@@ -38,17 +38,17 @@ QString& appDataOverride()
     return path;
 }
 
-void seedBundledSettings()
+void seedBundledFile(const QString& fileName)
 {
     if (qgetenv("APPIMAGE").isEmpty())
         return;
 
-    const QString dest = Settings::getAppDataDir() + QStringLiteral("/settings.ini");
+    const QString dest = Settings::getAppDataDir() + QLatin1Char('/') + fileName;
     if (QFile::exists(dest))
         return;
 
     const QString bundled = QCoreApplication::applicationDirPath()
-        + QStringLiteral("/settings.ini");
+        + QLatin1Char('/') + fileName;
     if (!QFile::exists(bundled))
         return;
     if (QFileInfo(bundled).absoluteFilePath() == QFileInfo(dest).absoluteFilePath())
@@ -56,11 +56,17 @@ void seedBundledSettings()
 
     QDir().mkpath(QFileInfo(dest).absolutePath());
     if (!QFile::copy(bundled, dest)) {
-        LOG_WARNING() << "Failed to copy default settings to" << dest;
+        LOG_WARNING() << "Failed to copy" << fileName << "to" << dest;
         return;
     }
     QFile::setPermissions(dest,
         QFile::permissions(dest) | QFileDevice::ReadOwner | QFileDevice::WriteOwner);
+}
+
+void seedBundledSettings()
+{
+    seedBundledFile(QStringLiteral("settings.ini"));
+    seedBundledFile(QStringLiteral("settings_fast.ini"));
 }
 
 } // namespace
@@ -117,18 +123,15 @@ Settings::getSettingsFilePath()
 #endif
 }
 
-AppSettings
-Settings::loadSettings()
-{
-    QMutexLocker lock(&settingsMutex());
-    seedBundledSettings();
-    AppSettings settings;
-    QString absolutePath = QFileInfo(getSettingsFilePath()).absoluteFilePath();
-    QSettings qsettings(absolutePath, QSettings::IniFormat);
+namespace {
 
-    // The file is applied only after a save has written date_v3.
-    if (!qsettings.contains(QStringLiteral("date_v3")))
-        return settings;
+// writeMigrations stores one-time INI fixes. Preset files are left untouched.
+bool readSettingsFile(QSettings& qsettings, AppSettings* out, bool writeMigrations)
+{
+    if (!out || !qsettings.contains(QStringLiteral("date_v3")))
+        return false;
+
+    AppSettings settings;
 
     qsettings.beginGroup("General");
     settings.language = qsettings.value("language", QString("ru")).toString().toStdString();
@@ -137,6 +140,7 @@ Settings::loadSettings()
     settings.fontSizeMultiplier = qsettings.value("fontSizeMultiplier", 1.0).toDouble();
     settings.primaryColor = qsettings.value("primaryColor", QString("blue")).toString().toStdString();
     settings.showNavigationMenu = qsettings.value("showNavigationMenu", false).toBool();
+    settings.preset = qsettings.value(QStringLiteral("preset"), 0).toInt() == 1 ? 1 : 0;
     settings.autoStopRecording = qsettings.value("autoStopRecording", true).toBool();
     settings.autoCalibrate = qsettings.value("autoCalibrate", false).toBool();
     settings.keepRecordingFiles = qsettings.value("keepRecordingFiles", false).toBool();
@@ -152,8 +156,10 @@ Settings::loadSettings()
             && settings.phrasalPauseMs == kLegacyDefaultPhrasalPauseMs) {
             settings.phrasalPauseMs = speechrate::kDefaultPhrasalPauseMs;
         }
-        qsettings.setValue(QStringLiteral("phrasalPauseMs"), settings.phrasalPauseMs);
-        qsettings.setValue(QStringLiteral("phrasalPauseMsMigrated200"), true);
+        if (writeMigrations) {
+            qsettings.setValue(QStringLiteral("phrasalPauseMs"), settings.phrasalPauseMs);
+            qsettings.setValue(QStringLiteral("phrasalPauseMsMigrated200"), true);
+        }
     }
     settings.articulationMethod = std::clamp(qsettings.value("articulationMethod", 0).toInt(), 0, 2);
     settings.speechRateMethod = std::clamp(qsettings.value("speechRateMethod", 0).toInt(), 0, 1);
@@ -167,8 +173,10 @@ Settings::loadSettings()
             || settings.summaryMethod == static_cast<int>(speechrate::SummaryMethod::WeightedMean)) {
             settings.summaryMethod = static_cast<int>(speechrate::SummaryMethod::Median);
         }
-        qsettings.setValue(QStringLiteral("summaryMethod"), settings.summaryMethod);
-        qsettings.setValue(QStringLiteral("summaryMethodMedianDefault"), true);
+        if (writeMigrations) {
+            qsettings.setValue(QStringLiteral("summaryMethod"), settings.summaryMethod);
+            qsettings.setValue(QStringLiteral("summaryMethodMedianDefault"), true);
+        }
     }
     settings.analysisWindowSec = clampAnalysisWindowSec(qsettings.value("analysisWindowSec", 10).toInt());
     settings.updatesPerMinute = clampUpdatesPerMinute(qsettings.value("updatesPerMinute", 60).toInt());
@@ -229,7 +237,43 @@ Settings::loadSettings()
     settings.fillerMax = qsettings.value("Max", 240).toDouble();
     qsettings.endGroup();
 
+    *out = settings;
+    return true;
+}
+
+QString fastPresetPath()
+{
+    const QString beside = Settings::getAppDataDir() + QStringLiteral("/settings_fast.ini");
+    if (QFile::exists(beside))
+        return beside;
+    return QStringLiteral(":/presets/settings_fast.ini");
+}
+
+} // namespace
+
+AppSettings
+Settings::loadSettings()
+{
+    QMutexLocker lock(&settingsMutex());
+    seedBundledSettings();
+    AppSettings settings;
+    const QString absolutePath = QFileInfo(getSettingsFilePath()).absoluteFilePath();
+    QSettings qsettings(absolutePath, QSettings::IniFormat);
+    if (!readSettingsFile(qsettings, &settings, true))
+        return AppSettings();
     return settings;
+}
+
+bool Settings::readPreset(int preset, AppSettings* settings)
+{
+    QMutexLocker lock(&settingsMutex());
+    // The live settings.ini is rewritten whenever a control changes, so the
+    // standard preset is the copy compiled into the program.
+    const QString path = preset == 1
+        ? fastPresetPath()
+        : QStringLiteral(":/presets/settings.ini");
+    QSettings qsettings(path, QSettings::IniFormat);
+    return readSettingsFile(qsettings, settings, false);
 }
 
 void Settings::saveSettings(const AppSettings& settings)
@@ -248,6 +292,7 @@ void Settings::saveSettings(const AppSettings& settings)
     qsettings.setValue("fontSizeMultiplier", settings.fontSizeMultiplier);
     qsettings.setValue("primaryColor", QString::fromStdString(settings.primaryColor));
     qsettings.setValue("showNavigationMenu", settings.showNavigationMenu);
+    qsettings.setValue(QStringLiteral("preset"), settings.preset == 1 ? 1 : 0);
     qsettings.remove("metricAverageCount");
     qsettings.remove("minRecordingTimeMs");
     qsettings.remove("maxRecordingTimeMs");

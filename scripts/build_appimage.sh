@@ -101,6 +101,7 @@ check_sources() {
     [[ -f "$PROJECT_ROOT/3rdparty/alglib-cpp/src/ap.cpp" ]] || \
         die "3rdparty/alglib-cpp is missing. Unpack ALGLIB as described in README.md."
     [[ -f "$PROJECT_ROOT/settings.ini" ]] || die "settings.ini is missing from the project root"
+    [[ -f "$PROJECT_ROOT/settings_fast.ini" ]] || die "settings_fast.ini is missing from the project root"
     [[ -f "$PROJECT_ROOT/packaging/$DESKTOP_ID.desktop" ]] || \
         die "packaging/$DESKTOP_ID.desktop is missing"
     [[ -f "$PROJECT_ROOT/res/icons/hicolor/256x256/apps/$DESKTOP_ID.png" ]] || \
@@ -154,6 +155,7 @@ stage_appdir() {
         die "Installed binary not found at $APPDIR/usr/bin/$APP_TARGET"
 
     install -m 644 "$PROJECT_ROOT/settings.ini" "$APPDIR/usr/bin/settings.ini"
+    install -m 644 "$PROJECT_ROOT/settings_fast.ini" "$APPDIR/usr/bin/settings_fast.ini"
 
     local found=0
     for qm in "$BUILD_DIR"/speech-rate-meter-2_*.qm; do
@@ -285,6 +287,7 @@ require_tree() {
 verify_appdir() {
     require_tree "qt.conf" "*/usr/bin/qt.conf"
     require_tree "settings.ini" "*/usr/bin/settings.ini"
+    require_tree "settings_fast.ini" "*/usr/bin/settings_fast.ini"
     require_tree "English translations" "*/usr/bin/speech-rate-meter-2_en.qm"
     require_tree "Russian translations" "*/usr/bin/speech-rate-meter-2_ru.qm"
     require_tree "xcb platform plugin" "*/plugins/platforms/libqxcb.so"

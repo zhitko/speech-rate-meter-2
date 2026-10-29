@@ -113,18 +113,21 @@ An opened file is not listed here, because **Open File** does not save a session
 
 ![Settings](images/en/07-settings.png)
 
-**General**, and the first controls under **Measurement**. **Advanced** is off.
+**General**, with **Additional** off. Measurement and the formula controls stay hidden until you turn Additional on.
 
-**General** is how the app looks.
+**General** is how the app looks, and which preset it uses.
 
 - **Language**, **Theme**, **Primary Color**, and **Font Size**.
 - **Show Navigation Menu** adds Home, History, and Settings along the bottom. The menu button stays in the toolbar.
+- **Mode** is **Standard (rare updates, accurate result)** or **Fast (frequent updates, lower accuracy)**. Standard uses a 60-second analysis window and 12 updates a minute, so each number covers more speech. Fast uses a 5-second window and 120 updates a minute, so the number follows you sooner and jumps more. Choosing a mode again restores it. Language, theme, color, font size, the navigation bar, **Keep recording files**, and the speech-detection thresholds stay as they are.
 - **Delete user data** removes saved sessions and any recording files still kept in `data/records`. Your settings stay.
+
+**Additional** opens **Measurement** and the formula controls. The switch turns off when you leave the app. The values stay as you left them.
 
 **Measurement** is how a session is read. The question mark beside a control explains that control in more detail.
 
-- **Analysis window** is how many recent seconds of speech the live pace uses. Shorter reacts faster and jumps more. The shortest value is 3 seconds. The default is 10.
-- **Updates per minute** is how often the pace is recalculated and how often the tempo chart gains a point. The default is 60, once a second. The shortest value is 1, once a minute.
+- **Analysis window** is how many recent seconds of speech the live pace uses. Shorter reacts faster and jumps more. The shortest value is 3 seconds. Standard mode uses 60 seconds. Fast mode uses 5 seconds.
+- **Updates per minute** is how often the pace is recalculated and how often the tempo chart gains a point. The shortest value is 1, once a minute. Standard mode uses 12, once every 5 seconds. Fast mode uses 120, twice a second.
 - **Chart window** is how many seconds the tempo chart keeps. The default is 300 seconds (5 minutes). The range is 30 to 1800 seconds.
 - **Pause** is how much silence ends a phrase and saves it. The default is 2 seconds. This is used only when **Detect speech automatically** is on. A phrase longer than 15 seconds is cut at the next pause, or at 15 seconds.
 - **Phrasal pause** is the shortest silent gap that counts as a pause inside the pace calculation. The default is 200 ms. Short stop closures in a word are not counted.
@@ -136,7 +139,7 @@ An opened file is not listed here, because **Open File** does not save a session
 - **Use all readings** is on by default. Each tempo-chart point is then the middle of every live reading since **Start**, and **Gauge median** cannot be changed. The arcs still use **Gauge median**. Turn it off and each chart point matches the arcs, with the tip at zero while the arcs are at rest.
 - **Gauge median** is how many latest readings the gauge takes the middle of. The default is 3, so one jump moves the arc less. Set it to 1 to show the current reading. After **Stop** the gauge shows the session summary, not this median.
 
-**Advanced** opens the controls that change detection and the formula, including **Keep recording files** and **Shortest vowel**. Leave them as they are unless you are comparing methods. The **Advanced** switch turns off when you leave the app. **Keep recording files** stays as you set it. On, each phrase is left as a WAV file in `data/records`. Off, those files are deleted when you leave the app.
+Under the same **Additional** switch, the detection and formula controls follow **Measurement**, including **Keep recording files** and **Shortest vowel**. Leave them as they are unless you are comparing methods. **Keep recording files** stays as you set it. On, each phrase is left as a WAV file in `data/records`. Off, those files are deleted when you leave the app.
 
 A change applies to the next phrase.
 

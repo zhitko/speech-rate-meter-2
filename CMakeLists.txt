@@ -231,6 +231,13 @@ qt_add_qml_module(appspeech-rate-meter-2
         3rdparty/SPTK/third_party/GETOPT/LICENSE
 )
 
+qt_add_resources(appspeech-rate-meter-2 "presets"
+    PREFIX "/presets"
+    FILES
+        settings.ini
+        settings_fast.ini
+)
+
 qt_add_translations(appspeech-rate-meter-2
     TS_FILES
         i18n/speech-rate-meter-2_en.ts
@@ -304,7 +311,10 @@ if(ANDROID)
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
             "${CMAKE_SOURCE_DIR}/settings.ini"
             "${CMAKE_SOURCE_DIR}/android/assets/settings.ini"
-        COMMENT "Copying settings.ini to APK assets"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${CMAKE_SOURCE_DIR}/settings_fast.ini"
+            "${CMAKE_SOURCE_DIR}/android/assets/settings_fast.ini"
+        COMMENT "Copying settings.ini and settings_fast.ini to APK assets"
     )
 else()
     target_link_libraries(appspeech-rate-meter-2
@@ -349,6 +359,9 @@ else()
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
             "${CMAKE_SOURCE_DIR}/settings.ini"
             "${CMAKE_BINARY_DIR}/settings.ini"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${CMAKE_SOURCE_DIR}/settings_fast.ini"
+            "${CMAKE_BINARY_DIR}/settings_fast.ini"
         ${_srm_copy_data_command}
         COMMENT "${_srm_runtime_comment}"
     )
@@ -361,6 +374,9 @@ else()
             COMMAND ${CMAKE_COMMAND} -E copy_if_different
                 "${CMAKE_SOURCE_DIR}/settings.ini"
                 "$<TARGET_FILE_DIR:appspeech-rate-meter-2>/settings.ini"
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${CMAKE_SOURCE_DIR}/settings_fast.ini"
+                "$<TARGET_FILE_DIR:appspeech-rate-meter-2>/settings_fast.ini"
             COMMAND ${CMAKE_COMMAND} -E ${_srm_copy_data_tool}
                 "${CMAKE_SOURCE_DIR}/data"
                 "$<TARGET_FILE_DIR:appspeech-rate-meter-2>/data"
@@ -371,7 +387,10 @@ else()
             COMMAND ${CMAKE_COMMAND} -E copy_if_different
                 "${CMAKE_SOURCE_DIR}/settings.ini"
                 "$<TARGET_FILE_DIR:appspeech-rate-meter-2>/settings.ini"
-            COMMENT "Copying settings.ini next to the executable"
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${CMAKE_SOURCE_DIR}/settings_fast.ini"
+                "$<TARGET_FILE_DIR:appspeech-rate-meter-2>/settings_fast.ini"
+            COMMENT "Copying settings.ini and settings_fast.ini next to the executable"
         )
     endif()
 endif()

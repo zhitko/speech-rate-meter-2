@@ -310,6 +310,23 @@ Page {
                             onActivated: if (settingsApi)
                                 settingsApi.fontSizeMultiplier = model[index].value
                         }
+
+                        FieldLabel {
+                            text: qsTr("Mode")
+                            help: qsTr("Standard restores the shipped settings: a long analysis window and few updates, so each number covers more speech and moves less often. Fast restores the fast preset: a short window and frequent updates, so the number follows you sooner and jumps more. Language, theme, color, font size, the navigation bar, Keep recording files, and speech-detection thresholds stay as they are. Choosing a mode again restores it.")
+                        }
+                        SettingComboBox {
+                            selectedValue: settingsApi ? settingsApi.preset : 0
+                            model: [
+                                { name: qsTr("Standard (rare updates, accurate result)"), id: 0 },
+                                { name: qsTr("Fast (frequent updates, lower accuracy)"), id: 1 }
+                            ]
+                            onActivated: if (settingsApi)
+                                settingsApi.preset = model[index].id
+                        }
+                        Hint {
+                            text: qsTr("Standard updates rarely and stays steadier. Fast updates often and jumps more.")
+                        }
                     }
 
                     Button {
@@ -330,6 +347,48 @@ Page {
             }
 
             Frame {
+                Layout.fillWidth: true
+                Layout.leftMargin: AppScale.pagePadding
+                Layout.rightMargin: AppScale.pagePadding
+                Layout.bottomMargin: AppScale.pagePadding
+
+                background: Rectangle {
+                    color: Theme.surfaceContainerLow(Material.theme)
+                    radius: 16
+                }
+
+                ColumnLayout {
+                    width: parent.width
+                    spacing: 10
+
+                    RowLayout {
+                        Layout.fillWidth: true
+
+                        Label {
+                            text: qsTr("Additional")
+                            font.bold: true
+                            font.pixelSize: AppScale.fs(20)
+                            color: Theme.primary(Material.theme)
+                            Layout.fillWidth: true
+                        }
+                        Switch {
+                            checked: settingsApi ? settingsApi.advanced : false
+                            onToggled: if (settingsApi)
+                                settingsApi.advanced = checked
+                        }
+                    }
+                    Label {
+                        Layout.fillWidth: true
+                        wrapMode: Text.Wrap
+                        text: qsTr("Measurement, detection, and formula coefficients. Turns off when you leave.")
+                        color: Theme.onSurfaceVariant(Material.theme)
+                        font.pixelSize: AppScale.fs(12)
+                    }
+                }
+            }
+
+            Frame {
+                visible: settingsApi && settingsApi.advanced
                 Layout.fillWidth: true
                 Layout.leftMargin: AppScale.pagePadding
                 Layout.rightMargin: AppScale.pagePadding
@@ -508,7 +567,7 @@ Page {
 
                         FieldLabel {
                             text: qsTr("Detect speech automatically")
-                            help: qsTr("On: recording waits for speech. A phrase starts at the first speech frame and ends at a pause of the Pause length. Off: recording starts at once and is cut into 15-second parts, with no speech detection. The detection method and thresholds are in the Speech detection stage, shown with Advanced on.")
+                            help: qsTr("On: recording waits for speech. A phrase starts at the first speech frame and ends at a pause of the Pause length. Off: recording starts at once and is cut into 15-second parts, with no speech detection. The detection method and thresholds are in the Speech detection stage, shown when Additional is on.")
                         }
                         Switch {
                             checked: settingsApi ? settingsApi.autoCalibrate : false
@@ -668,15 +727,6 @@ Page {
                                   : qsTr("Middle of this many latest readings. 1 is the current value.")
                         }
 
-                        FieldLabel { text: qsTr("Advanced") }
-                        Switch {
-                            checked: settingsApi ? settingsApi.advanced : false
-                            onToggled: if (settingsApi)
-                                settingsApi.advanced = checked
-                        }
-                        Hint {
-                            text: qsTr("Detection, loudness, and formula coefficients. Turns off when you leave.")
-                        }
                     }
                 }
             }
@@ -694,12 +744,6 @@ Page {
                     Layout.leftMargin: 4
                     spacing: 2
 
-                    Label {
-                        text: qsTr("Advanced")
-                        font.bold: true
-                        font.pixelSize: AppScale.fs(20)
-                        color: Theme.primary(Material.theme)
-                    }
                     Label {
                         Layout.fillWidth: true
                         wrapMode: Text.Wrap

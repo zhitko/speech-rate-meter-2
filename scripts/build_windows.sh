@@ -568,6 +568,7 @@ check_sources() {
     [[ -f "$PROJECT_ROOT/3rdparty/alglib-cpp/src/ap.cpp" ]] || \
         die "3rdparty/alglib-cpp is missing. Unpack ALGLIB as described in README.md."
     [[ -f "$PROJECT_ROOT/settings.ini" ]] || die "settings.ini is missing from the project root"
+    [[ -f "$PROJECT_ROOT/settings_fast.ini" ]] || die "settings_fast.ini is missing from the project root"
     [[ -f "$PROJECT_ROOT/res/icons/speechratemeter.ico" ]] || \
         die "res/icons/speechratemeter.ico is missing"
     if [[ ! -f "$PROJECT_ROOT/res/icons/speechratemeter.rc" ]]; then
@@ -1121,6 +1122,7 @@ package_app() {
     cp -a "$PROJECT_ROOT/LICENSE" "$PACKAGE_DIR/LICENSE"
     cp -a "$PROJECT_ROOT/licenses/." "$PACKAGE_DIR/licenses/"
     cp -a "$PROJECT_ROOT/settings.ini" "$PACKAGE_DIR/settings.ini"
+    cp -a "$PROJECT_ROOT/settings_fast.ini" "$PACKAGE_DIR/settings_fast.ini"
     write_package_readme
 
     # SettingsApi loads speech-rate-meter-2_<lang>.qm from the executable's
@@ -1205,7 +1207,9 @@ package_app() {
         require_root_dll "$omp_name"
     fi
     [[ -f "$PACKAGE_DIR/settings.ini" ]] || die "settings.ini was not copied into the package"
+    [[ -f "$PACKAGE_DIR/settings_fast.ini" ]] || die "settings_fast.ini was not copied into the package"
     cp -a "$PROJECT_ROOT/settings.ini" "$PACKAGE_DIR/settings.ini"
+    cp -a "$PROJECT_ROOT/settings_fast.ini" "$PACKAGE_DIR/settings_fast.ini"
 
     if [[ "$BUILD_TYPE" == "debug" ]]; then
         suffix="-debug"
