@@ -1,7 +1,7 @@
 import QtQuick
-import QtQuick.Shapes
 import QtQuick.Layouts
 import QtQuick.Controls.Material 6.8
+import QtQuick.Shapes
 import "../utils"
 
 Item {
@@ -73,6 +73,8 @@ Item {
     readonly property int zone: Math.min(2, Math.floor(fraction * 3))
     readonly property int targetZone: Theme.zoneForValue(value, minimum, maximum)
     readonly property color zoneColor: Theme.zoneColor(zone, paintTheme)
+    // Marker ring follows the arc color at the value. The zone name uses
+    // zoneColor, which stays dark enough to read.
 
     readonly property bool dual: showSecond
     readonly property real secondFraction: Math.max(0, Math.min(1, (animatedSecond - minimum) / range))
@@ -80,6 +82,8 @@ Item {
     readonly property int secondZone: Math.min(2, Math.floor(secondFraction * 3))
     readonly property int secondTargetZone: Theme.zoneForValue(secondValue, minimum, maximum)
     readonly property color secondZoneColor: Theme.zoneColor(secondZone, paintTheme)
+    readonly property color markerColor: Theme.paceColor(fraction, paintTheme)
+    readonly property color secondMarkerColor: Theme.paceColor(secondFraction, paintTheme)
 
     readonly property real labelSpace: AppScale.fs(12) + 10
     // Fit the 240° arc to the item. The stroke passes through 3 o'clock and
@@ -117,12 +121,12 @@ Item {
         return startAngle + index * (segmentSweep + gapAngle)
     }
 
-    function filledSweep(index) {
-        return Math.max(0, Math.min(segmentSweep, valueAngle - segmentStart(index)))
-    }
-
     function innerSegmentStart(index) {
         return startAngle + index * (innerSegmentSweep + innerGapAngle)
+    }
+
+    function filledSweep(index) {
+        return Math.max(0, Math.min(segmentSweep, valueAngle - segmentStart(index)))
     }
 
     function innerFilledSweep(index) {
@@ -134,7 +138,21 @@ Item {
         return Qt.point(cx + Math.cos(a) * r, cy + Math.sin(a) * r)
     }
 
-    component Arc: ShapePath {
+    // Opaque stand-in for a translucent stroke on the card. Overlapping
+    // slices then stay one colour instead of stacking.
+    function paintOnCard(t, alpha) {
+        var c = Theme.paceColor(t, paintTheme)
+        var bg = cardColor
+        var a = Math.max(0, Math.min(1, alpha))
+        return Qt.rgba(bg.r + (c.r - bg.r) * a,
+                       bg.g + (c.g - bg.g) * a,
+                       bg.b + (c.b - bg.b) * a, 1)
+    }
+
+    // Slow and Average are flat saturated colors. Fast is yellow to red, drawn
+    // as short flat strokes so the blend stays even. A conical stroke gradient
+    // ran the wrong way around this arc.
+    component SolidArc: ShapePath {
         id: arc
         required property var gauge
         property real ringRadius: gauge.radius
@@ -157,66 +175,114 @@ Item {
         }
     }
 
+    // One step of the Fast zone. `filled` covers up to the marker; the track
+    // is the faint remainder. Opaque steps overlap a little so the joins do
+    // not show. The faint track does not, or the overlaps would go dark.
+    component FastSlice: ShapePath {
+        id: slice
+        property int step: 0
+        property int steps: 16
+        property bool inner: false
+        property bool filled: false
+        property var gauge: root
+        readonly property bool live: !inner || gauge.dual
+        readonly property real z0: inner ? gauge.innerSegmentStart(2) : gauge.segmentStart(2)
+        readonly property real zoneSweep: inner ? gauge.innerSegmentSweep : gauge.segmentSweep
+        readonly property real sliceSweep: zoneSweep / steps
+        readonly property real a0: z0 + step * sliceSweep
+        readonly property real a1: z0 + (step + 1) * sliceSweep
+        readonly property real valueEnd: inner
+                                          ? gauge.innerSegmentStart(2) + (gauge.dual && gauge.hasValue ? gauge.innerFilledSweep(2) : 0)
+                                          : gauge.segmentStart(2) + (gauge.hasValue ? gauge.filledSweep(2) : 0)
+        readonly property real rawFrom: filled ? a0 : Math.max(a0, valueEnd)
+        readonly property real rawTo: filled ? Math.min(a1, valueEnd) : a1
+        // Overlap neighbouring steps. The track is mixed onto the card, not
+        // drawn translucent, so an overlap does not turn into a dark rib.
+        readonly property real from: rawFrom - (rawFrom > z0 + 0.3 ? 0.9 : 0)
+        readonly property real to: rawTo + (rawTo < z0 + zoneSweep - 0.3 ? 0.9 : 0)
+        readonly property real drawn: to - from
+        readonly property real tee: {
+            var mid = (Math.max(from, a0) + Math.min(to, a1)) * 0.5
+            return Math.max(0, Math.min(1, (2 + (mid - z0) / Math.max(1, zoneSweep)) / 3))
+        }
+        readonly property bool roundEnd: step === 0 || step === steps - 1
+                                         || (filled && to < a1 - 0.4)
+        fillColor: "transparent"
+        strokeWidth: live && drawn > 0.2 ? (inner ? gauge.innerStroke : gauge.stroke) : 0
+        strokeColor: filled
+                      ? Theme.paceColor(tee, gauge.paintTheme)
+                      : gauge.paintOnCard(tee, 0.34)
+        capStyle: roundEnd ? ShapePath.RoundCap : ShapePath.FlatCap
+
+        PathAngleArc {
+            centerX: slice.gauge.cx
+            centerY: slice.gauge.cy
+            radiusX: slice.inner ? slice.gauge.innerRadius : slice.gauge.radius
+            radiusY: slice.inner ? slice.gauge.innerRadius : slice.gauge.radius
+            startAngle: slice.from
+            sweepAngle: Math.max(0.01, slice.drawn)
+        }
+    }
+
     Shape {
         anchors.fill: parent
         preferredRendererType: Shape.CurveRenderer
 
-        Arc { gauge: root; arcStart: root.segmentStart(0); arcSweep: root.segmentSweep; arcColor: Qt.alpha(Theme.zoneColor(0, root.paintTheme), 0.18) }
-        Arc { gauge: root; arcStart: root.segmentStart(1); arcSweep: root.segmentSweep; arcColor: Qt.alpha(Theme.zoneColor(1, root.paintTheme), 0.18) }
-        Arc { gauge: root; arcStart: root.segmentStart(2); arcSweep: root.segmentSweep; arcColor: Qt.alpha(Theme.zoneColor(2, root.paintTheme), 0.18) }
+        SolidArc { gauge: root; arcStart: root.segmentStart(0); arcSweep: root.segmentSweep; arcColor: Qt.alpha(Theme.paceAnchor(0, root.paintTheme), 0.28) }
+        SolidArc { gauge: root; arcStart: root.segmentStart(1); arcSweep: root.segmentSweep; arcColor: Qt.alpha(Theme.paceAnchor(1, root.paintTheme), 0.28) }
+        FastSlice { step: 0 } FastSlice { step: 1 } FastSlice { step: 2 } FastSlice { step: 3 }
+        FastSlice { step: 4 } FastSlice { step: 5 } FastSlice { step: 6 } FastSlice { step: 7 }
+        FastSlice { step: 8 } FastSlice { step: 9 } FastSlice { step: 10 } FastSlice { step: 11 }
+        FastSlice { step: 12 } FastSlice { step: 13 } FastSlice { step: 14 } FastSlice { step: 15 }
+        SolidArc { gauge: root; arcStart: root.segmentStart(0); arcSweep: root.hasValue ? root.filledSweep(0) : 0; arcColor: Theme.paceAnchor(0, root.paintTheme) }
+        SolidArc { gauge: root; arcStart: root.segmentStart(1); arcSweep: root.hasValue ? root.filledSweep(1) : 0; arcColor: Theme.paceAnchor(1, root.paintTheme) }
+        FastSlice { step: 0; filled: true } FastSlice { step: 1; filled: true }
+        FastSlice { step: 2; filled: true } FastSlice { step: 3; filled: true }
+        FastSlice { step: 4; filled: true } FastSlice { step: 5; filled: true }
+        FastSlice { step: 6; filled: true } FastSlice { step: 7; filled: true }
+        FastSlice { step: 8; filled: true } FastSlice { step: 9; filled: true }
+        FastSlice { step: 10; filled: true } FastSlice { step: 11; filled: true }
+        FastSlice { step: 12; filled: true } FastSlice { step: 13; filled: true }
+        FastSlice { step: 14; filled: true } FastSlice { step: 15; filled: true }
 
-        Arc { gauge: root; arcStart: root.segmentStart(0); arcSweep: root.hasValue ? root.filledSweep(0) : 0; arcColor: Theme.zoneColor(0, root.paintTheme) }
-        Arc { gauge: root; arcStart: root.segmentStart(1); arcSweep: root.hasValue ? root.filledSweep(1) : 0; arcColor: Theme.zoneColor(1, root.paintTheme) }
-        Arc { gauge: root; arcStart: root.segmentStart(2); arcSweep: root.hasValue ? root.filledSweep(2) : 0; arcColor: Theme.zoneColor(2, root.paintTheme) }
-
-        Arc {
-            gauge: root
-            ringRadius: root.innerRadius
-            ringStroke: root.innerStroke
-            arcStart: root.innerSegmentStart(0)
-            arcSweep: root.dual ? root.innerSegmentSweep : 0
-            arcColor: Qt.alpha(Theme.zoneColor(0, root.paintTheme), 0.18)
+        SolidArc {
+            gauge: root; ringRadius: root.innerRadius; ringStroke: root.innerStroke
+            arcStart: root.innerSegmentStart(0); arcSweep: root.dual ? root.innerSegmentSweep : 0
+            arcColor: Qt.alpha(Theme.paceAnchor(0, root.paintTheme), 0.28)
         }
-        Arc {
-            gauge: root
-            ringRadius: root.innerRadius
-            ringStroke: root.innerStroke
-            arcStart: root.innerSegmentStart(1)
-            arcSweep: root.dual ? root.innerSegmentSweep : 0
-            arcColor: Qt.alpha(Theme.zoneColor(1, root.paintTheme), 0.18)
+        SolidArc {
+            gauge: root; ringRadius: root.innerRadius; ringStroke: root.innerStroke
+            arcStart: root.innerSegmentStart(1); arcSweep: root.dual ? root.innerSegmentSweep : 0
+            arcColor: Qt.alpha(Theme.paceAnchor(1, root.paintTheme), 0.28)
         }
-        Arc {
-            gauge: root
-            ringRadius: root.innerRadius
-            ringStroke: root.innerStroke
-            arcStart: root.innerSegmentStart(2)
-            arcSweep: root.dual ? root.innerSegmentSweep : 0
-            arcColor: Qt.alpha(Theme.zoneColor(2, root.paintTheme), 0.18)
-        }
-        Arc {
-            gauge: root
-            ringRadius: root.innerRadius
-            ringStroke: root.innerStroke
+        FastSlice { step: 0; inner: true } FastSlice { step: 1; inner: true }
+        FastSlice { step: 2; inner: true } FastSlice { step: 3; inner: true }
+        FastSlice { step: 4; inner: true } FastSlice { step: 5; inner: true }
+        FastSlice { step: 6; inner: true } FastSlice { step: 7; inner: true }
+        FastSlice { step: 8; inner: true } FastSlice { step: 9; inner: true }
+        FastSlice { step: 10; inner: true } FastSlice { step: 11; inner: true }
+        FastSlice { step: 12; inner: true } FastSlice { step: 13; inner: true }
+        FastSlice { step: 14; inner: true } FastSlice { step: 15; inner: true }
+        SolidArc {
+            gauge: root; ringRadius: root.innerRadius; ringStroke: root.innerStroke
             arcStart: root.innerSegmentStart(0)
             arcSweep: root.dual && root.hasValue ? root.innerFilledSweep(0) : 0
-            arcColor: Theme.zoneColor(0, root.paintTheme)
+            arcColor: Theme.paceAnchor(0, root.paintTheme)
         }
-        Arc {
-            gauge: root
-            ringRadius: root.innerRadius
-            ringStroke: root.innerStroke
+        SolidArc {
+            gauge: root; ringRadius: root.innerRadius; ringStroke: root.innerStroke
             arcStart: root.innerSegmentStart(1)
             arcSweep: root.dual && root.hasValue ? root.innerFilledSweep(1) : 0
-            arcColor: Theme.zoneColor(1, root.paintTheme)
+            arcColor: Theme.paceAnchor(1, root.paintTheme)
         }
-        Arc {
-            gauge: root
-            ringRadius: root.innerRadius
-            ringStroke: root.innerStroke
-            arcStart: root.innerSegmentStart(2)
-            arcSweep: root.dual && root.hasValue ? root.innerFilledSweep(2) : 0
-            arcColor: Theme.zoneColor(2, root.paintTheme)
-        }
+        FastSlice { step: 0; inner: true; filled: true } FastSlice { step: 1; inner: true; filled: true }
+        FastSlice { step: 2; inner: true; filled: true } FastSlice { step: 3; inner: true; filled: true }
+        FastSlice { step: 4; inner: true; filled: true } FastSlice { step: 5; inner: true; filled: true }
+        FastSlice { step: 6; inner: true; filled: true } FastSlice { step: 7; inner: true; filled: true }
+        FastSlice { step: 8; inner: true; filled: true } FastSlice { step: 9; inner: true; filled: true }
+        FastSlice { step: 10; inner: true; filled: true } FastSlice { step: 11; inner: true; filled: true }
+        FastSlice { step: 12; inner: true; filled: true } FastSlice { step: 13; inner: true; filled: true }
+        FastSlice { step: 14; inner: true; filled: true } FastSlice { step: 15; inner: true; filled: true }
     }
 
     Repeater {
@@ -253,7 +319,7 @@ Item {
         y: center.y - height / 2
         color: root.cardColor
         border.width: Math.max(2, root.innerStroke * 0.32)
-        border.color: root.secondZoneColor
+        border.color: root.secondMarkerColor
     }
 
     Rectangle {
@@ -267,7 +333,7 @@ Item {
         y: center.y - height / 2
         color: root.cardColor
         border.width: Math.max(3, root.stroke * 0.32)
-        border.color: root.zoneColor
+        border.color: root.markerColor
     }
 
     Column {
@@ -410,18 +476,18 @@ Item {
     }
 
     Text {
-        readonly property point end: root.pointAt(root.startAngle, root.radius)
-        x: end.x - width / 2
-        y: end.y + root.stroke / 2 + 4
+        readonly property point tip: root.pointAt(root.startAngle, root.radius)
+        x: tip.x - width / 2
+        y: tip.y + root.stroke / 2 + 4
         text: root.minimum.toFixed(0)
         font.pixelSize: AppScale.fs(12)
         color: Theme.onSurfaceVariant(Material.theme)
     }
 
     Text {
-        readonly property point end: root.pointAt(root.startAngle + root.sweepAngle, root.radius)
-        x: end.x - width / 2
-        y: end.y + root.stroke / 2 + 4
+        readonly property point tip: root.pointAt(root.startAngle + root.sweepAngle, root.radius)
+        x: tip.x - width / 2
+        y: tip.y + root.stroke / 2 + 4
         text: root.maximum.toFixed(0)
         font.pixelSize: AppScale.fs(12)
         color: Theme.onSurfaceVariant(Material.theme)

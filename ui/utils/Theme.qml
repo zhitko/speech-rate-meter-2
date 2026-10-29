@@ -436,11 +436,67 @@ Item {
     }
 
     // Speech-rate zones: 0 = Slow, 1 = Average, 2 = Fast.
-    readonly property var zoneColorsLight: ["#1E8E5A", "#D99A00", "#D2382F"]
-    readonly property var zoneColorsDark: ["#5DD39E", "#F4C04E", "#FF8A80"]
+    // These inks stay dark enough for the zone name, history badges, and
+    // other small text. The arc stroke and the tempo lines use the brighter
+    // pace anchors below, the same hues at a higher saturation.
+    readonly property var zoneColorsLight: ["#1A4FE0", "#0E7C36", "#D32722"]
+    readonly property var zoneColorsDark: ["#6B96FF", "#3DDE6A", "#FF5C48"]
+    // Bright anchors for the pace arc and the tempo curves.
+    // Light: saturated blue, saturated green, then yellow → orange → red.
+    readonly property color paceSlowLight: "#1A4FE0"
+    readonly property color paceMidLight: "#1BB34A"
+    readonly property color paceYellowLight: "#F0C400"
+    readonly property color paceOrangeLight: "#F07800"
+    readonly property color paceFastLight: "#E0312B"
+    readonly property color paceSlowDark: "#6B96FF"
+    readonly property color paceMidDark: "#3DDE6A"
+    readonly property color paceYellowDark: "#FFE14A"
+    readonly property color paceOrangeDark: "#FF9A2E"
+    readonly property color paceFastDark: "#FF5C48"
     function zoneColor(zone, theme) {
         let colors = theme === Material.Dark ? zoneColorsDark : zoneColorsLight;
         return colors[Math.max(0, Math.min(2, zone))];
+    }
+    function paceAnchor(zone, theme) {
+        let dark = theme === Material.Dark;
+        if (zone <= 0)
+            return dark ? paceSlowDark : paceSlowLight;
+        if (zone === 1)
+            return dark ? paceMidDark : paceMidLight;
+        return dark ? paceFastDark : paceFastLight;
+    }
+    function mixColor(c1, c2, t) {
+        let u = Math.max(0, Math.min(1, t));
+        return Qt.rgba(c1.r + (c2.r - c1.r) * u,
+                       c1.g + (c2.g - c1.g) * u,
+                       c1.b + (c2.b - c1.b) * u, 1);
+    }
+    // t is 0 at the slow end and 1 at the fast end. Blue holds through Slow,
+    // green through most of Average, then a clear yellow-to-red gradient
+    // across Fast.
+    function paceColor(t, theme) {
+        let dark = theme === Material.Dark;
+        let x = Math.max(0, Math.min(1, t));
+        let slow = dark ? paceSlowDark : paceSlowLight;
+        let mid = dark ? paceMidDark : paceMidLight;
+        let yellow = dark ? paceYellowDark : paceYellowLight;
+        let orange = dark ? paceOrangeDark : paceOrangeLight;
+        let fast = dark ? paceFastDark : paceFastLight;
+        let stops = [
+            { p: 0.00, c: slow },
+            { p: 0.22, c: slow },
+            { p: 0.40, c: mid },
+            { p: 0.58, c: mid },
+            { p: 0.70, c: yellow },
+            { p: 0.85, c: orange },
+            { p: 1.00, c: fast }
+        ];
+        let i = 0;
+        while (i < stops.length - 2 && stops[i + 1].p < x)
+            i = i + 1;
+        let a = stops[i];
+        let b = stops[i + 1];
+        return mixColor(a.c, b.c, (x - a.p) / Math.max(0.0001, b.p - a.p));
     }
     function zoneForValue(value, minimum, maximum) {
         if (!(maximum > minimum))

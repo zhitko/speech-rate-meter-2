@@ -123,6 +123,9 @@ public:
     Q_INVOKABLE QVariantMap session(const QString& sessionId) const;
     // Recompute the stopped summary from the kept phrases using the current setting.
     Q_INVOKABLE void refreshSummary();
+    // Screenshot aid. Seeds a finished result ("result") or an open measuring
+    // session ("live") without a microphone. Not used by the product UI.
+    Q_INVOKABLE void loadPreview(const QString& mode);
 
 signals:
     void sessionActiveChanged();
