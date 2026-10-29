@@ -60,6 +60,8 @@ Page {
             padding: AppScale.pagePadding
             text: root.guideText
             textFormat: Text.MarkdownText
+            // Image links in the guide are relative to docs/.
+            baseUrl: Qt.resolvedUrl("../../docs/")
             wrapMode: Text.Wrap
             color: Theme.onSurface(Material.theme)
             linkColor: Theme.primary(Material.theme)

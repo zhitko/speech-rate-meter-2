@@ -201,6 +201,20 @@ qt_add_qml_module(appspeech-rate-meter-2
         LICENSE
         docs/user_guide_en.md
         docs/user_guide_ru.md
+        docs/images/en/01-home-ready.png
+        docs/images/en/02-home-recording.png
+        docs/images/en/03-home-result.png
+        docs/images/en/04-open-file.png
+        docs/images/en/05-history.png
+        docs/images/en/06-session.png
+        docs/images/en/07-settings.png
+        docs/images/ru/01-home-ready.png
+        docs/images/ru/02-home-recording.png
+        docs/images/ru/03-home-result.png
+        docs/images/ru/04-open-file.png
+        docs/images/ru/05-history.png
+        docs/images/ru/06-session.png
+        docs/images/ru/07-settings.png
         docs/privacy_policy_en.md
         docs/privacy_policy_ru.md
         licenses/THIRD_PARTY_NOTICES.md
