@@ -1767,4 +1767,41 @@ void SessionApi::notifySessions()
         emit sessionsChanged();
 }
 
+void SessionApi::loadPreview(const QString& mode)
+{
+    QVariantList points;
+    constexpr int count = 150;
+    for (int i = 0; i < count; ++i) {
+        const double t = i * 2.0;
+        const double wave = std::sin(i / 7.0) * 14.0 + std::sin(i / 3.1) * 7.0;
+        QVariantMap point;
+        point.insert(QStringLiteral("seconds"), t);
+        point.insert(QStringLiteral("speechRate"), 146.0 + wave);
+        point.insert(QStringLiteral("articulationRate"), 174.0 + wave * 0.85);
+        points.append(point);
+    }
+    m_tempoPoints = points;
+    m_lastTempoSeconds = points.last().toMap().value(QStringLiteral("seconds")).toDouble();
+    m_speechRate = 152.0;
+    m_articulationRate = 178.0;
+    m_gaugeArticulationRate = 178.0;
+    m_phrasePauses = 0.53;
+    m_speechDuration = 313.0;
+    m_fillerScore = 125.0;
+    m_hasResult = true;
+    const bool live = mode == QLatin1String("live");
+    m_audioLevel = live ? 0.45 : 0.0;
+    m_sessionActive = live;
+    m_showingMean = !live;
+    m_phase = live ? Measuring : IdleReady;
+    m_sessionStartedMs = live ? QDateTime::currentMSecsSinceEpoch() - 314000 : 0;
+    emit sessionActiveChanged();
+    emit phaseChanged();
+    emit hasResultChanged();
+    emit showingMeanChanged();
+    emit metricsChanged();
+    emit tempoPointsChanged();
+    emit audioLevelChanged();
+}
+
 #include "sessionapi.moc"

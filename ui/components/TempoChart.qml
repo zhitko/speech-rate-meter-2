@@ -3,9 +3,10 @@ import QtQuick.Layouts
 import QtQuick.Controls.Material 6.8
 import "../utils"
 
-// Live tempo chart: header, zone washes, grid, and pace lines (no fill
-// under the stroke). The line grows from the left until the chart window
-// is full, then scrolls. Y is fixed to Slow–Fast.
+// Live tempo chart: header, zone washes, boundary lines, and pace lines
+// (no fill under the stroke). The line grows from the left until the chart
+// window is full, then scrolls. Y is fixed to Slow–Fast. The left side
+// names the zones; the numeric ends stay on the arcs.
 Item {
     id: root
     property var points: []
@@ -43,16 +44,27 @@ Item {
     // the header's height.
     property bool compactHeader: false
     readonly property int paintTheme: Material.theme
-    // Same green / yellow as the Slow and Average gauge arcs.
-    readonly property color articulationColor: Theme.zoneColor(0, paintTheme)
-    readonly property color speechColor: Theme.zoneColor(1, paintTheme)
+    // Same blue / green as the slow and medium parts of the pace arc.
+    readonly property color articulationColor: Theme.paceAnchor(0, paintTheme)
+    readonly property color speechColor: Theme.paceAnchor(1, paintTheme)
     readonly property color lineColor: gaugeMode === 1 ? articulationColor : speechColor
     readonly property color axisColor: Theme.outlineVariant(paintTheme)
     readonly property color labelColor: Theme.onSurfaceVariant(paintTheme)
-    // Same Slow / Average / Fast washes as the gauge track, softer on the chart.
-    readonly property color zoneSlow: Qt.alpha(Theme.zoneColor(0, paintTheme), 0.09)
-    readonly property color zoneAverage: Qt.alpha(Theme.zoneColor(1, paintTheme), 0.09)
-    readonly property color zoneFast: Qt.alpha(Theme.zoneColor(2, paintTheme), 0.09)
+    readonly property color boundaryColor: paintTheme === Material.Dark
+                                           ? Qt.rgba(0.93, 0.94, 0.96, 0.62)
+                                           : Qt.rgba(0.13, 0.16, 0.22, 0.55)
+    // Same Slow / Average / Fast washes as the gauge, softer on the chart.
+    // Fast runs from yellow at the medium border to red at the top.
+    readonly property color zoneSlow: Qt.alpha(Theme.paceAnchor(0, paintTheme), 0.13)
+    readonly property color zoneAverage: Qt.alpha(Theme.paceAnchor(1, paintTheme), 0.13)
+    readonly property color zoneFast: Qt.alpha(Theme.paceAnchor(2, paintTheme), 0.16)
+    readonly property color zoneFastStart: Qt.alpha(paintTheme === Material.Dark
+                                                     ? Theme.paceYellowDark
+                                                     : Theme.paceYellowLight, 0.14)
+    readonly property string slowLabel: qsTr("slow")
+    readonly property string mediumLabel: qsTr("medium")
+    readonly property string fastLabel: qsTr("fast")
+    readonly property real paceLineWidth: 4
     readonly property string chartIcon: gaugeMode === 1 ? Icons.faCommentDots : Icons.faGaugeHigh
 
     readonly property real dataEnd: {
@@ -154,6 +166,11 @@ Item {
     onZoneSlowChanged: canvas.requestPaint()
     onZoneAverageChanged: canvas.requestPaint()
     onZoneFastChanged: canvas.requestPaint()
+    onZoneFastStartChanged: canvas.requestPaint()
+    onBoundaryColorChanged: canvas.requestPaint()
+    onSlowLabelChanged: canvas.requestPaint()
+    onMediumLabelChanged: canvas.requestPaint()
+    onFastLabelChanged: canvas.requestPaint()
     onPaintThemeChanged: canvas.requestPaint()
 
     RowLayout {
@@ -323,11 +340,10 @@ Item {
 
             var labelSize = AppScale.fs(11)
             ctx.font = labelSize + "px sans-serif"
-            var unitSuffix = root.unit.length > 0 ? " " + root.unit : ""
-            var maxLabel = yMax.toFixed(0) + unitSuffix
-            var minLabel = yMin.toFixed(0) + unitSuffix
-            var left = Math.max(ctx.measureText(maxLabel).width, ctx.measureText(minLabel).width) + 10
-            var top = Math.max(labelSize / 2, 6) + 2
+            // Rotated zone words are only as wide as the font is tall.
+            var gutter = labelSize + 16
+            var left = gutter
+            var top = 8
             var bottom = labelSize + 10
             var plotWidth = Math.max(1, width - left)
             var plotHeight = Math.max(1, height - top - bottom)
@@ -341,30 +357,52 @@ Item {
 
             // Horizontal bands match gauge arcs: Fast (top), Average, Slow (bottom).
             var bandH = plotHeight / 3
-            ctx.fillStyle = root.zoneFast
+            var fastGrad = ctx.createLinearGradient(0, top + bandH, 0, top)
+            fastGrad.addColorStop(0, root.zoneFastStart)
+            fastGrad.addColorStop(1, root.zoneFast)
+            ctx.fillStyle = fastGrad
             ctx.fillRect(left, top, plotWidth, bandH)
             ctx.fillStyle = root.zoneAverage
             ctx.fillRect(left, top + bandH, plotWidth, bandH)
             ctx.fillStyle = root.zoneSlow
             ctx.fillRect(left, top + 2 * bandH, plotWidth, plotHeight - 2 * bandH)
 
-            ctx.strokeStyle = root.axisColor
+            // Thin lines at both ends and at the two borders between zones.
+            ctx.strokeStyle = root.boundaryColor
             ctx.lineWidth = 1
+            ctx.globalAlpha = 1
             for (var g = 0; g <= 3; ++g) {
                 var gy = Math.round(top + g / 3 * plotHeight) + 0.5
-                ctx.globalAlpha = g === 3 ? 1 : 0.6
                 ctx.beginPath()
                 ctx.moveTo(left, gy)
                 ctx.lineTo(left + plotWidth, gy)
                 ctx.stroke()
             }
-            ctx.globalAlpha = 1
 
-            ctx.fillStyle = root.labelColor
-            ctx.textAlign = "right"
-            ctx.textBaseline = "middle"
-            ctx.fillText(maxLabel, left - 8, top)
-            ctx.fillText(minLabel, left - 8, top + plotHeight)
+            // slow / medium / fast, reading upward, each centered on its band.
+            var zoneWords = [root.fastLabel, root.mediumLabel, root.slowLabel]
+            var zoneInks = [Theme.zoneColor(2, root.paintTheme),
+                            Theme.zoneColor(1, root.paintTheme),
+                            Theme.zoneColor(0, root.paintTheme)]
+            for (var zi = 0; zi < 3; ++zi) {
+                var word = zoneWords[zi]
+                var size = labelSize
+                ctx.font = size + "px sans-serif"
+                var maxLen = Math.max(8, bandH - 8)
+                while (size > 8 && ctx.measureText(word).width > maxLen) {
+                    size -= 1
+                    ctx.font = size + "px sans-serif"
+                }
+                ctx.save()
+                ctx.translate(gutter * 0.42, top + (zi + 0.5) * bandH)
+                ctx.rotate(-Math.PI / 2)
+                ctx.fillStyle = zoneInks[zi]
+                ctx.globalAlpha = 1
+                ctx.textAlign = "center"
+                ctx.textBaseline = "middle"
+                ctx.fillText(word, 0, 0)
+                ctx.restore()
+            }
 
             var gapLimit = Math.max(0.25, root.sampleInterval) * 2.5
             var series = []
@@ -417,7 +455,7 @@ Item {
                             ctx.lineTo(bx, by)
                     }
                     ctx.strokeStyle = spec.color
-                    ctx.lineWidth = 2.5
+                    ctx.lineWidth = root.paceLineWidth
                     ctx.lineJoin = "round"
                     ctx.lineCap = "round"
                     ctx.stroke()

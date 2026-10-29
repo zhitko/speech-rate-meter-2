@@ -1837,6 +1837,21 @@
         <source>Articulation</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <location filename="../ui/components/TempoChart.qml" line="64"/>
+        <source>slow</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/components/TempoChart.qml" line="65"/>
+        <source>medium</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/components/TempoChart.qml" line="66"/>
+        <source>fast</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>UserGuidePage</name>

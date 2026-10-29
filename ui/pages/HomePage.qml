@@ -145,8 +145,32 @@ Page {
     readonly property real gaugeRoom: viewportHeight - AppScale.pagePadding * 2 - 4 - gaugeSurround
     // The legacy caps were measured with the arc below the chip. gaugeRoom
     // already includes the reclaimed band, so it is not added a second time.
-    readonly property real naturalGaugeHeight: Math.min(legacyGaugeHeight * 1.5 + chipBand,
-                                                         Math.max(legacyGaugeHeight + chipBand, gaugeRoom))
+    // After Stop, Open File, and any result already on screen, the chart and
+    // the arcs grow. Recording, and Home before anything has been measured,
+    // keep the sizes this layout had before. One size for both states would
+    // either shrink the live chart, which already takes the leftover page, or
+    // push the pinned Stop button. The page scrolls when the larger result
+    // does not fit.
+    readonly property real resultScale: (!active && hasResult) ? 1.4 : 1
+    // The card already fills the page above the tiles. Growing that whole
+    // slot by 1.4 made the chart and the arcs nearly twice as tall and pushed
+    // the arc-end numbers under the footer. Scale the chart and the gauge
+    // from the fitted result size instead. See chartResultHeight / gaugeResultHeight.
+    readonly property real naturalGaugeHeight: {
+        var base = Math.min(legacyGaugeHeight * 1.5 + chipBand,
+                             Math.max(legacyGaugeHeight + chipBand, gaugeRoom))
+        return base * resultScale
+    }
+    // Height the gauge card fills when the page is exactly the window.
+    // Results ask for 1.4× that, so both the chart and the arcs grow and the
+    // page scrolls instead of squeezing them back to the old size.
+    readonly property real unscaledCardSlot: {
+        var pad = AppScale.pagePadding * 2
+        if (wideLayout)
+            return Math.max(280, viewportHeight - pad)
+        var side = sideColumnActive ? sideColumn.implicitHeight + 12 : 0
+        return Math.max(280, viewportHeight - pad - side)
+    }
     // Phone column width is known up front. Wide cards are not: the tiles can
     // take more than their share, so that height is measured from the real width.
     function gaugeContentHeight(gaugeWidth) {
@@ -194,7 +218,8 @@ Page {
         return Math.max(chartMinHeight, viewportHeight - restedGaugeHeight - sideH - chrome)
     }
     readonly property real fittedGaugeHeight: {
-        if (!fitNavigation || cardsBelowGauge)
+        // A result is allowed to scroll. Do not shrink it back to the window.
+        if (resultScale > 1 || !fitNavigation || cardsBelowGauge)
             return naturalGaugeHeight
         // A few spare pixels keep rounding from bringing the scrollbar back.
         var budget = viewportHeight - AppScale.pagePadding * 2 - 8
@@ -693,13 +718,23 @@ Page {
                                             : 1
                     Layout.fillHeight: root.cardFills
                     Layout.alignment: Qt.AlignTop
+                    // A straight 1.4× of this slot made the phone chart and arcs
+                    // nearly twice as tall and hid the numbers under the arc ends.
+                    // 1.22× on a phone keeps that growth near 1.4× and leaves
+                    // 70 / 210 above the footer. A wide window is only a little
+                    // taller than the screen, so 1100×800 still shows the arc.
+                    Layout.minimumHeight: root.resultScale > 1
+                                          ? root.unscaledCardSlot * (root.wideLayout ? 1.05 : 1.22) : 0
                     // A wide window puts the summary beside this card. Without a
                     // cap the card would grow with that column and the arcs would
                     // run off the bottom of the screen. The page still scrolls
-                    // when the summary is taller than the window.
+                    // when the summary is taller than the window. A result lifts
+                    // that cap so the chart and the arcs can grow.
                     Layout.maximumHeight: !root.wideLayout ? -1
                             : Math.max(implicitHeight,
-                                       root.viewportHeight - AppScale.pagePadding * 2)
+                                       root.resultScale > 1
+                                           ? root.unscaledCardSlot * 1.05
+                                           : root.viewportHeight - AppScale.pagePadding * 2)
                     implicitHeight: gaugeColumn.implicitHeight + 32
                     radius: Theme.shapeExtraLarge
                     color: Theme.surfaceContainerLow(Material.theme)
@@ -826,14 +861,24 @@ Page {
                             visible: root.showGaugeArcs
                             Layout.fillWidth: true
                             Layout.fillHeight: !root.metricCardsHidden
-                            Layout.verticalStretchFactor: root.metricCardsHidden ? 1 : 5
+                            // Stretch is ignored unless the slot is filling. While
+                            // the value cards are hidden the slot is a fixed cap.
+                            Layout.verticalStretchFactor: root.metricCardsHidden ? 0 : 5
                             Layout.topMargin: 0
                             readonly property real hintBlock: 4 + gaugeHint.implicitHeight + 2
-                            Layout.preferredHeight: (root.metricCardsHidden || root.cardsBelowGauge
-                                                     ? root.restedGaugeHeight : root.gaugeFloor) + hintBlock
-                            Layout.minimumHeight: (root.cardsBelowGauge ? root.restedGaugeHeight : root.gaugeFloor) + hintBlock
+                            // With the value cards hidden the arc is a fixed cap.
+                            // A result multiplies that cap; recording leaves it.
+                            // With the cards showing, the taller result card shares
+                            // the extra height, so the cap itself stays put.
+                            readonly property real slotScale: root.metricCardsHidden ? root.resultScale : 1
+                            Layout.preferredHeight: ((root.metricCardsHidden || root.cardsBelowGauge
+                                                      ? root.restedGaugeHeight : root.gaugeFloor) * slotScale) + hintBlock
+                            Layout.minimumHeight: ((root.cardsBelowGauge ? root.restedGaugeHeight
+                                                    : (root.metricCardsHidden
+                                                       ? root.restedGaugeHeight * root.resultScale
+                                                       : root.gaugeFloor))) + hintBlock
                             Layout.maximumHeight: root.metricCardsHidden
-                                                   ? root.restedGaugeHeight + hintBlock
+                                                   ? root.restedGaugeHeight * root.resultScale + hintBlock
                                                    : 10000
 
                             SpeechRateGauge {

@@ -131,7 +131,9 @@ Page {
                             var room = root.wideLayout
                                        ? Math.min(root.height * 0.55, root.layoutWidth * 0.42)
                                        : root.layoutWidth * 0.9
-                            return Math.min(legacy * 1.5, Math.max(legacy, room))
+                            // A saved result uses the same 1.4× arc as Home after Stop.
+                            // The min and max captions stay the gauge's small labels.
+                            return Math.min(legacy * 1.5, Math.max(legacy, room)) * 1.4
                         }
                         hasValue: sessionData.speechRate !== undefined
                         showSecond: root.gaugeMode === 2

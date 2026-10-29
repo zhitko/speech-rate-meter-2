@@ -2326,6 +2326,21 @@
         <source>Articulation</source>
         <translation>Артикуляция</translation>
     </message>
+    <message>
+        <location filename="../ui/components/TempoChart.qml" line="64"/>
+        <source>slow</source>
+        <translation>медленно</translation>
+    </message>
+    <message>
+        <location filename="../ui/components/TempoChart.qml" line="65"/>
+        <source>medium</source>
+        <translation>средне</translation>
+    </message>
+    <message>
+        <location filename="../ui/components/TempoChart.qml" line="66"/>
+        <source>fast</source>
+        <translation>быстро</translation>
+    </message>
 </context>
 <context>
     <name>UserGuidePage</name>

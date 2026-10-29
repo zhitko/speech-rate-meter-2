@@ -7,11 +7,14 @@
 #include <QFontDatabase>
 #include <QGuiApplication>
 #include <QIcon>
+#include <QImage>
 #include <QMutex>
 #include <QQmlApplicationEngine>
+#include <QQuickWindow>
 #include <QStandardPaths>
 #include <QStringList>
 #include <QTextStream>
+#include <QTimer>
 #include <QtQml>
 
 // APIS
@@ -158,6 +161,47 @@ int main(int argc, char* argv[])
         []() { QCoreApplication::exit(-1); },
         Qt::QueuedConnection);
     engine.loadFromModule(QLatin1String("SpeechRateMeter2"), QLatin1String("Main"));
+
+    // SRM_PREVIEW=mode,width,height,theme,language,outfile
+    // Seeds Home and writes one window grab. Screenshot aid only.
+    const QByteArray preview = qgetenv("SRM_PREVIEW");
+    if (!preview.isEmpty()) {
+        const QString spec = QString::fromUtf8(preview);
+        QTimer::singleShot(600, &app, [&engine, &app, spec]() {
+            const QStringList parts = spec.split(QLatin1Char(','));
+            QObject* root = engine.rootObjects().value(0);
+            auto* window = qobject_cast<QQuickWindow*>(root);
+            if (!window || parts.size() < 6) {
+                QCoreApplication::exit(2);
+                return;
+            }
+            window->setProperty("width", parts.at(1).toInt());
+            window->setProperty("height", parts.at(2).toInt());
+            QObject* settings = root->property("settingsApi").value<QObject*>();
+            if (settings) {
+                settings->setProperty("theme", parts.at(3));
+                settings->setProperty("language", parts.at(4));
+                settings->setProperty("gaugeMode", 2);
+                settings->setProperty("showNavigationMenu", false);
+                settings->setProperty("showFillersTile", true);
+            }
+            QObject* session = root->property("sessionApi").value<QObject*>();
+            if (session)
+                QMetaObject::invokeMethod(session, "loadPreview", Q_ARG(QString, parts.at(0)));
+            const QString outfile = parts.at(5);
+            const int shotWidth = parts.at(1).toInt();
+            const int shotHeight = parts.at(2).toInt();
+            QTimer::singleShot(1600, &app, [window, outfile, shotWidth, shotHeight]() {
+                window->setProperty("width", shotWidth);
+                window->setProperty("height", shotHeight);
+                const QImage image = window->grabWindow();
+                const bool ok = !image.isNull() && image.save(outfile);
+                fprintf(stderr, "SRM_SHOT %s %d %dx%d\n",
+                    outfile.toUtf8().constData(), ok ? 1 : 0, image.width(), image.height());
+                QCoreApplication::exit(ok ? 0 : 3);
+            });
+        });
+    }
 
     return app.exec();
 }
