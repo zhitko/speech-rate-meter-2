@@ -15,31 +15,26 @@ Filenames are `N_screen_name.png` and match the phone listing order.
 | 5 | User guide | `phone/5_user_guide.png` | `tablet7/5_user_guide.png` | `tablet10/5_user_guide.png` |
 | 6 | Privacy policy | `phone/6_privacy.png` | `tablet7/6_privacy.png` | `tablet10/6_privacy.png` |
 
-Build the emulator APK first:
+Build the emulator APK, then capture. The script starts the matching AVD,
+installs that APK, and drives the six screens. A 30-second chart window is
+used so a short take is visible; the default in the app is 5 minutes.
 
 ```bash
 ./scripts/build_android.sh x86_64 debug
+python3 packaging/google-play/capture_screenshots.py
+python3 packaging/google-play/capture_screenshots.py phone
 ```
 
-Recapture with the phone AVD (3-button navigation, `1080×2400`):
+`phone` uses `Pixel7a_x86_64` (3-button navigation, `1080×2400`).
+`tablet7` and `tablet10` use the Play tablet AVDs.
+
+One screen can still be captured by hand after the emulator is showing it:
 
 ```bash
 ./scripts/run_emulator.sh Pixel7a_x86_64
 ./scripts/run_emulator.sh --screenshot home
-./scripts/run_emulator.sh --screenshot history
-./scripts/run_emulator.sh --screenshot session
-./scripts/run_emulator.sh --screenshot settings
-./scripts/run_emulator.sh --screenshot guide
-./scripts/run_emulator.sh --screenshot privacy
 ```
 
-Then the tablet slots:
-
-```bash
-./scripts/run_emulator.sh --tablet 7
-./scripts/run_emulator.sh --tablet 10
-```
-
-Known `--screenshot` names write the numbered files above. Phone files go to
-`phone/`. After `--tablet 7` or `--tablet 10`, the same commands write
-`tablet7/` or `tablet10/`.
+Known `--screenshot` names are `home`, `history`, `session`, `settings`,
+`guide`, and `privacy`. Phone files go to `phone/`. After `--tablet 7` or
+`--tablet 10`, the same command writes `tablet7/` or `tablet10/`.

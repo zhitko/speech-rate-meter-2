@@ -123,6 +123,7 @@ running_avd_name() {
         args=(-s "$serial")
     fi
     timeout 5 "$ADB_CMD" "${args[@]}" emu avd name 2>/dev/null \
+        | tr -d '\r' \
         | awk 'NF && $1 != "OK" {print $1; exit}' || true
 }
 
