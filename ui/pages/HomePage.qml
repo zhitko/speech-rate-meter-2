@@ -52,11 +52,12 @@ Page {
         NumberAnimation { to: 0.25; duration: 700; easing.type: Easing.InOutSine }
         NumberAnimation { to: 1; duration: 700; easing.type: Easing.InOutSine }
     }
-    // Live recording only. The chart and the arcs stay visible. This overlay
-    // counts down until two live readings have arrived. Stop and Open File
-    // are not an active session, so they do not show it.
+    // Live recording only. The chart and the arcs stay on screen, empty, while
+    // this overlay counts down. Readings collected during the wait are kept,
+    // and they appear on the chart and the arcs only after the label hides.
+    // Stop and Open File are not an active session, so they do not show it.
     readonly property bool liveVisualsHeld: active && !!sessionApi
-                                             && sessionApi.liveReadingCount < 2
+                                             && sessionApi.liveReadingCount < sessionApi.liveChartReadings
     property real warmupBlink: 1
     SequentialAnimation on warmupBlink {
         running: root.liveVisualsHeld
@@ -65,10 +66,10 @@ Page {
         NumberAnimation { to: 0.45; duration: 480; easing.type: Easing.InOutSine }
         NumberAnimation { to: 1; duration: 480; easing.type: Easing.InOutSine }
     }
-    // Integers in the arc centre appear after the session and after Open File.
-    // While recording the arcs and the chart keep moving and the value cards
-    // stay off. After Stop or Open File the switches choose which cards show.
-    // A pace already on the gauge is not repeated as a card.
+    // Integers in the arc centre follow the live readings while recording,
+    // and the session summary after Stop and after Open File. Value cards
+    // stay off while recording. After Stop or Open File the switches choose
+    // which cards show. A pace already on the gauge is not repeated as a card.
     readonly property bool showReadings: !active
     readonly property bool showResultCards: !active && hasResult
     readonly property bool showSpeechRateTile: showResultCards
@@ -821,7 +822,7 @@ Page {
                             Layout.topMargin: 32
                             Layout.fillHeight: true
                             Layout.minimumHeight: root.chartMinHeight
-                            points: root.tempoPoints
+                            points: root.liveVisualsHeld ? [] : root.tempoPoints
                             windowSec: root.tempoWindowSec
                             sampleInterval: root.tempoSampleSec
                             minimum: root.slowWpm
@@ -829,9 +830,9 @@ Page {
                             gaugeMode: root.gaugeMode
                             live: root.active
                             nowSec: root.active ? root.tempoNow : root.tempoFreeze
-                            tipActive: root.tempoTipActive
-                            tipSpeech: root.tempoTipSpeech
-                            tipArticulation: root.tempoTipArticulation
+                            tipActive: root.tempoTipActive && !root.liveVisualsHeld
+                            tipSpeech: root.liveVisualsHeld ? 0 : root.tempoTipSpeech
+                            tipArticulation: root.liveVisualsHeld ? 0 : root.tempoTipArticulation
                             caption: ""
                         }
 
@@ -852,7 +853,7 @@ Page {
                                 plotInset: Theme.chartZoneGutter
                                 // While recording, anything but Measuring means the user is not
                                 // speaking (or not enough yet), so the needle rests at zero.
-                                hasValue: root.hasResult || root.active
+                                hasValue: (root.hasResult || root.active) && !root.liveVisualsHeld
                                 showSecond: root.gaugeMode === 2
                                 // Both draws speech rate on the outer arc (value, top number)
                                 // and articulation one ring inside. Fillers is the innermost
@@ -863,16 +864,16 @@ Page {
                                           ? Theme.articulationSeriesColor(Material.theme)
                                           : Theme.speechSeriesColor(Material.theme)
                                 secondArcColor: Theme.articulationSeriesColor(Material.theme)
-                                value: root.gaugeAtRest ? 0
+                                value: root.gaugeAtRest || root.liveVisualsHeld ? 0
                                        : (root.gaugeMode === 1 ? sessionApi.gaugeArticulationRate : sessionApi.speechRate)
-                                secondValue: root.gaugeAtRest ? 0 : sessionApi.gaugeArticulationRate
-                                fillerValue: !sessionApi || root.gaugeAtRest ? 0 : root.fillerFraction() * 100
+                                secondValue: root.gaugeAtRest || root.liveVisualsHeld ? 0 : sessionApi.gaugeArticulationRate
+                                fillerValue: !sessionApi || root.gaugeAtRest || root.liveVisualsHeld ? 0 : root.fillerFraction() * 100
                                 minimum: root.slowWpm
                                 maximum: root.fastWpm
                                 cardColor: gaugeCard.color
                                 micActive: root.active
                                 micLevel: sessionApi ? sessionApi.audioLevel : 0
-                                showNumbers: root.showReadings
+                                showNumbers: true
                             }
 
                             Label {

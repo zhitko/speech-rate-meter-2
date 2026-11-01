@@ -1603,16 +1603,21 @@ void SessionApi::showMetrics(const QVariantMap& shown, double speechSeconds)
     }
 }
 
+int SessionApi::liveChartReadings() const
+{
+    return kLiveChartReadings;
+}
+
 void SessionApi::noteLiveReading()
 {
-    if (m_liveReadingCount >= 2)
+    if (m_liveReadingCount >= kLiveChartReadings)
         return;
     ++m_liveReadingCount;
     const int beforeSec = m_liveChartRemainingSec;
     const bool beforeAlmost = m_liveChartAlmost;
     refreshLiveChartWait();
-    // The first reading does not change the countdown. Home still needs the
-    // new count so it can release the chart on the second one.
+    // A reading before the fifth does not change the countdown. Home still
+    // needs the new count so it can release the chart on the fifth one.
     if (beforeSec == m_liveChartRemainingSec && beforeAlmost == m_liveChartAlmost)
         emit liveChartWaitChanged();
 }
@@ -1620,7 +1625,7 @@ void SessionApi::noteLiveReading()
 void SessionApi::refreshLiveChartWait()
 {
     LiveChartWait next;
-    if (m_sessionActive && m_liveReadingCount < 2) {
+    if (m_sessionActive && m_liveReadingCount < kLiveChartReadings) {
         const double speechMs = std::max(0.0, m_speechDuration) * 1000.0;
         const int collectedMs = speechMs >= 36000000.0
             ? 36000000
@@ -1850,8 +1855,8 @@ void SessionApi::loadPreview(const QString& mode)
     m_showingMean = !live && !early;
     m_phase = early ? Listening : (live ? Measuring : IdleReady);
     // A finished take and a live chart already have their readings. The early
-    // grab is still waiting for the first two.
-    m_liveReadingCount = early ? 0 : 2;
+    // grab is still waiting for the first five.
+    m_liveReadingCount = early ? 0 : kLiveChartReadings;
     m_liveChartWaitLatched = false;
     m_sessionStartedMs = early
         ? QDateTime::currentMSecsSinceEpoch() - 2000

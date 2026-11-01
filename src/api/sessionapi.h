@@ -60,6 +60,7 @@ class SessionApi : public QObject {
     Q_PROPERTY(bool recordingSummaryPending READ recordingSummaryPending NOTIFY recordingSummaryChanged)
     Q_PROPERTY(QVariantMap recordingSummary READ recordingSummary NOTIFY recordingSummaryChanged)
     Q_PROPERTY(QVariantList tempoPoints READ tempoPoints NOTIFY tempoPointsChanged)
+    Q_PROPERTY(int liveChartReadings READ liveChartReadings CONSTANT)
     Q_PROPERTY(int liveReadingCount READ liveReadingCount NOTIFY liveChartWaitChanged)
     Q_PROPERTY(int liveChartRemainingSec READ liveChartRemainingSec NOTIFY liveChartWaitChanged)
     Q_PROPERTY(bool liveChartAlmost READ liveChartAlmost NOTIFY liveChartWaitChanged)
@@ -104,14 +105,17 @@ public:
     bool recordingSummaryPending() const { return m_recordingSummaryPending; }
     QVariantMap recordingSummary() const { return m_recordingSummary; }
     QVariantList tempoPoints() const { return m_tempoPoints; }
+    // Live publishes Home waits for before it drops “Everything is working”.
+    int liveChartReadings() const;
     // Live publishes accepted during this take. Home holds the chart and the
-    // arcs until this reaches 2. Stop and Open File are not an active session.
+    // arcs until this reaches liveChartReadings(). Stop and Open File are
+    // not an active session.
     int liveReadingCount() const { return m_liveReadingCount; }
-    // Rounded-up seconds of collected speech still expected before the second
+    // Rounded-up seconds of collected speech still expected before the fifth
     // live reading. Never negative. 0 when the chart is not being held, or
     // when liveChartAlmost() is set.
     int liveChartRemainingSec() const { return m_liveChartRemainingSec; }
-    // The estimate ran out and the second reading has not arrived.
+    // The estimate ran out and the fifth reading has not arrived.
     bool liveChartAlmost() const { return m_liveChartAlmost; }
     bool openFileAvailable() const;
     bool openFileBusy() const { return m_openFileBusy; }

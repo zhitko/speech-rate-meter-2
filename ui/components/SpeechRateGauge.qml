@@ -20,8 +20,7 @@ Item {
     property real fillerValue: 0
     // Without a value the arcs stay empty and the readouts show a dash.
     property bool hasValue: true
-    // Home turns this off while recording. The arcs keep moving; the integers
-    // come back after Stop, Open File, and a saved result.
+    // Integers sit above the names while recording and after Stop.
     property bool showNumbers: true
     property string unit: qsTr("wpm")
     property color cardColor: Theme.surfaceContainerLow(Material.theme)
@@ -460,8 +459,8 @@ Item {
                 return Math.max(top, Math.min(prefer, aboveDiameter))
             }
             // Put the apex name on the chord that was measured for it.
-            // While recording the integer is hidden, so the name is the top
-            // line and must not climb into the tip of the ring.
+            // The integer is the top line when it is shown, so the name
+            // stays on that chord and does not climb into the tip of the ring.
             var captionOffset = figures ? root.numberPx : 0
             var want = root.cy - root.holeRadius + root.apexFromTop - captionOffset
             return Math.max(top, Math.min(want, aboveDiameter))
