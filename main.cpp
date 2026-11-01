@@ -163,8 +163,9 @@ int main(int argc, char* argv[])
         Qt::QueuedConnection);
     engine.loadFromModule(QLatin1String("SpeechRateMeter2"), QLatin1String("Main"));
 
-    // SRM_PREVIEW=mode,width,height,theme,language,outfile
+    // SRM_PREVIEW=mode,width,height,theme,language,outfile[,gaugeMode[,fillers]]
     // Seeds Home and writes one window grab. Screenshot aid only.
+    // gaugeMode defaults to 2 (both paces). fillers is 1 or 0, default 1.
     const QByteArray preview = qgetenv("SRM_PREVIEW");
     if (!preview.isEmpty()) {
         const QString spec = QString::fromUtf8(preview);
@@ -182,9 +183,11 @@ int main(int argc, char* argv[])
             if (settings) {
                 settings->setProperty("theme", parts.at(3));
                 settings->setProperty("language", parts.at(4));
-                settings->setProperty("gaugeMode", 2);
+                const int gaugeMode = parts.size() >= 7 ? parts.at(6).toInt() : 2;
+                const bool fillers = parts.size() < 8 || parts.at(7) != QLatin1String("0");
+                settings->setProperty("gaugeMode", gaugeMode);
                 settings->setProperty("showNavigationMenu", false);
-                settings->setProperty("showFillersTile", true);
+                settings->setProperty("showFillersTile", fillers);
             }
             QObject* session = root->property("sessionApi").value<QObject*>();
             if (session)

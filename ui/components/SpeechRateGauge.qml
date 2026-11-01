@@ -119,18 +119,25 @@ Item {
     readonly property real fillerRadius: Math.max(16, (dual ? innerRadius : radius) - ringStep)
     readonly property real cx: plotInset + plotSpan / 2
     readonly property real cy: Theme.paceCy(radius)
-    readonly property real blockHeight: Theme.gaugeBlockHeight(radius)
-    readonly property real labelBand: 22
     readonly property real holeRadius: Math.max(12, fillerRadius - stroke * 0.5 - 4)
-    // Shared integers. Shrink only when the innermost hole cannot hold them.
+    // Shared integers. The ring names sit under the arc, so the hole holds
+    // numbers, the unit, and (one pace) the zone chip.
     readonly property real readoutNumberSize: {
         var paceCap = dual
                 ? Math.min(28, Math.max(16, innerRadius * 0.34))
                 : Math.min(40, Math.max(22, radius * 0.28))
-        var fixed = AppScale.fs(11) * (dual ? 3 : 2) + AppScale.fs(12) + (dual ? 4 : 28)
+        var unit = AppScale.fs(dual ? 12 : 13)
+        var zone = dual ? 0 : (AppScale.fs(13) + 12)
         var lines = dual ? 3 : 2
-        var fit = (holeRadius - fixed) / lines
+        var fit = (holeRadius - unit - zone - 8) / lines
         return Math.max(14, Math.min(paceCap, fit))
+    }
+    readonly property real captionLine: AppScale.fs(12) + 6
+    // Both paces: two rows under the ends. One pace: the two names share one row.
+    readonly property int captionRows: dual ? 2 : 1
+    readonly property real blockHeight: {
+        var under = 2 + captionLine + 8 + captionRows * captionLine + (dual ? 2 : 0) + 2
+        return cy + stroke * 0.5 + under
     }
 
     readonly property real gapAngle: stroke / Math.max(1, radius) * 180 / Math.PI + 2
@@ -383,19 +390,6 @@ Item {
 
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
-            visible: root.dual
-            width: Math.max(48, root.innerRadius * 1.4)
-            horizontalAlignment: Text.AlignHCenter
-            elide: Text.ElideRight
-            text: root.metricLabel
-            font.pixelSize: AppScale.fs(11)
-            font.weight: Font.DemiBold
-            color: root.hasValue && root.value > 0 ? root.arcColor : Theme.onSurfaceVariant(Material.theme)
-            Accessible.ignored: true
-        }
-
-        Text {
-            anchors.horizontalCenter: parent.horizontalCenter
             visible: root.dual && (!root.hasValue || root.showNumbers)
             topPadding: 2
             text: root.hasValue ? root.animatedSecond.toFixed(0) : "– –"
@@ -403,21 +397,6 @@ Item {
             font.weight: root.hasValue ? Font.DemiBold : Font.Light
             font.features: { "tnum": 1 }
             color: root.hasValue ? Theme.onSurface(Material.theme) : Theme.outline(Material.theme)
-        }
-
-        Text {
-            anchors.horizontalCenter: parent.horizontalCenter
-            visible: root.dual
-            width: Math.max(48, root.innerRadius * 1.4)
-            horizontalAlignment: Text.AlignHCenter
-            elide: Text.ElideRight
-            text: root.secondMetricLabel
-            font.pixelSize: AppScale.fs(11)
-            font.weight: Font.DemiBold
-            color: root.hasValue && root.secondValue > 0
-                   ? root.secondArcColor
-                   : Theme.onSurfaceVariant(Material.theme)
-            Accessible.ignored: true
         }
 
         Text {
@@ -430,26 +409,12 @@ Item {
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
             visible: !root.hasValue || root.showNumbers
-            topPadding: 2
+            topPadding: 6
             text: root.hasValue ? root.animatedFiller.toFixed(0) : "– –"
             font.pixelSize: root.readoutNumberSize
             font.weight: root.hasValue ? Font.DemiBold : Font.Light
             font.features: { "tnum": 1 }
             color: root.hasValue ? Theme.onSurface(Material.theme) : Theme.outline(Material.theme)
-        }
-
-        Text {
-            anchors.horizontalCenter: parent.horizontalCenter
-            width: Math.max(48, root.holeRadius * 1.6)
-            horizontalAlignment: Text.AlignHCenter
-            elide: Text.ElideRight
-            text: qsTranslate("HomePage", "Fillers")
-            font.pixelSize: AppScale.fs(11)
-            font.weight: Font.DemiBold
-            color: root.hasValue && root.fillerValue > 0
-                   ? root.fillerColor
-                   : Theme.onSurfaceVariant(Material.theme)
-            Accessible.ignored: true
         }
 
         Item { width: 1; height: root.dual ? 1 : 4; visible: !root.dual || root.micActive }
@@ -516,32 +481,111 @@ Item {
             }
         }
 
-        Text {
-            anchors.horizontalCenter: parent.horizontalCenter
-            visible: !root.dual
-            text: root.metricLabel
-            font.pixelSize: AppScale.fs(12)
-            font.weight: Font.DemiBold
-            color: root.hasValue && root.value > 0 ? root.arcColor : Theme.onSurface(Material.theme)
-            Accessible.ignored: true
-        }
     }
 
     Text {
+        id: minLabel
         readonly property point tip: root.pointAt(root.startAngle, root.radius)
         x: tip.x - width / 2
         y: tip.y + root.stroke / 2 + 2
+        height: root.captionLine
+        verticalAlignment: Text.AlignVCenter
         text: root.minimum.toFixed(0)
         font.pixelSize: AppScale.fs(12)
         color: Theme.onSurfaceVariant(Material.theme)
     }
 
     Text {
+        id: maxLabel
         readonly property point tip: root.pointAt(root.startAngle + root.sweepAngle, root.radius)
         x: tip.x - width / 2
         y: tip.y + root.stroke / 2 + 2
+        height: root.captionLine
+        verticalAlignment: Text.AlignVCenter
         text: root.maximum.toFixed(0)
         font.pixelSize: AppScale.fs(12)
         color: Theme.onSurfaceVariant(Material.theme)
+    }
+
+    // Ring names, under the arc and clear of 70 / 210. Both paces make a
+    // triangle: speech at the lower left, articulation at the lower right,
+    // fillers centred on the next line. One pace keeps the two names on
+    // that first line, pace at the left and fillers at the right.
+    Item {
+        id: nameRow
+        anchors.left: parent.left
+        anchors.right: parent.right
+        y: minLabel.y + minLabel.height + 8
+        height: root.captionLine
+
+        Text {
+            id: nameLeft
+            anchors.left: parent.left
+            anchors.leftMargin: root.plotInset
+            anchors.verticalCenter: parent.verticalCenter
+            width: Math.max(48, (parent.width - root.plotInset) / 2 - 8)
+            height: root.captionLine
+            horizontalAlignment: Text.AlignLeft
+            verticalAlignment: Text.AlignVCenter
+            wrapMode: Text.NoWrap
+            fontSizeMode: Text.HorizontalFit
+            minimumPixelSize: 9
+            text: root.metricLabel
+            font.pixelSize: AppScale.fs(12)
+            font.weight: Font.DemiBold
+            color: root.hasValue && root.value > 0
+                   ? root.arcColor
+                   : Theme.onSurfaceVariant(Material.theme)
+            Accessible.ignored: true
+        }
+
+        Text {
+            id: nameRight
+            anchors.right: parent.right
+            anchors.rightMargin: 12
+            anchors.verticalCenter: parent.verticalCenter
+            width: Math.max(48, (parent.width - root.plotInset) / 2 - 8)
+            height: root.captionLine
+            horizontalAlignment: Text.AlignRight
+            verticalAlignment: Text.AlignVCenter
+            wrapMode: Text.NoWrap
+            fontSizeMode: Text.HorizontalFit
+            minimumPixelSize: 9
+            text: root.dual ? root.secondMetricLabel : qsTranslate("HomePage", "Fillers")
+            font.pixelSize: AppScale.fs(12)
+            font.weight: Font.DemiBold
+            color: {
+                if (root.dual)
+                    return root.hasValue && root.secondValue > 0
+                            ? root.secondArcColor
+                            : Theme.onSurfaceVariant(Material.theme)
+                return root.hasValue && root.fillerValue > 0
+                        ? root.fillerColor
+                        : Theme.onSurfaceVariant(Material.theme)
+            }
+            Accessible.ignored: true
+        }
+    }
+
+    Text {
+        id: nameBottom
+        visible: root.dual
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.horizontalCenterOffset: root.plotInset / 2
+        y: nameRow.y + nameRow.height + 2
+        width: Math.max(48, Math.min(parent.width - 16, parent.width * 0.62))
+        height: root.captionLine
+        horizontalAlignment: Text.AlignHCenter
+        verticalAlignment: Text.AlignVCenter
+        wrapMode: Text.NoWrap
+        fontSizeMode: Text.HorizontalFit
+        minimumPixelSize: 9
+        text: qsTranslate("HomePage", "Fillers")
+        font.pixelSize: AppScale.fs(12)
+        font.weight: Font.DemiBold
+        color: root.hasValue && root.fillerValue > 0
+               ? root.fillerColor
+               : Theme.onSurfaceVariant(Material.theme)
+        Accessible.ignored: true
     }
 }

@@ -538,9 +538,13 @@ Item {
         return gaugeStroke(radius) * 0.55 + radius;
     }
     // The fillers ring is concentric, so it does not add a row under the arc.
-    // The 22 px is the Min/Max captions under the shared diameter.
+    // Under the diameter: the Min/Max numbers, then two lines for the ring
+    // names (the triangle when both paces are shown). fitPaceRadius reserves
+    // that band so the chart keeps its height with all three names.
     function gaugeBlockHeight(radius) {
-        return paceCy(radius) + gaugeStroke(radius) * 0.5 + 22;
+        let line = AppScale.fs(12) + 6;
+        let under = 2 + line + 8 + line + 2 + line + 2;
+        return paceCy(radius) + gaugeStroke(radius) * 0.5 + under;
     }
     // Shrink the semicircle until the chart above it still has room.
     // The caller then gives the chart and the arcs that same width.
