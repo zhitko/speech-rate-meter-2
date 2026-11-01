@@ -1128,6 +1128,26 @@
         <translation>Общие</translation>
     </message>
     <message>
+        <source>Mode</source>
+        <translation>Режим</translation>
+    </message>
+    <message>
+        <source>Standard restores the shipped settings: a long analysis window and few updates, so each number covers more speech and moves less often. Fast restores the fast preset: a short window and frequent updates, so the number follows you sooner and jumps more. Language, theme, color, font size, the navigation bar, Keep recording files, and speech-detection thresholds stay as they are. Choosing a mode again restores it.</source>
+        <translation>Стандартный возвращает поставленные настройки: длинное окно анализа и редкие обновления, поэтому каждое число охватывает больше речи и реже меняется. Быстрый возвращает быстрый пресет: короткое окно и частые обновления, поэтому число быстрее следует за вами и сильнее скачет. Язык, тема, цвет, размер шрифта, панель навигации, «Сохранять файлы записи» и пороги обнаружения речи остаются как есть. Повторный выбор режима восстанавливает его.</translation>
+    </message>
+    <message>
+        <source>Standard (rare updates, accurate result)</source>
+        <translation>Стандартный режим (нечастое обновление — точный результат)</translation>
+    </message>
+    <message>
+        <source>Fast (frequent updates, lower accuracy)</source>
+        <translation>Быстрый режим (частое обновление — точность низкая)</translation>
+    </message>
+    <message>
+        <source>Standard updates rarely and stays steadier. Fast updates often and jumps more.</source>
+        <translation>Стандартный обновляется редко и держится ровнее. Быстрый обновляется часто и сильнее скачет.</translation>
+    </message>
+    <message>
         <source>Additional</source>
         <translation>Дополнительные</translation>
     </message>

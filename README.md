@@ -64,11 +64,11 @@ An **Additional** switch under General is not saved and turns off when you leave
 
 | Section | What you control |
 | --- | --- |
-| **General (always visible)** | UI language (EN/RU), light/dark/system theme, accent color (Blue/Green/Purple/Orange/Red), navigation menu, font size, delete user data |
+| **General (always visible)** | UI language (EN/RU), light/dark/system theme, accent color (Blue/Green/Purple/Orange/Red), navigation menu, font size, mode preset (Standard or Fast), delete user data |
 | **Measurement (inside Additional)** | Analysis window, updates per minute, chart window, gauge (speech rate, articulation rate, or both), use all readings, gauge median, pause length, phrasal-pause minimum, speech rate method (direct or legacy), articulation method (direct, legacy, or window), session summary, Detect speech automatically, tile switches, Slow and Fast ends of the gauge |
 | **Also inside Additional** | Keep recording files, voice-activity method and thresholds, calibration, intensity frame/shift/smooth, vowel-length limit, power-mean degree, coefficients K1–K5 and the filler range |
 
-The settings shipped in `settings.ini` use a 60 s analysis window and 12 updates a minute. There is no separate fast preset.
+**Mode** chooses a preset. Standard restores the shipped `settings.ini` (60 s analysis window, 12 updates a minute). Fast restores `settings_fast.ini` (5 s window, 120 updates a minute). Language, theme, color, font size, the navigation bar, Keep recording files, and speech-detection thresholds stay as they are.
 
 **Detect speech automatically** measures background noise after Start, then waits for speech. A pause ends the phrase. When it is off, measuring starts when you press Start, a pause does not end the phrase, and the recording is saved in 15-second parts.
 

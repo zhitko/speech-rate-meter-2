@@ -115,18 +115,19 @@ An opened file is not listed here, because **Open File** does not save a session
 
 **General**, with **Additional** off. Measurement and the formula controls stay hidden until you turn Additional on.
 
-**General** is how the app looks.
+**General** is how the app looks, and which preset it uses.
 
 - **Language**, **Theme**, **Primary Color**, and **Font Size**.
 - **Show Navigation Menu** adds Home, History, and Settings along the bottom. The menu button stays in the toolbar.
+- **Mode** is **Standard (rare updates, accurate result)** or **Fast (frequent updates, lower accuracy)**. Standard uses a 60-second analysis window and 12 updates a minute, so each number covers more speech. Fast uses a 5-second window and 120 updates a minute, so the number follows you sooner and jumps more. Choosing a mode again restores it. Language, theme, color, font size, the navigation bar, **Keep recording files**, and the speech-detection thresholds stay as they are.
 - **Delete user data** removes saved sessions and any recording files still kept in `data/records`. Your settings stay.
 
 **Additional** opens **Measurement** and the formula controls. The switch turns off when you leave the app. The values stay as you left them.
 
 **Measurement** is how a session is read. The question mark beside a control explains that control in more detail.
 
-- **Analysis window** is how many recent seconds of speech the live pace uses. Shorter reacts faster and jumps more. The shortest value is 3 seconds. The settings shipped with the app use 60 seconds.
-- **Updates per minute** is how often the pace is recalculated and how often the tempo chart gains a point. The shortest value is 1, once a minute. The settings shipped with the app use 12, once every 5 seconds.
+- **Analysis window** is how many recent seconds of speech the live pace uses. Shorter reacts faster and jumps more. The shortest value is 3 seconds. Standard mode uses 60 seconds. Fast mode uses 5 seconds.
+- **Updates per minute** is how often the pace is recalculated and how often the tempo chart gains a point. The shortest value is 1, once a minute. Standard mode uses 12, once every 5 seconds. Fast mode uses 120, twice a second.
 - **Chart window** is how many seconds the tempo chart keeps. The default is 300 seconds (5 minutes). The range is 30 to 1800 seconds.
 - **Pause** is how much silence ends a phrase and saves it. The default is 2 seconds. This is used only when **Detect speech automatically** is on. A phrase longer than 15 seconds is cut at the next pause, or at 15 seconds.
 - **Phrasal pause** is the shortest silent gap that counts as a pause inside the pace calculation. The default is 200 ms. Short stop closures in a word are not counted.

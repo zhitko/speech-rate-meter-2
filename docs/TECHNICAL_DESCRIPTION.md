@@ -16,7 +16,7 @@ One job is on screen at a time. A drawer (and the bottom bar, when that setting 
 | --- | --- |
 | Home | Start or stop a session, and read the session so far. |
 | History | Past sessions. A row opens that session’s charts. |
-| Settings | Appearance. Measurement, calibration, and coefficients stay behind Additional. |
+| Settings | Appearance and the mode preset. Measurement, calibration, and coefficients stay behind Additional. |
 | User Guide | How to record. |
 | Privacy Policy | What stays on the device. |
 | Open-source licences | Bundled components. |
@@ -611,7 +611,7 @@ kurtosis = mean(z^4) - 3                    # excess kurtosis
 
 Stored in `settings.ini` beside the executable (desktop) or in application-local data (Android), INI format. The file is read only when the root key `date_v3` exists. Until the user changes something, every value below is the in-code default and the file may be absent. The first save writes `date_v3` as an empty `QDate`, which is enough to make later launches load the file. General application and recorder values are under the `[General]` group; analysis coefficients retain their named groups.
 
-Additional is a process-global boolean, shown as a switch under General. It is not written to the INI and resets to off on restart. When it is off, Settings shows General only: language, theme, color, font size, the navigation bar, and Delete user data. Measurement and the numbered stage cards are hidden, not reset. The switch’s note says it turns off when you leave the app. Show Navigation Menu, in General, shows Home, History, and Settings along the bottom; the toolbar menu button stays. An older file may still contain `General/preset`. That key used to choose a bundled preset (`0` the shipped `settings.ini`, `1` `settings_fast.ini` with a 5 s window and 120 updates a minute). It is ignored on load and removed on the next save. Analysis values already stored in the user’s `settings.ini` are left as they are, so a file that was last saved from the fast preset keeps those stored numbers. The file shipped with the application still uses a 60 s analysis window and 12 updates a minute. The in-code defaults stay 10 s and 60 updates a minute. The live file remains `settings.ini`.
+Additional is a process-global boolean, shown as a switch under General. It is not written to the INI and resets to off on restart. When it is off, Settings shows General only: language, theme, color, font size, the navigation bar, Mode, and Delete user data. Measurement and the numbered stage cards are hidden, not reset. The switch’s note says it turns off when you leave the app. Show Navigation Menu, in General, shows Home, History, and Settings along the bottom; the toolbar menu button stays. Mode (`General/preset`) is 0 or 1. 0 restores the shipped standard preset, the bundled `settings.ini`: analysis window 60 s and 12 updates a minute. 1 restores `settings_fast.ini`: analysis window 5 s and 120 updates a minute. Choosing the current mode again reloads that file. Language, theme, color, font size, the navigation bar, Keep recording files, and the speech-detection thresholds are kept. The live file remains `settings.ini`.
 
 Everyday labels use plain units. Silence Duration is edited in seconds and stored as milliseconds.
 
@@ -621,7 +621,6 @@ Everyday labels use plain units. Silence Duration is edited in seconds and store
 | Updates per minute | `General/updatesPerMinute` | 60 | How often Home updates while you speak, and how often Open File adds a chart point. At least 1 (once a minute). No upper limit. The wait is at least 1 ms. A stored value below 1 loads as 1. |
 | Chart window (s) | `General/tempoChartWindowSec` | 300 s | How much of the tempo chart stays on screen. A point is added on each live update and on each Open File sample. Range 30…1800. Home shows the chart together with the arcs. While recording they wait until 30 s of speech. |
 | (removed) | `General/recordingView` | — | Ignored. Older files may still contain `0` (chart) or `1` (arcs). Home always shows both. The key is removed on the next save. |
-| (removed) | `General/preset` | — | Ignored. Older files may still contain `0` or `1` from the Standard / Fast choice. The key is removed on the next save. Stored analysis values are not rewritten. |
 | Gauge | `General/gaugeMode` | Speech rate (`0`) | One pace, or both: speech rate outside, articulation inside. Articulation rate is `1`, Both is `2`. A pace on the gauge is not also a card on a saved result. |
 | Show Speech rate tile | `General/showSpeechRateTile` | on | Shows the speech-rate card on a saved result. The switch is disabled, and the card stays hidden, when Gauge is Speech rate or Both. Home does not show it. |
 | Show Articulation rate tile | `General/showArticulationRateTile` | on | Shows the articulation card on a saved result. The switch is disabled, and the card stays hidden, when Gauge is Articulation rate or Both. Home does not show it. |

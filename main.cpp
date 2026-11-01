@@ -45,6 +45,7 @@ static void extractAndroidAssets()
     // The asset paths to extract (relative to assets:/)
     const QStringList assetRoots = {
         QStringLiteral("settings.ini"),
+        QStringLiteral("settings_fast.ini"),
         QStringLiteral("data")
     };
 

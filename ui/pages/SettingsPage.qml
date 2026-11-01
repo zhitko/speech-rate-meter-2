@@ -311,6 +311,22 @@ Page {
                                 settingsApi.fontSizeMultiplier = model[index].value
                         }
 
+                        FieldLabel {
+                            text: qsTr("Mode")
+                            help: qsTr("Standard restores the shipped settings: a long analysis window and few updates, so each number covers more speech and moves less often. Fast restores the fast preset: a short window and frequent updates, so the number follows you sooner and jumps more. Language, theme, color, font size, the navigation bar, Keep recording files, and speech-detection thresholds stay as they are. Choosing a mode again restores it.")
+                        }
+                        SettingComboBox {
+                            selectedValue: settingsApi ? settingsApi.preset : 0
+                            model: [
+                                { name: qsTr("Standard (rare updates, accurate result)"), id: 0 },
+                                { name: qsTr("Fast (frequent updates, lower accuracy)"), id: 1 }
+                            ]
+                            onActivated: if (settingsApi)
+                                settingsApi.preset = model[index].id
+                        }
+                        Hint {
+                            text: qsTr("Standard updates rarely and stays steadier. Fast updates often and jumps more.")
+                        }
                     }
 
                     Button {

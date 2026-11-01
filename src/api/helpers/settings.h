@@ -15,6 +15,9 @@ struct AppSettings {
     double fontSizeMultiplier = 1.0;
     std::string primaryColor = "blue";
     bool showNavigationMenu = false;
+    // 0: standard preset, the shipped settings.ini (long window, few updates).
+    // 1: fast preset, settings_fast.ini (short window, frequent updates).
+    int preset = 0;
 
     bool autoStopRecording = true;
     bool autoCalibrate = false;
@@ -83,6 +86,10 @@ public:
     static AppSettings loadSettings();
     static void saveSettings(const AppSettings& settings);
     static AppSettings getDefaultSettings();
+    // Fills settings from the preset file. Does not change the live settings.ini.
+    // 0 reads the shipped standard file. 1 reads settings_fast.ini beside the
+    // program, or the copy bundled in the binary when that file is absent.
+    static bool readPreset(int preset, AppSettings* settings);
 
     /**
      * Unpackaged desktop build: directory of the executable.
