@@ -66,7 +66,6 @@ void seedBundledFile(const QString& fileName)
 void seedBundledSettings()
 {
     seedBundledFile(QStringLiteral("settings.ini"));
-    seedBundledFile(QStringLiteral("settings_fast.ini"));
 }
 
 } // namespace
@@ -140,7 +139,10 @@ bool readSettingsFile(QSettings& qsettings, AppSettings* out, bool writeMigratio
     settings.fontSizeMultiplier = qsettings.value("fontSizeMultiplier", 1.0).toDouble();
     settings.primaryColor = qsettings.value("primaryColor", QString("blue")).toString().toStdString();
     settings.showNavigationMenu = qsettings.value("showNavigationMenu", false).toBool();
-    settings.preset = qsettings.value(QStringLiteral("preset"), 0).toInt() == 1 ? 1 : 0;
+    // General/preset used to select the fast preset (1 = settings_fast.ini).
+    // The choice is gone. Read the key so an older file still loads, then
+    // drop it on the next save. Analysis values already in this file stay.
+    (void)qsettings.value(QStringLiteral("preset"));
     settings.autoStopRecording = qsettings.value("autoStopRecording", true).toBool();
     settings.autoCalibrate = qsettings.value("autoCalibrate", false).toBool();
     settings.keepRecordingFiles = qsettings.value("keepRecordingFiles", false).toBool();
@@ -241,14 +243,6 @@ bool readSettingsFile(QSettings& qsettings, AppSettings* out, bool writeMigratio
     return true;
 }
 
-QString fastPresetPath()
-{
-    const QString beside = Settings::getAppDataDir() + QStringLiteral("/settings_fast.ini");
-    if (QFile::exists(beside))
-        return beside;
-    return QStringLiteral(":/presets/settings_fast.ini");
-}
-
 } // namespace
 
 AppSettings
@@ -262,18 +256,6 @@ Settings::loadSettings()
     if (!readSettingsFile(qsettings, &settings, true))
         return AppSettings();
     return settings;
-}
-
-bool Settings::readPreset(int preset, AppSettings* settings)
-{
-    QMutexLocker lock(&settingsMutex());
-    // The live settings.ini is rewritten whenever a control changes, so the
-    // standard preset is the copy compiled into the program.
-    const QString path = preset == 1
-        ? fastPresetPath()
-        : QStringLiteral(":/presets/settings.ini");
-    QSettings qsettings(path, QSettings::IniFormat);
-    return readSettingsFile(qsettings, settings, false);
 }
 
 void Settings::saveSettings(const AppSettings& settings)
@@ -292,7 +274,7 @@ void Settings::saveSettings(const AppSettings& settings)
     qsettings.setValue("fontSizeMultiplier", settings.fontSizeMultiplier);
     qsettings.setValue("primaryColor", QString::fromStdString(settings.primaryColor));
     qsettings.setValue("showNavigationMenu", settings.showNavigationMenu);
-    qsettings.setValue(QStringLiteral("preset"), settings.preset == 1 ? 1 : 0);
+    qsettings.remove(QStringLiteral("preset"));
     qsettings.remove("metricAverageCount");
     qsettings.remove("minRecordingTimeMs");
     qsettings.remove("maxRecordingTimeMs");

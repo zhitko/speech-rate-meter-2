@@ -60,7 +60,7 @@ class SessionApi : public QObject {
     Q_PROPERTY(bool recordingSummaryPending READ recordingSummaryPending NOTIFY recordingSummaryChanged)
     Q_PROPERTY(QVariantMap recordingSummary READ recordingSummary NOTIFY recordingSummaryChanged)
     Q_PROPERTY(QVariantList tempoPoints READ tempoPoints NOTIFY tempoPointsChanged)
-    Q_PROPERTY(double firstReadingSec READ firstReadingSec CONSTANT)
+    Q_PROPERTY(int liveChartSpeechSec READ liveChartSpeechSec CONSTANT)
     Q_PROPERTY(bool openFileAvailable READ openFileAvailable CONSTANT)
     Q_PROPERTY(bool openFileBusy READ openFileBusy NOTIFY openFileBusyChanged)
     Q_PROPERTY(QString openFileError READ openFileError NOTIFY openFileErrorChanged)
@@ -102,8 +102,10 @@ public:
     bool recordingSummaryPending() const { return m_recordingSummaryPending; }
     QVariantMap recordingSummary() const { return m_recordingSummary; }
     QVariantList tempoPoints() const { return m_tempoPoints; }
-    // Speech the analysis window must hold before the first live reading.
-    double firstReadingSec() const;
+    // Home hides the live chart and arcs until the speech clock reaches this.
+    // Wall time is not used. Stop and Open File do not wait.
+    static constexpr int kLiveChartSpeechSec = 30;
+    int liveChartSpeechSec() const { return kLiveChartSpeechSec; }
     bool openFileAvailable() const;
     bool openFileBusy() const { return m_openFileBusy; }
     QString openFileError() const { return m_openFileError; }

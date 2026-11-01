@@ -1115,11 +1115,6 @@ bool SessionApi::openFileAvailable() const
 #endif
 }
 
-double SessionApi::firstReadingSec() const
-{
-    return static_cast<double>(kMinWindowSamples) / kSampleRate;
-}
-
 double SessionApi::sessionElapsedSec() const
 {
     if (m_sessionStartedMs <= 0)
@@ -1787,13 +1782,22 @@ void SessionApi::loadPreview(const QString& mode)
     m_gaugeArticulationRate = 178.0;
     m_phrasePauses = 0.53;
     m_speechDuration = 313.0;
-    m_fillerScore = 125.0;
+    // fillerMin 120 … fillerMax 240 maps 180 to 50 percent on the fillers arc.
+    m_fillerScore = 180.0;
     m_hasResult = true;
-    const bool live = mode == QLatin1String("live");
+    const bool early = mode == QLatin1String("early");
+    const bool live = mode == QLatin1String("live") || early;
+    if (early) {
+        m_tempoPoints.clear();
+        m_lastTempoSeconds = -1;
+        m_speechDuration = 12.0;
+        m_hasResult = false;
+        m_fillerScore = 0.0;
+    }
     m_audioLevel = live ? 0.45 : 0.0;
     m_sessionActive = live;
-    m_showingMean = !live;
-    m_phase = live ? Measuring : IdleReady;
+    m_showingMean = !live && !early;
+    m_phase = early ? Listening : (live ? Measuring : IdleReady);
     m_sessionStartedMs = live ? QDateTime::currentMSecsSinceEpoch() - 314000 : 0;
     emit sessionActiveChanged();
     emit phaseChanged();

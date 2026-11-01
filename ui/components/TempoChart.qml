@@ -23,10 +23,6 @@ Item {
     property int gaugeMode: 0
     property string unit: qsTr("wpm")
     property string caption: ""
-    // Speech needed before the first live point, for the waiting message.
-    property real firstReadingSec: 0
-    readonly property bool waiting: live && (!points || points.length === 0)
-    readonly property int firstReadingWholeSec: Math.max(1, Math.ceil(firstReadingSec))
 
     readonly property bool showSpeech: gaugeMode !== 1
     readonly property bool showArticulation: gaugeMode !== 0
@@ -44,9 +40,9 @@ Item {
     // the header's height.
     property bool compactHeader: false
     readonly property int paintTheme: Material.theme
-    // Same blue / green as the slow and medium parts of the pace arc.
-    readonly property color articulationColor: Theme.paceAnchor(0, paintTheme)
-    readonly property color speechColor: Theme.paceAnchor(1, paintTheme)
+    // Same blue and green as the pace arcs.
+    readonly property color articulationColor: Theme.articulationSeriesColor(paintTheme)
+    readonly property color speechColor: Theme.speechSeriesColor(paintTheme)
     readonly property color lineColor: gaugeMode === 1 ? articulationColor : speechColor
     readonly property color axisColor: Theme.outlineVariant(paintTheme)
     readonly property color labelColor: Theme.onSurfaceVariant(paintTheme)
@@ -59,9 +55,8 @@ Item {
     readonly property real paceLineWidth: 4
     readonly property string chartIcon: gaugeMode === 1 ? Icons.faCommentDots : Icons.faGaugeHigh
     // Left inset of the colored plot. Zone words sit in this gutter, and the
-    // plot runs to the canvas edge, so overlays centered on the canvas sit
-    // left of the bands.
-    readonly property real zoneGutter: AppScale.fs(11) + 16
+    // plot runs to the canvas edge. The pace arcs use the same inset.
+    readonly property real zoneGutter: Theme.chartZoneGutter
 
     readonly property real dataEnd: {
         var all = points
@@ -128,8 +123,6 @@ Item {
     Accessible.role: Accessible.Chart
     Accessible.name: qsTr("Tempo")
     Accessible.description: {
-        if (waiting)
-            return waitingTitle.text + " " + waitingBody.text
         // The figures are not painted while recording. A screen reader still
         // hears the latest pace, because the moving line is not announced.
         if (!(live && hasHeader))
@@ -252,58 +245,12 @@ Item {
         anchors.verticalCenter: canvas.verticalCenter
         anchors.horizontalCenterOffset: root.zoneGutter / 2
         width: Math.max(0, canvas.width - root.zoneGutter - 32)
-        visible: !root.waiting && root.plotted.length === 0 && !root.tipActive
+        visible: root.plotted.length === 0 && !root.tipActive && !root.live
         text: qsTr("No tempo yet")
         horizontalAlignment: Text.AlignHCenter
         wrapMode: Text.Wrap
         color: Theme.onSurfaceVariant(Material.theme)
         font.pixelSize: AppScale.fs(14)
-    }
-
-    Column {
-        anchors.horizontalCenter: canvas.horizontalCenter
-        anchors.verticalCenter: canvas.verticalCenter
-        anchors.horizontalCenterOffset: root.zoneGutter / 2
-        width: Math.max(0, canvas.width - root.zoneGutter - 32)
-        visible: root.waiting
-        spacing: 6
-        z: 1
-
-        Text {
-            width: parent.width
-            horizontalAlignment: Text.AlignHCenter
-            font.family: Icons.familySolid
-            font.weight: Font.Black
-            font.pixelSize: AppScale.fs(22)
-            text: Icons.faMicrophone
-            color: Theme.primary(Material.theme)
-        }
-
-        Text {
-            id: waitingTitle
-            width: parent.width
-            horizontalAlignment: Text.AlignHCenter
-            wrapMode: Text.Wrap
-            text: qsTr("Everything is working. Keep speaking.")
-            color: Theme.onSurface(Material.theme)
-            font.pixelSize: AppScale.fs(16)
-            font.weight: Font.DemiBold
-        }
-
-        Text {
-            id: waitingBody
-            width: parent.width
-            horizontalAlignment: Text.AlignHCenter
-            wrapMode: Text.Wrap
-            text: qsTr("The tempo appears about %n second(s) after you start speaking.", "",
-                       root.firstReadingWholeSec)
-            color: Theme.onSurfaceVariant(Material.theme)
-            font.pixelSize: AppScale.fs(14)
-            // The column is centered on the plot, which lands this line on
-            // the medium/slow border. Shift it clear of that line, into the
-            // slow band.
-            transform: Translate { y: Math.round(font.pixelSize * 2.2) }
-        }
     }
 
     Canvas {
@@ -355,19 +302,13 @@ Item {
                 return top + (1 - (value - yMin) / valueSpan) * plotHeight
             }
 
-            // Horizontal bands match the gauge: each zone blends across its
-            // third. Fast is the top band, Slow the bottom.
+            // Horizontal bands match the gauge tracks. Fast is the top band
+            // and is a light gold, Slow the bottom.
             var bandH = plotHeight / 3
             for (var zone = 0; zone < 3; ++zone) {
                 var yTop = top + (2 - zone) * bandH
                 var yBot = zone === 0 ? top + plotHeight : yTop + bandH
-                var wash = ctx.createLinearGradient(0, yBot, 0, yTop)
-                var stops = 4
-                for (var stop = 0; stop <= stops; ++stop) {
-                    var u = stop / stops
-                    wash.addColorStop(u, Qt.alpha(Theme.paceColor((zone + u) / 3, root.paintTheme), 0.16))
-                }
-                ctx.fillStyle = wash
+                ctx.fillStyle = Theme.zoneTrackColor(zone, root.paintTheme)
                 ctx.fillRect(left, yTop, plotWidth, Math.max(1, yBot - yTop))
             }
 

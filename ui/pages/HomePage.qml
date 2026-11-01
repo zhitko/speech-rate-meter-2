@@ -51,11 +51,24 @@ Page {
         NumberAnimation { to: 0.25; duration: 700; easing.type: Easing.InOutSine }
         NumberAnimation { to: 1; duration: 700; easing.type: Easing.InOutSine }
     }
-    // The chart and the arcs stay together: while recording, after Stop,
-    // after Open File, and while idle. There is no longer a choice between them.
-    readonly property bool showTempoChart: true
-    readonly property bool showGaugeArcs: true
-    readonly property bool chartAndGauge: true
+    // Speech time, not the badge clock. Home hides the live chart and arcs
+    // until this many seconds. SessionApi::kLiveChartSpeechSec is the same number.
+    readonly property int liveChartSpeechSec: sessionApi ? sessionApi.liveChartSpeechSec : 30
+    readonly property bool liveVisualsHeld: active && !!sessionApi
+                                             && sessionApi.speechDuration < liveChartSpeechSec
+    property real warmupBlink: 1
+    SequentialAnimation on warmupBlink {
+        running: root.liveVisualsHeld
+        loops: Animation.Infinite
+        alwaysRunToEnd: true
+        NumberAnimation { to: 0.28; duration: 480; easing.type: Easing.InOutSine }
+        NumberAnimation { to: 1; duration: 480; easing.type: Easing.InOutSine }
+    }
+    // The chart and the arcs stay together after the speech clock passes
+    // 30 s, after Stop, after Open File, and while idle.
+    readonly property bool showTempoChart: !liveVisualsHeld
+    readonly property bool showGaugeArcs: !liveVisualsHeld
+    readonly property bool chartAndGauge: showTempoChart && showGaugeArcs
     // Integers in the arc centre appear after the session and after Open File.
     // While recording the arcs and the chart keep moving and the value cards
     // stay off. After Stop or Open File the switches choose which cards show.
@@ -126,46 +139,9 @@ Page {
     readonly property bool wideLayout: layoutInnerWidth >= 720
                                        || (layoutInnerWidth >= 560 && layoutInnerWidth > height * 1.15)
     readonly property real viewportHeight: Math.max(0, height - footer.height)
-    // Baseline from before the arcs grew. The gauge aims for 1.5× this and
-    // stops at the space above the pinned button, so a short phone does not
-    // push the arc ends off the screen.
-    readonly property real legacyGaugeHeight: wideLayout
-                                              ? Math.max(170, Math.min(height - AppScale.pagePadding * 2 - 110, 440))
-                                              : Math.max(200, Math.min(layoutWidth * 0.62, height * 0.36, 330))
-    // The phase chip is a corner overlay. This is how far the gauge rises into
-    // that band so the arc can use the space instead of sitting below it.
-    readonly property real chipBand: 40
-    // Card margins (16 + 16), column spacing (8), hint bottom margin (4), and the
-    // gauge top margin (28 minus the chip band the arc now fills).
-    readonly property real gaugeSurround: 72 - chipBand + (gaugeHint.implicitHeight > 0 ? gaugeHint.implicitHeight : 0)
-    // Below this the arc ends collide with the center label. The chart sits
-    // above the arcs, and both grow into whatever height the card has left.
-    readonly property real gaugeFloor: 156
-    readonly property real chartMinHeight: 148
-    readonly property real gaugeRoom: viewportHeight - AppScale.pagePadding * 2 - 4 - gaugeSurround
-    // The legacy caps were measured with the arc below the chip. gaugeRoom
-    // already includes the reclaimed band, so it is not added a second time.
-    // Stop, Open File, and a result already on screen keep this size. The
-    // chart and the arcs do not grow or shrink when the result cards appear.
-    // Those cards sit beside the card or under it, and the page scrolls.
-    readonly property real naturalGaugeHeight: {
-        return Math.min(legacyGaugeHeight * 1.5 + chipBand,
-                         Math.max(legacyGaugeHeight + chipBand, gaugeRoom))
-    }
     // Height the gauge card fills while recording. Results use the same slot.
     readonly property real recordingCardHeight: Math.max(280, viewportHeight - AppScale.pagePadding * 2)
-    // Phone column width is known up front. Wide cards are not: the tiles can
-    // take more than their share, so that height is measured from the real width.
-    function gaugeContentHeight(gaugeWidth) {
-        var labelSpace = AppScale.fs(12) + 10
-        var byWidth = Math.max(20, (Math.max(0, gaugeWidth) - 4) / 2.15)
-        var content = byWidth * 1.66 + labelSpace + 4
-        return Math.min(fittedGaugeHeight, Math.max(gaugeFloor, content))
-    }
-    // Preferred heights stay at the floor while the value cards are on, so a
-    // short window does not scroll just because a preferred size was large.
-    // fillHeight then shares whatever height is left. With those cards hidden,
-    // expandedChartHeight gives the leftover page to the tempo chart.
+    readonly property real chartMinHeight: 140
     // On a wide window the button column keeps the Listen and Open File slots
     // while recording, and the result cards use that same width. The chart
     // does not give up width when those cards appear.
@@ -179,42 +155,16 @@ Page {
     }
     readonly property real metricColumnWidth: wideLayout ? controlsColumnWidth
                                                : Math.max(1, sideColumn.implicitWidth)
-    // Height of the arc at this width, before it is asked to fill the page.
-    function gaugeArcHeight(gaugeWidth) {
-        var labelSpace = AppScale.fs(12) + 10
-        var byWidth = Math.max(20, (Math.max(0, gaugeWidth) - 4) / 2.15)
-        return Math.max(gaugeFloor, byWidth * 1.66 + labelSpace + 4)
-    }
-    readonly property real restedGaugeHeight: {
-        var gaugeWidth = wideLayout
-                         ? Math.max(120, layoutWidth - metricColumnWidth)
-                         : Math.max(120, layoutWidth)
-        // The arc stays readable. Height past this goes to the tempo chart
-        // once the value cards are hidden.
-        var cap = Math.max(gaugeFloor, viewportHeight * (wideLayout ? 0.46 : 0.34))
-        return Math.min(gaugeArcHeight(gaugeWidth), cap)
-    }
-    // The tempo chart takes the page height the value cards no longer use
-    // while recording. A result keeps that height; the cards scroll instead
-    // of borrowing it. The gauge stays the size of its arc.
-    readonly property real expandedChartHeight: {
-        var sideH = metricCardsHidden && sideColumnActive && !wideLayout
-                    ? sideColumn.implicitHeight + 12
-                    : 0
-        var chrome = AppScale.pagePadding * 2 + 104
-        return Math.max(chartMinHeight, viewportHeight - restedGaugeHeight - sideH - chrome)
-    }
-    readonly property real fittedGaugeHeight: {
-        if (!fitNavigation || cardsBelowGauge)
-            return naturalGaugeHeight
-        // A few spare pixels keep rounding from bringing the scrollbar back.
-        var budget = viewportHeight - AppScale.pagePadding * 2 - 8
-        var room = wideLayout
-                ? budget - gaugeSurround
-                : budget - sideColumn.implicitHeight - layout.rowSpacing - gaugeSurround
-        var fitted = Math.min(naturalGaugeHeight, room)
-        return Math.max(Math.min(gaugeFloor, naturalGaugeHeight), fitted)
-    }
+    readonly property real gaugeCardWidth: wideLayout
+                                            ? Math.max(160, layoutWidth - metricColumnWidth)
+                                            : Math.max(160, layoutWidth)
+    // Card padding around the column that holds the chart and the arcs.
+    readonly property real gaugeContentWidth: Math.max(140, gaugeCardWidth - 32)
+    readonly property real gaugeContentBody: Math.max(240, recordingCardHeight - 32)
+    readonly property real chosenRadius: Theme.fitPaceRadius(gaugeContentWidth, gaugeContentBody, Theme.chartZoneGutter)
+    // Chart and pace arcs share this width, so the 180° ends meet the plot.
+    readonly property real visualsWidth: Math.min(gaugeContentWidth,
+                                                   Theme.chartZoneGutter + Theme.gaugePlotSpan(chosenRadius))
     readonly property bool navigationLayoutFits: fitNavigation
             && layout.implicitHeight + AppScale.pagePadding * 2 <= viewportHeight + 1
 
@@ -805,20 +755,68 @@ Page {
                         anchors.margins: 16
                         spacing: 4
 
+                        Item {
+                            visible: root.liveVisualsHeld
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            Layout.topMargin: 32
+                            Layout.minimumHeight: 180
+
+                            Column {
+                                id: warmupColumn
+                                anchors.centerIn: parent
+                                width: Math.min(parent.width - 24, 480)
+                                spacing: 16
+
+                                Text {
+                                    width: parent.width
+                                    horizontalAlignment: Text.AlignHCenter
+                                    font.family: Icons.familySolid
+                                    font.weight: Font.Black
+                                    font.pixelSize: AppScale.fs(28)
+                                    text: Icons.faMicrophone
+                                    color: Theme.primary(Material.theme)
+                                    opacity: root.warmupBlink
+                                }
+
+                                Rectangle {
+                                    width: parent.width
+                                    height: warmupTitle.implicitHeight + 24
+                                    radius: 16
+                                    color: Qt.alpha(Theme.primary(Material.theme), 0.16)
+
+                                    Text {
+                                        id: warmupTitle
+                                        anchors.left: parent.left
+                                        anchors.right: parent.right
+                                        anchors.leftMargin: 16
+                                        anchors.rightMargin: 16
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        horizontalAlignment: Text.AlignHCenter
+                                        wrapMode: Text.Wrap
+                                        text: qsTranslate("TempoChart", "Everything is working. Keep speaking.")
+                                        color: Theme.onSurface(Material.theme)
+                                        font.pixelSize: AppScale.fs(26)
+                                        font.weight: Font.Bold
+                                        opacity: root.warmupBlink
+                                    }
+                                }
+                            }
+                        }
+
                         TempoChart {
                             id: tempoChart
                             visible: root.showTempoChart
                             compactHeader: true
-                            Layout.fillWidth: true
+                            Layout.alignment: Qt.AlignHCenter
+                            Layout.preferredWidth: root.visualsWidth
+                            Layout.maximumWidth: root.visualsWidth
                             // Clears the phase chip, which sits over this column.
                             // The Tempo label lives in that chip row, so the plot
                             // can start as soon as the chip ends.
                             Layout.topMargin: 32
                             Layout.fillHeight: true
-                            Layout.verticalStretchFactor: 8
-                            Layout.preferredHeight: root.expandedChartHeight
                             Layout.minimumHeight: root.chartMinHeight
-                            Layout.maximumHeight: 10000
                             points: root.tempoPoints
                             windowSec: root.tempoWindowSec
                             sampleInterval: root.tempoSampleSec
@@ -830,48 +828,25 @@ Page {
                             tipActive: root.tempoTipActive
                             tipSpeech: root.tempoTipSpeech
                             tipArticulation: root.tempoTipArticulation
-                            firstReadingSec: sessionApi ? sessionApi.firstReadingSec : 0
-                            // The waiting message in the chart already says to keep speaking.
-                            caption: root.showGaugeArcs || waiting ? "" : root.hintText()
+                            caption: ""
                         }
 
-                        // The slot is the gauge's vertical budget. On a wide window
-                        // that budget is often taller than the circle, so the arc and
-                        // the hint are centered in it instead of sitting on the floor.
                         Item {
                             id: gaugeSlot
                             visible: root.showGaugeArcs
-                            Layout.fillWidth: true
-                            // The arc keeps the recording cap after Stop and
-                            // Open File. It does not grow into a result card.
+                            Layout.alignment: Qt.AlignHCenter
+                            Layout.preferredWidth: root.visualsWidth
+                            Layout.maximumWidth: root.visualsWidth
                             Layout.fillHeight: false
-                            Layout.verticalStretchFactor: 0
-                            Layout.topMargin: 0
                             readonly property real hintBlock: 4 + gaugeHint.implicitHeight + 2
-                            Layout.preferredHeight: root.restedGaugeHeight + hintBlock
-                            Layout.minimumHeight: root.restedGaugeHeight + hintBlock
-                            Layout.maximumHeight: root.restedGaugeHeight + hintBlock
+                            Layout.preferredHeight: gauge.implicitHeight + hintBlock
+                            Layout.minimumHeight: gauge.implicitHeight + hintBlock
 
                             SpeechRateGauge {
                                 id: gauge
-                                readonly property real sideBleed: root.wideLayout ? 8
-                                                                     : AppScale.pagePadding + 10
-                                x: -sideBleed
-                                width: parent.width + sideBleed * 2
-                                height: {
-                                    if (!root.chartAndGauge)
-                                        return root.gaugeContentHeight(width)
-                                    var room = Math.max(root.gaugeFloor, parent.height - parent.hintBlock)
-                                    return Math.min(root.gaugeContentHeight(width), room)
-                                }
-                                // Center the arc and the hint together. A phone slot is
-                                // already the circle's height, so this stays at the top.
-                                y: {
-                                    if (!root.wideLayout)
-                                        return 0
-                                    var block = height + parent.hintBlock
-                                    return Math.max(0, (parent.height - block) / 2)
-                                }
+                                width: parent.width
+                                height: implicitHeight
+                                plotInset: Theme.chartZoneGutter
                                 // While recording, anything but Measuring means the user is not
                                 // speaking (or not enough yet), so the needle rests at zero.
                                 hasValue: root.hasResult || root.active
@@ -881,9 +856,14 @@ Page {
                                 // the Gauge setting names.
                                 metricLabel: root.gaugeMode === 1 ? qsTr("Articulation") : qsTr("Speech rate")
                                 secondMetricLabel: qsTr("Articulation")
+                                arcColor: root.gaugeMode === 1
+                                          ? Theme.articulationSeriesColor(Material.theme)
+                                          : Theme.speechSeriesColor(Material.theme)
+                                secondArcColor: Theme.articulationSeriesColor(Material.theme)
                                 value: root.gaugeAtRest ? 0
                                        : (root.gaugeMode === 1 ? sessionApi.gaugeArticulationRate : sessionApi.speechRate)
                                 secondValue: root.gaugeAtRest ? 0 : sessionApi.gaugeArticulationRate
+                                fillerValue: !sessionApi || root.gaugeAtRest ? 0 : root.fillerFraction() * 100
                                 minimum: root.slowWpm
                                 maximum: root.fastWpm
                                 cardColor: gaugeCard.color
@@ -895,7 +875,7 @@ Page {
                             Label {
                                 id: gaugeHint
                                 width: parent.width
-                                y: gauge.y + gauge.height + 4
+                                y: gauge.height + 4
                                 horizontalAlignment: Text.AlignHCenter
                                 wrapMode: Text.Wrap
                                 text: root.hintText()

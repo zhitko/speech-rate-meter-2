@@ -1823,14 +1823,6 @@
         <source>Everything is working. Keep speaking.</source>
         <translation type="unfinished"></translation>
     </message>
-    <message numerus="yes">
-        <location filename="../ui/components/TempoChart.qml" line="276"/>
-        <source>The tempo appears about %n second(s) after you start speaking.</source>
-        <translation>
-            <numerusform>The tempo appears about %n second after you start speaking.</numerusform>
-            <numerusform>The tempo appears about %n seconds after you start speaking.</numerusform>
-        </translation>
-    </message>
     <message>
         <location filename="../ui/components/TempoChart.qml" line="124"/>
         <location filename="../ui/components/TempoChart.qml" line="192"/>

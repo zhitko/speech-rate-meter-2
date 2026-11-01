@@ -2,7 +2,7 @@
 
 Speech Rate Meter 2 shows how fast you are speaking, in words per minute. It does not recognize words, and the recording stays on this device.
 
-While you speak, the arcs and the tempo chart follow you. The numbers appear when you press **Stop**.
+While you speak, the chart and the arcs stay hidden for the first 30 seconds of speech. Until then Home shows “Everything is working. Keep speaking.”, blinking. After that they follow you. The numbers appear when you press **Stop**. If you stop sooner, the result is shown at once.
 
 ## Record a session
 
@@ -14,7 +14,7 @@ While you speak, the arcs and the tempo chart follow you. The numbers appear whe
 
 Home before **Start**. The tempo chart is empty, the gauge has no number, and **Start** is on screen. The chip reads **Ready**.
 
-Until the first point appears, the chart says that everything is working and that the tempo shows up about two seconds after you start speaking. The line grows from the left. When it reaches the right edge, older points slide off.
+For the first 30 seconds of speech the chart and the arcs stay hidden, and “Everything is working. Keep speaking.” blinks in their place. Those 30 seconds are speech time, not the clock on the red badge. After that the line grows from the left. When it reaches the right edge, older points slide off. Pressing **Stop** before 30 seconds shows the result at once. **Open File** does not wait.
 
 ![Home while recording](images/en/02-home-recording.png)
 
@@ -44,9 +44,9 @@ A measured WAV. The hint reads **This recording**. **Whole recording** compares 
 
 ## What you see on Home
 
-**The gauge.** The arc runs from **Slow** to **Fast** and is split equally into Slow, Average, and Fast. By default it shows speech rate. The printed number is the measured pace. The marker stays inside the Slow–Fast range, so a pace outside that range still prints its real number while the marker sits at the end.
+**The gauge.** The arc is a semicircle. Its ends meet the left and right edges of the chart above it. It runs from **Slow** to **Fast** and is split equally into Slow, Average, and Fast. Those three colours are the track. The arc itself is one colour, the same colour as that pace on the chart: green for speech rate, blue for articulation. By default it shows speech rate. The printed number is the measured pace. The marker stays inside the Slow–Fast range, so a pace outside that range still prints its real number while the marker sits at the end. Under the pace arcs, a smaller red semicircle shows **Fillers** from 0 to 100 percent. Its number appears with the other numbers, after **Stop** or **Open File**.
 
-**The tempo chart.** Each point is one live update, at the same pace the arcs are using. The chart keeps the last **Chart window** (5 minutes by default). It uses the same three bands as the gauge and labels them slow, medium, and fast, written upward. It does not repeat the Slow and Fast numbers. Those numbers stay under the ends of the arc.
+**The tempo chart.** Each point is one live update, at the same pace the arcs are using. The chart keeps the last **Chart window** (5 minutes by default). It uses the same three bands as the gauge tracks and labels them slow, medium, and fast, written upward. Fast is a light gold, lighter than the green medium band. It does not repeat the Slow and Fast numbers. Those numbers stay under the ends of the arc. The lines use the same colours as the arcs.
 
 **The chip** in the corner of the gauge tells you the state:
 
@@ -66,7 +66,7 @@ A measured WAV. The hint reads **This recording**. **Whole recording** compares 
 
 - **Speech rate** is the overall pace, in words per minute, pauses between words included. This is the number on the gauge by default.
 - **Articulation** is the pace while you are actually speaking, with those gaps left out. Also in words per minute. It is usually close to the speech rate, and higher when you leave gaps.
-- **Fillers** is how much some sounds are drawn out, such as a long “uh”. It is a percent, not a count of words. Its card is off until you turn **Show Fillers tile** on.
+- **Fillers** is how much some sounds are drawn out, such as a long “uh”. It is a percent, not a count of words. The red arc under the pace arcs shows that percent. Its card is off until you turn **Show Fillers tile** on.
 - **Pauses** is the length of the longer gaps, in seconds. It is not the total time you were silent.
 - **Speech** is the total time that counted as speech. From one minute the card reads `1m 30s`. While you record, the red badge shows the time since **Start** instead. Silence before speech is detected is not included, and a pause is included only up to the **Pause** setting.
 
@@ -115,19 +115,18 @@ An opened file is not listed here, because **Open File** does not save a session
 
 **General**, with **Additional** off. Measurement and the formula controls stay hidden until you turn Additional on.
 
-**General** is how the app looks, and which preset it uses.
+**General** is how the app looks.
 
 - **Language**, **Theme**, **Primary Color**, and **Font Size**.
 - **Show Navigation Menu** adds Home, History, and Settings along the bottom. The menu button stays in the toolbar.
-- **Mode** is **Standard (rare updates, accurate result)** or **Fast (frequent updates, lower accuracy)**. Standard uses a 60-second analysis window and 12 updates a minute, so each number covers more speech. Fast uses a 5-second window and 120 updates a minute, so the number follows you sooner and jumps more. Choosing a mode again restores it. Language, theme, color, font size, the navigation bar, **Keep recording files**, and the speech-detection thresholds stay as they are.
 - **Delete user data** removes saved sessions and any recording files still kept in `data/records`. Your settings stay.
 
 **Additional** opens **Measurement** and the formula controls. The switch turns off when you leave the app. The values stay as you left them.
 
 **Measurement** is how a session is read. The question mark beside a control explains that control in more detail.
 
-- **Analysis window** is how many recent seconds of speech the live pace uses. Shorter reacts faster and jumps more. The shortest value is 3 seconds. Standard mode uses 60 seconds. Fast mode uses 5 seconds.
-- **Updates per minute** is how often the pace is recalculated and how often the tempo chart gains a point. The shortest value is 1, once a minute. Standard mode uses 12, once every 5 seconds. Fast mode uses 120, twice a second.
+- **Analysis window** is how many recent seconds of speech the live pace uses. Shorter reacts faster and jumps more. The shortest value is 3 seconds. The settings shipped with the app use 60 seconds.
+- **Updates per minute** is how often the pace is recalculated and how often the tempo chart gains a point. The shortest value is 1, once a minute. The settings shipped with the app use 12, once every 5 seconds.
 - **Chart window** is how many seconds the tempo chart keeps. The default is 300 seconds (5 minutes). The range is 30 to 1800 seconds.
 - **Pause** is how much silence ends a phrase and saves it. The default is 2 seconds. This is used only when **Detect speech automatically** is on. A phrase longer than 15 seconds is cut at the next pause, or at 15 seconds.
 - **Phrasal pause** is the shortest silent gap that counts as a pause inside the pace calculation. The default is 200 ms. Short stop closures in a word are not counted.
@@ -149,7 +148,7 @@ A change applies to the next phrase.
 - **The arc has no number.** That is normal while a session is running. Press **Stop** to see the summary.
 - **The chip says Listening.** The app is waiting for speech. Speak when you are ready. With automatic detection, give it a quiet moment first so it can measure the room.
 - **The chip says Too short to save.** That phrase was under one second, so it was not kept. Speak a little longer.
-- **The chart says there is no tempo yet.** Keep speaking. The first point appears about two seconds after speech starts.
+- **The chart and the arcs are missing while you speak.** That lasts for the first 30 seconds of speech. “Everything is working. Keep speaking.” blinks until then. After **Stop**, they are shown even if you spoke for less than 30 seconds.
 - **There is no Open File button.** That button is only on a computer.
 
 ## Other pages

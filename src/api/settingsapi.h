@@ -17,7 +17,6 @@ class SettingsApi : public QObject {
     Q_PROPERTY(double fontSizeMultiplier READ fontSizeMultiplier WRITE setFontSizeMultiplier NOTIFY fontSizeMultiplierChanged)
     Q_PROPERTY(QString primaryColor READ primaryColor WRITE setPrimaryColor NOTIFY primaryColorChanged)
     Q_PROPERTY(bool showNavigationMenu READ showNavigationMenu WRITE setShowNavigationMenu NOTIFY showNavigationMenuChanged)
-    Q_PROPERTY(int preset READ preset WRITE setPreset NOTIFY presetChanged)
     Q_PROPERTY(bool autoStopRecording READ autoStopRecording WRITE setAutoStopRecording NOTIFY autoStopRecordingChanged)
     Q_PROPERTY(bool autoCalibrate READ autoCalibrate WRITE setAutoCalibrate NOTIFY autoCalibrateChanged)
     Q_PROPERTY(int vadCalibrationDurationMs READ vadCalibrationDurationMs WRITE setVadCalibrationDurationMs NOTIFY vadCalibrationDurationMsChanged)
@@ -83,9 +82,6 @@ public:
 
     bool showNavigationMenu() const;
     void setShowNavigationMenu(bool showNavigationMenu);
-
-    int preset() const;
-    void setPreset(int preset);
 
     bool autoStopRecording() const;
     void setAutoStopRecording(bool autoStopRecording);
@@ -200,7 +196,6 @@ signals:
     void fontSizeMultiplierChanged();
     void primaryColorChanged();
     void showNavigationMenuChanged();
-    void presetChanged();
     void autoStopRecordingChanged();
     void autoCalibrateChanged();
     void vadCalibrationDurationMsChanged();
