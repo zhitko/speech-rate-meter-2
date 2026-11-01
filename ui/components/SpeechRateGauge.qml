@@ -120,24 +120,39 @@ Item {
     readonly property real cx: plotInset + plotSpan / 2
     readonly property real cy: Theme.paceCy(radius)
     readonly property real holeRadius: Math.max(12, fillerRadius - stroke * 0.5 - 4)
-    // Shared integers. The ring names sit under the arc, so the hole holds
-    // numbers, the unit, and (one pace) the zone chip.
-    readonly property real readoutNumberSize: {
-        var paceCap = dual
-                ? Math.min(28, Math.max(16, innerRadius * 0.34))
-                : Math.min(40, Math.max(22, radius * 0.28))
-        var unit = AppScale.fs(dual ? 12 : 13)
-        var zone = dual ? 0 : (AppScale.fs(13) + 12)
-        var lines = dual ? 3 : 2
-        var fit = (holeRadius - unit - zone - 8) / lines
-        return Math.max(14, Math.min(paceCap, fit))
+    readonly property real blockHeight: Theme.gaugeBlockHeight(radius)
+    // Value + name blocks live in the clear disc inside the innermost ring.
+    // Two blocks share the wide part of that disc. The caption size is the
+    // smaller of 11 px and what the longest name (11 letters) can take in
+    // one block, and it is never below 8 px. Numbers use the height that is
+    // left. On a short window the disc is smaller, so both shrink.
+    readonly property real pairGap: holeRadius < 96 ? 10 : 14
+    readonly property real captionPx: {
+        var r = Math.max(28, holeRadius)
+        var fromTop = r * (dual ? 0.40 : 0.30)
+        var dy = Math.max(0, Math.min(r - 1, r - fromTop))
+        var half = Math.sqrt(Math.max(0, r * r - dy * dy))
+        var per = Math.max(24, (half * 2 - 8 - pairGap) / 2)
+        var byWidth = per / (11 * 0.58)
+        var byHeight = r / (dual ? 6.2 : 4.2)
+        return Math.max(8, Math.min(AppScale.fs(11), Math.floor(Math.min(byWidth, byHeight))))
     }
-    readonly property real captionLine: AppScale.fs(12) + 6
-    // Both paces: two rows under the ends. One pace: the two names share one row.
-    readonly property int captionRows: dual ? 2 : 1
-    readonly property real blockHeight: {
-        var under = 2 + captionLine + 8 + captionRows * captionLine + (dual ? 2 : 0) + 2
-        return cy + stroke * 0.5 + under
+    readonly property real numberPx: {
+        var unit = Math.min(AppScale.fs(11), captionPx + 1)
+        var room = holeRadius - captionPx * (dual ? 2 : 1) - unit - (dual ? 12 : 8)
+        var fit = room / (dual ? 2 : 1)
+        return Math.max(11, Math.min(dual ? 22 : 30, Math.floor(fit)))
+    }
+    readonly property real blockWidth: {
+        var r = Math.max(28, holeRadius)
+        var fromTop = r * (dual ? 0.40 : 0.30)
+        var dy = Math.max(0, Math.min(r - 1, r - fromTop))
+        var half = Math.sqrt(Math.max(0, r * r - dy * dy))
+        return Math.max(36, (half * 2 - 8 - pairGap) / 2)
+    }
+
+    function captionInk(active, series) {
+        return active ? series : Theme.onSurfaceVariant(paintTheme)
     }
 
     readonly property real gapAngle: stroke / Math.max(1, radius) * 180 / Math.PI + 2
@@ -366,74 +381,168 @@ Item {
         border.color: root.fillerColor
     }
 
-    Column {
+    // One ring: the integer above its name. Names use the ring colour.
+    // While recording the integer is hidden. With no measurement it is a dash.
+    component ValueBlock: Column {
+        id: block
+        property string figure: ""
+        property bool figureVisible: true
+        property string caption: ""
+        property color ink: Theme.onSurfaceVariant(root.paintTheme)
+        width: root.blockWidth
+        spacing: 0
+
+        Text {
+            visible: block.figureVisible
+            width: block.width
+            horizontalAlignment: Text.AlignHCenter
+            text: block.figure
+            font.pixelSize: root.numberPx
+            font.weight: root.hasValue ? Font.DemiBold : Font.Light
+            font.features: { "tnum": 1 }
+            color: root.hasValue ? Theme.onSurface(root.paintTheme) : Theme.outline(root.paintTheme)
+            Accessible.ignored: true
+        }
+        Text {
+            width: block.width
+            horizontalAlignment: Text.AlignHCenter
+            verticalAlignment: Text.AlignVCenter
+            wrapMode: Text.NoWrap
+            fontSizeMode: Text.HorizontalFit
+            minimumPixelSize: 8
+            text: block.caption
+            font.pixelSize: root.captionPx
+            font.weight: Font.DemiBold
+            color: block.ink
+            Accessible.ignored: true
+        }
+    }
+
+    // Inside the rings. Both paces: speech and articulation on the upper
+    // row, wpm under them, fillers centred below. One pace: that block and
+    // fillers side by side, with wpm under the pace block only.
+    Item {
         id: readout
+        readonly property bool figures: !root.hasValue || root.showNumbers
+        readonly property string paceFigure: root.hasValue ? root.animatedValue.toFixed(0) : "– –"
+        readonly property string secondFigure: root.hasValue ? root.animatedSecond.toFixed(0) : "– –"
+        readonly property string fillerFigure: root.hasValue ? root.animatedFiller.toFixed(0) : "– –"
+        width: root.blockWidth * 2 + root.pairGap
+        height: dualColumn.visible ? dualColumn.implicitHeight : singleRow.implicitHeight
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.horizontalCenterOffset: root.plotInset / 2
         y: {
-            var top = Math.max(0, root.cy - root.holeRadius + 2)
-            var prefer = root.cy - root.holeRadius * 0.5 - height / 2
+            var top = root.cy - root.holeRadius + 2
             var aboveDiameter = root.cy - 4 - height
+            var prefer = root.cy - root.holeRadius * 0.46 - height / 2
             return Math.max(top, Math.min(prefer, aboveDiameter))
         }
-        spacing: root.dual ? 0 : 2
 
-        Text {
-            anchors.horizontalCenter: parent.horizontalCenter
-            visible: !root.hasValue || root.showNumbers
-            text: root.hasValue ? root.animatedValue.toFixed(0) : "– –"
-            font.pixelSize: root.readoutNumberSize
-            font.weight: root.hasValue ? Font.DemiBold : Font.Light
-            font.features: { "tnum": 1 }
-            color: root.hasValue ? Theme.onSurface(Material.theme) : Theme.outline(Material.theme)
+        Column {
+            id: dualColumn
+            visible: root.dual
+            width: parent.width
+            spacing: 2
+
+            Row {
+                width: parent.width
+                spacing: root.pairGap
+
+                ValueBlock {
+                    figure: readout.paceFigure
+                    figureVisible: readout.figures
+                    caption: root.metricLabel
+                    ink: root.captionInk(root.hasValue && root.value > 0, root.arcColor)
+                }
+                ValueBlock {
+                    figure: readout.secondFigure
+                    figureVisible: readout.figures
+                    caption: root.secondMetricLabel
+                    ink: root.captionInk(root.hasValue && root.secondValue > 0, root.secondArcColor)
+                }
+            }
+
+            Text {
+                width: parent.width
+                horizontalAlignment: Text.AlignHCenter
+                text: root.unit
+                font.pixelSize: Math.min(AppScale.fs(11), root.captionPx + 1)
+                color: Theme.onSurfaceVariant(root.paintTheme)
+            }
+
+            Item {
+                width: parent.width
+                height: fillerBlock.implicitHeight
+
+                ValueBlock {
+                    id: fillerBlock
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    figure: readout.fillerFigure
+                    figureVisible: readout.figures
+                    caption: qsTranslate("HomePage", "Fillers")
+                    ink: root.captionInk(root.hasValue && root.fillerValue > 0, root.fillerColor)
+                }
+            }
         }
 
-        Text {
+        Row {
+            id: singleRow
+            visible: !root.dual
+            spacing: root.pairGap
             anchors.horizontalCenter: parent.horizontalCenter
-            visible: root.dual && (!root.hasValue || root.showNumbers)
-            topPadding: 2
-            text: root.hasValue ? root.animatedSecond.toFixed(0) : "– –"
-            font.pixelSize: root.readoutNumberSize
-            font.weight: root.hasValue ? Font.DemiBold : Font.Light
-            font.features: { "tnum": 1 }
-            color: root.hasValue ? Theme.onSurface(Material.theme) : Theme.outline(Material.theme)
+
+            Column {
+                width: root.blockWidth
+                spacing: 1
+
+                ValueBlock {
+                    width: parent.width
+                    figure: readout.paceFigure
+                    figureVisible: readout.figures
+                    caption: root.metricLabel
+                    ink: root.captionInk(root.hasValue && root.value > 0, root.arcColor)
+                }
+                Text {
+                    width: parent.width
+                    horizontalAlignment: Text.AlignHCenter
+                    text: root.unit
+                    font.pixelSize: Math.min(AppScale.fs(11), root.captionPx + 1)
+                    color: Theme.onSurfaceVariant(root.paintTheme)
+                }
+            }
+
+            ValueBlock {
+                figure: readout.fillerFigure
+                figureVisible: readout.figures
+                caption: qsTranslate("HomePage", "Fillers")
+                ink: root.captionInk(root.hasValue && root.fillerValue > 0, root.fillerColor)
+            }
         }
+    }
 
-        Text {
-            anchors.horizontalCenter: parent.horizontalCenter
-            text: root.unit
-            font.pixelSize: AppScale.fs(root.dual ? 12 : 13)
-            color: Theme.onSurfaceVariant(Material.theme)
-        }
+    Item {
+        id: micSlot
+        visible: root.micActive
+        width: Math.min(root.holeRadius * 1.3, 120)
+        height: micRow.implicitHeight
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.horizontalCenterOffset: root.plotInset / 2
+        // Open part of the semicircle, between the end labels, so it does
+        // not cover the names inside the rings.
+        y: root.cy + 6
 
-        Text {
-            anchors.horizontalCenter: parent.horizontalCenter
-            visible: !root.hasValue || root.showNumbers
-            topPadding: 6
-            text: root.hasValue ? root.animatedFiller.toFixed(0) : "– –"
-            font.pixelSize: root.readoutNumberSize
-            font.weight: root.hasValue ? Font.DemiBold : Font.Light
-            font.features: { "tnum": 1 }
-            color: root.hasValue ? Theme.onSurface(Material.theme) : Theme.outline(Material.theme)
-        }
-
-        Item { width: 1; height: root.dual ? 1 : 4; visible: !root.dual || root.micActive }
-
-        RowLayout {
+        Row {
             id: micRow
             anchors.horizontalCenter: parent.horizontalCenter
-            visible: root.micActive
-            width: implicitWidth
-            height: implicitHeight
             spacing: 6
             Accessible.role: Accessible.ProgressBar
             Accessible.name: qsTr("Microphone level")
             Accessible.description: qsTr("%1 percent").arg(Math.round(root.micClamped * 100))
 
             Text {
-                Layout.alignment: Qt.AlignVCenter
+                anchors.verticalCenter: parent.verticalCenter
                 font.family: Icons.familySolid
-                font.pixelSize: AppScale.fs(13)
+                font.pixelSize: AppScale.fs(12)
                 text: Icons.faMicrophone
                 color: root.micShown > 0.04
                        ? Theme.primary(root.paintTheme)
@@ -443,11 +552,9 @@ Item {
 
             Rectangle {
                 id: micTrack
-                Layout.alignment: Qt.AlignVCenter
-                Layout.preferredWidth: Math.max(root.dual ? 56 : 72, Math.min(root.dual ? 96 : 128, root.radius * (root.dual ? 0.42 : 0.55)))
-                Layout.preferredHeight: 10
-                implicitWidth: Layout.preferredWidth
-                implicitHeight: 10
+                anchors.verticalCenter: parent.verticalCenter
+                width: Math.max(36, Math.min(72, root.holeRadius * 0.7))
+                height: 8
                 radius: height / 2
                 color: Qt.alpha(Theme.primary(root.paintTheme), 0.18)
 
@@ -460,27 +567,6 @@ Item {
                 }
             }
         }
-
-        Rectangle {
-            anchors.horizontalCenter: parent.horizontalCenter
-            visible: !root.dual && root.showNumbers
-            implicitWidth: zoneText.implicitWidth + 24
-            implicitHeight: zoneText.implicitHeight + 8
-            radius: height / 2
-            opacity: root.hasValue && root.value > 0 ? 1 : 0
-            color: Qt.alpha(Theme.zoneColor(root.zone, root.paintTheme), 0.16)
-            Behavior on opacity { NumberAnimation { duration: 200 } }
-
-            Text {
-                id: zoneText
-                anchors.centerIn: parent
-                text: root.zoneLabels[root.zone]
-                font.pixelSize: AppScale.fs(13)
-                font.weight: Font.DemiBold
-                color: Theme.zoneColor(root.zone, root.paintTheme)
-            }
-        }
-
     }
 
     Text {
@@ -488,8 +574,6 @@ Item {
         readonly property point tip: root.pointAt(root.startAngle, root.radius)
         x: tip.x - width / 2
         y: tip.y + root.stroke / 2 + 2
-        height: root.captionLine
-        verticalAlignment: Text.AlignVCenter
         text: root.minimum.toFixed(0)
         font.pixelSize: AppScale.fs(12)
         color: Theme.onSurfaceVariant(Material.theme)
@@ -500,92 +584,8 @@ Item {
         readonly property point tip: root.pointAt(root.startAngle + root.sweepAngle, root.radius)
         x: tip.x - width / 2
         y: tip.y + root.stroke / 2 + 2
-        height: root.captionLine
-        verticalAlignment: Text.AlignVCenter
         text: root.maximum.toFixed(0)
         font.pixelSize: AppScale.fs(12)
         color: Theme.onSurfaceVariant(Material.theme)
-    }
-
-    // Ring names, under the arc and clear of 70 / 210. Both paces make a
-    // triangle: speech at the lower left, articulation at the lower right,
-    // fillers centred on the next line. One pace keeps the two names on
-    // that first line, pace at the left and fillers at the right.
-    Item {
-        id: nameRow
-        anchors.left: parent.left
-        anchors.right: parent.right
-        y: minLabel.y + minLabel.height + 8
-        height: root.captionLine
-
-        Text {
-            id: nameLeft
-            anchors.left: parent.left
-            anchors.leftMargin: root.plotInset
-            anchors.verticalCenter: parent.verticalCenter
-            width: Math.max(48, (parent.width - root.plotInset) / 2 - 8)
-            height: root.captionLine
-            horizontalAlignment: Text.AlignLeft
-            verticalAlignment: Text.AlignVCenter
-            wrapMode: Text.NoWrap
-            fontSizeMode: Text.HorizontalFit
-            minimumPixelSize: 9
-            text: root.metricLabel
-            font.pixelSize: AppScale.fs(12)
-            font.weight: Font.DemiBold
-            color: root.hasValue && root.value > 0
-                   ? root.arcColor
-                   : Theme.onSurfaceVariant(Material.theme)
-            Accessible.ignored: true
-        }
-
-        Text {
-            id: nameRight
-            anchors.right: parent.right
-            anchors.rightMargin: 12
-            anchors.verticalCenter: parent.verticalCenter
-            width: Math.max(48, (parent.width - root.plotInset) / 2 - 8)
-            height: root.captionLine
-            horizontalAlignment: Text.AlignRight
-            verticalAlignment: Text.AlignVCenter
-            wrapMode: Text.NoWrap
-            fontSizeMode: Text.HorizontalFit
-            minimumPixelSize: 9
-            text: root.dual ? root.secondMetricLabel : qsTranslate("HomePage", "Fillers")
-            font.pixelSize: AppScale.fs(12)
-            font.weight: Font.DemiBold
-            color: {
-                if (root.dual)
-                    return root.hasValue && root.secondValue > 0
-                            ? root.secondArcColor
-                            : Theme.onSurfaceVariant(Material.theme)
-                return root.hasValue && root.fillerValue > 0
-                        ? root.fillerColor
-                        : Theme.onSurfaceVariant(Material.theme)
-            }
-            Accessible.ignored: true
-        }
-    }
-
-    Text {
-        id: nameBottom
-        visible: root.dual
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.horizontalCenterOffset: root.plotInset / 2
-        y: nameRow.y + nameRow.height + 2
-        width: Math.max(48, Math.min(parent.width - 16, parent.width * 0.62))
-        height: root.captionLine
-        horizontalAlignment: Text.AlignHCenter
-        verticalAlignment: Text.AlignVCenter
-        wrapMode: Text.NoWrap
-        fontSizeMode: Text.HorizontalFit
-        minimumPixelSize: 9
-        text: qsTranslate("HomePage", "Fillers")
-        font.pixelSize: AppScale.fs(12)
-        font.weight: Font.DemiBold
-        color: root.hasValue && root.fillerValue > 0
-               ? root.fillerColor
-               : Theme.onSurfaceVariant(Material.theme)
-        Accessible.ignored: true
     }
 }
