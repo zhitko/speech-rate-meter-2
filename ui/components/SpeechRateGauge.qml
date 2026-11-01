@@ -122,33 +122,52 @@ Item {
     readonly property real holeRadius: Math.max(12, fillerRadius - stroke * 0.5 - 4)
     readonly property real blockHeight: Theme.gaugeBlockHeight(radius)
     // Value + name blocks live in the clear disc inside the innermost ring.
-    // Two blocks share the wide part of that disc. The caption size is the
-    // smaller of 11 px and what the longest name (11 letters) can take in
-    // one block, and it is never below 8 px. Numbers use the height that is
-    // left. On a short window the disc is smaller, so both shrink.
+    // Both paces: the triangle points up. Fillers is the apex, because it is
+    // the innermost ring and it does not share the wpm unit. Speech rate and
+    // articulation share the wider chord below. The apex is the narrow part,
+    // so its name shrinks to that chord and is never below 8 px. The pace
+    // names use the wider row, still capped at 11 px. Numbers use the height
+    // that is left. On a short window the disc is smaller, so both shrink.
     readonly property real pairGap: holeRadius < 96 ? 10 : 14
+    function holeHalf(fromTop) {
+        var r = Math.max(28, holeRadius)
+        var dy = Math.max(0, Math.min(r - 1, r - fromTop))
+        return Math.sqrt(Math.max(0, r * r - dy * dy))
+    }
+    // How far down the apex name must sit for a 12-letter word at 8 px
+    // ("Заполнители") to stay inside the ring, with a margin.
+    readonly property real apexFromTop: {
+        var r = Math.max(28, holeRadius)
+        var needHalf = (12 * 0.62 * 8 + 16) / 2
+        var dy = Math.sqrt(Math.max(0, r * r - needHalf * needHalf))
+        var fromTop = Math.max(r * 0.16, r - dy)
+        return Math.min(fromTop, r * 0.46)
+    }
+    readonly property real blockWidth: {
+        var fromTop = Math.max(28, holeRadius) * (dual ? 0.62 : 0.42)
+        var half = holeHalf(fromTop)
+        return Math.max(36, (half * 2 - 8 - pairGap) / 2)
+    }
     readonly property real captionPx: {
         var r = Math.max(28, holeRadius)
-        var fromTop = r * (dual ? 0.40 : 0.30)
-        var dy = Math.max(0, Math.min(r - 1, r - fromTop))
-        var half = Math.sqrt(Math.max(0, r * r - dy * dy))
-        var per = Math.max(24, (half * 2 - 8 - pairGap) / 2)
-        var byWidth = per / (11 * 0.58)
+        var byWidth = blockWidth / (11 * 0.58)
         var byHeight = r / (dual ? 6.2 : 4.2)
         return Math.max(8, Math.min(AppScale.fs(11), Math.floor(Math.min(byWidth, byHeight))))
     }
     readonly property real numberPx: {
         var unit = Math.min(AppScale.fs(11), captionPx + 1)
-        var room = holeRadius - captionPx * (dual ? 2 : 1) - unit - (dual ? 12 : 8)
+        var room = holeRadius - captionPx * (dual ? 2 : 1) - unit - (dual ? 14 : 8)
         var fit = room / (dual ? 2 : 1)
         return Math.max(11, Math.min(dual ? 22 : 30, Math.floor(fit)))
     }
-    readonly property real blockWidth: {
-        var r = Math.max(28, holeRadius)
-        var fromTop = r * (dual ? 0.40 : 0.30)
-        var dy = Math.max(0, Math.min(r - 1, r - fromTop))
-        var half = Math.sqrt(Math.max(0, r * r - dy * dy))
-        return Math.max(36, (half * 2 - 8 - pairGap) / 2)
+    readonly property real apexWidth: {
+        var half = holeHalf(apexFromTop)
+        var chord = Math.max(28, half * 2 - 16)
+        return Math.min(chord, blockWidth * 2 + pairGap)
+    }
+    readonly property real apexCaptionPx: {
+        var byWidth = apexWidth / (12 * 0.62)
+        return Math.max(8, Math.min(captionPx, Math.floor(byWidth)))
     }
 
     function captionInk(active, series) {
@@ -389,6 +408,7 @@ Item {
         property bool figureVisible: true
         property string caption: ""
         property color ink: Theme.onSurfaceVariant(root.paintTheme)
+        property real captionSize: root.captionPx
         width: root.blockWidth
         spacing: 0
 
@@ -411,16 +431,17 @@ Item {
             fontSizeMode: Text.HorizontalFit
             minimumPixelSize: 8
             text: block.caption
-            font.pixelSize: root.captionPx
+            font.pixelSize: block.captionSize
             font.weight: Font.DemiBold
             color: block.ink
             Accessible.ignored: true
         }
     }
 
-    // Inside the rings. Both paces: speech and articulation on the upper
-    // row, wpm under them, fillers centred below. One pace: that block and
-    // fillers side by side, with wpm under the pace block only.
+    // Inside the rings. Both paces: the triangle points up. Fillers is the
+    // apex, speech rate and articulation sit side by side below, and wpm is
+    // under those two only. One pace: that block and fillers side by side,
+    // with wpm under the pace block only.
     Item {
         id: readout
         readonly property bool figures: !root.hasValue || root.showNumbers
@@ -432,17 +453,41 @@ Item {
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.horizontalCenterOffset: root.plotInset / 2
         y: {
-            var top = root.cy - root.holeRadius + 2
-            var aboveDiameter = root.cy - 4 - height
-            var prefer = root.cy - root.holeRadius * 0.46 - height / 2
-            return Math.max(top, Math.min(prefer, aboveDiameter))
+            var top = root.cy - root.holeRadius + 3
+            var aboveDiameter = root.cy - 2 - height
+            if (!root.dual) {
+                var prefer = root.cy - root.holeRadius * 0.42 - height / 2
+                return Math.max(top, Math.min(prefer, aboveDiameter))
+            }
+            // Put the apex name on the chord that was measured for it.
+            // While recording the integer is hidden, so the name is the top
+            // line and must not climb into the tip of the ring.
+            var captionOffset = figures ? root.numberPx : 0
+            var want = root.cy - root.holeRadius + root.apexFromTop - captionOffset
+            return Math.max(top, Math.min(want, aboveDiameter))
         }
 
         Column {
             id: dualColumn
             visible: root.dual
             width: parent.width
-            spacing: 2
+            spacing: 1
+
+            Item {
+                width: parent.width
+                height: apexBlock.implicitHeight
+
+                ValueBlock {
+                    id: apexBlock
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    width: root.apexWidth
+                    captionSize: root.apexCaptionPx
+                    figure: readout.fillerFigure
+                    figureVisible: readout.figures
+                    caption: qsTranslate("HomePage", "Fillers")
+                    ink: root.captionInk(root.hasValue && root.fillerValue > 0, root.fillerColor)
+                }
+            }
 
             Row {
                 width: parent.width
@@ -468,20 +513,6 @@ Item {
                 text: root.unit
                 font.pixelSize: Math.min(AppScale.fs(11), root.captionPx + 1)
                 color: Theme.onSurfaceVariant(root.paintTheme)
-            }
-
-            Item {
-                width: parent.width
-                height: fillerBlock.implicitHeight
-
-                ValueBlock {
-                    id: fillerBlock
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    figure: readout.fillerFigure
-                    figureVisible: readout.figures
-                    caption: qsTranslate("HomePage", "Fillers")
-                    ink: root.captionInk(root.hasValue && root.fillerValue > 0, root.fillerColor)
-                }
             }
         }
 
