@@ -303,7 +303,9 @@ Item {
             }
 
             // Horizontal bands match the gauge scale. Each zone blends across
-            // its third. Fast is the top band and lightens to gold.
+            // its third. The fill is the 9% wash from before the brighter
+            // bands. Fast is the top band and lightens to gold. The lines
+            // on the borders stay at full strength.
             var bandH = plotHeight / 3
             for (var zone = 0; zone < 3; ++zone) {
                 var yTop = top + (2 - zone) * bandH
@@ -312,7 +314,7 @@ Item {
                 var stops = 4
                 for (var stop = 0; stop <= stops; ++stop) {
                     var u = stop / stops
-                    wash.addColorStop(u, Qt.alpha(Theme.paceColor((zone + u) / 3, root.paintTheme), 0.22))
+                    wash.addColorStop(u, Qt.alpha(Theme.paceColor((zone + u) / 3, root.paintTheme), 0.09))
                 }
                 ctx.fillStyle = wash
                 ctx.fillRect(left, yTop, plotWidth, Math.max(1, yBot - yTop))
