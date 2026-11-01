@@ -157,7 +157,7 @@ Item {
         var unit = Math.min(AppScale.fs(11), captionPx + 1)
         var room = holeRadius - captionPx * (dual ? 2 : 1) - unit - (dual ? 14 : 8)
         var fit = room / (dual ? 2 : 1)
-        return Math.max(11, Math.min(dual ? 22 : 30, Math.floor(fit)))
+        return Math.max(11, Math.min(dual ? 28 : 38, Math.floor(fit)))
     }
     readonly property real apexWidth: {
         var half = holeHalf(apexFromTop)
@@ -173,23 +173,9 @@ Item {
         return active ? series : Theme.onSurfaceVariant(paintTheme)
     }
 
-    readonly property real gapAngle: stroke / Math.max(1, radius) * 180 / Math.PI + 2
-    readonly property real segmentSweep: (sweepAngle - 2 * gapAngle) / 3
-    readonly property real innerGapAngle: stroke / Math.max(1, innerRadius) * 180 / Math.PI + 2
-    readonly property real innerSegmentSweep: (sweepAngle - 2 * innerGapAngle) / 3
-    readonly property real fillerGapAngle: stroke / Math.max(1, fillerRadius) * 180 / Math.PI + 2
-    readonly property real fillerSegmentSweep: (sweepAngle - 2 * fillerGapAngle) / 3
-
-    function segmentStart(index) {
-        return startAngle + index * (segmentSweep + gapAngle)
-    }
-
-    function innerSegmentStart(index) {
-        return startAngle + index * (innerSegmentSweep + innerGapAngle)
-    }
-
-    function fillerSegmentStart(index) {
-        return startAngle + index * (fillerSegmentSweep + fillerGapAngle)
+    // 0 speech (or the single pace), 1 articulation, 2 fillers.
+    function ringRadius(ring) {
+        return ring === 2 ? fillerRadius : ring === 1 ? innerRadius : radius
     }
 
     function pointAt(angleDeg, r, centerY) {
@@ -206,68 +192,132 @@ Item {
                        bg.b + (color.b - bg.b) * a, 1)
     }
 
-    // One step of the scale. Short flat strokes stand in for a stroke
-    // gradient. The gap between zones is the thin border. The value is a
-    // separate stroke in the chart colour, drawn on top.
-    component ZoneSlice: ShapePath {
-        id: slice
-        property int zone: 0
-        property int step: 0
-        property int steps: 16
-        // 0 speech (or the single pace), 1 articulation, 2 fillers.
+    // The arc runs clockwise on screen from 9 o'clock to 3 o'clock. A conical
+    // gradient runs counter-clockwise from its angle, so with angle 0 the
+    // scale fraction f sits at position (1 - f) / 2. The lower half is only
+    // reached by the round caps: slow below the left end, fast below the right.
+    function conicPos(f) {
+        return (1 - Math.max(0, Math.min(1, f))) / 2
+    }
+
+    // Pace colours along the whole scale, toned down onto the card.
+    component PaceGradient: ConicalGradient {
+        id: pace
+        property real alpha: 0.4
+        property var gauge: root
+        function tone(f) {
+            return pace.gauge.paintOnCard(Theme.paceColor(f, pace.gauge.paintTheme), pace.alpha)
+        }
+        centerX: gauge.cx
+        centerY: gauge.cy
+        angle: 0
+        GradientStop { position: 0.0; color: pace.tone(1) }
+        GradientStop { position: pace.gauge.conicPos(0.925); color: pace.tone(0.925) }
+        GradientStop { position: pace.gauge.conicPos(0.85); color: pace.tone(0.85) }
+        GradientStop { position: pace.gauge.conicPos(0.775); color: pace.tone(0.775) }
+        GradientStop { position: pace.gauge.conicPos(0.70); color: pace.tone(0.70) }
+        GradientStop { position: pace.gauge.conicPos(0.64); color: pace.tone(0.64) }
+        GradientStop { position: pace.gauge.conicPos(0.58); color: pace.tone(0.58) }
+        GradientStop { position: pace.gauge.conicPos(0.49); color: pace.tone(0.49) }
+        GradientStop { position: pace.gauge.conicPos(0.40); color: pace.tone(0.40) }
+        GradientStop { position: pace.gauge.conicPos(0.31); color: pace.tone(0.31) }
+        GradientStop { position: pace.gauge.conicPos(0.22); color: pace.tone(0.22) }
+        GradientStop { position: pace.gauge.conicPos(0.11); color: pace.tone(0.11) }
+        GradientStop { position: 0.5; color: pace.tone(0) }
+        GradientStop { position: 0.75; color: pace.tone(0) }
+        GradientStop { position: 0.7501; color: pace.tone(1) }
+        GradientStop { position: 1.0; color: pace.tone(1) }
+    }
+
+    // Value stroke: pale at the scale start, full chart colour at the head.
+    component TrailGradient: ConicalGradient {
+        id: trail
+        property color ink: "black"
+        property real head: 0
+        property var gauge: root
+        readonly property color faded: gauge.paintOnCard(ink, 0.38)
+        centerX: gauge.cx
+        centerY: gauge.cy
+        angle: 0
+        GradientStop { position: 0.0; color: trail.ink }
+        GradientStop { position: trail.gauge.conicPos(trail.head); color: trail.ink }
+        GradientStop { position: 0.5; color: trail.faded }
+        GradientStop { position: 0.75; color: trail.faded }
+        GradientStop { position: 0.7501; color: trail.ink }
+        GradientStop { position: 1.0; color: trail.ink }
+    }
+
+    // One continuous ring of the scale.
+    component TrackArc: ShapePath {
+        id: track
         property int ring: 0
         property var gauge: root
         readonly property bool live: ring === 1 ? gauge.dual : true
-        readonly property real z0: ring === 2 ? gauge.fillerSegmentStart(zone)
-                                   : ring === 1 ? gauge.innerSegmentStart(zone)
-                                   : gauge.segmentStart(zone)
-        readonly property real zoneSweep: ring === 2 ? gauge.fillerSegmentSweep
-                                         : ring === 1 ? gauge.innerSegmentSweep
-                                         : gauge.segmentSweep
-        readonly property real sliceSweep: zoneSweep / steps
-        readonly property real a0: z0 + step * sliceSweep
-        readonly property real a1: z0 + (step + 1) * sliceSweep
-        readonly property bool atStart: step === 0
-        readonly property bool atEnd: step === steps - 1
-        readonly property real from: atStart ? a0 : a0 - 0.7
-        readonly property real to: atEnd ? a1 : a1 + 0.7
-        readonly property real drawn: Math.max(0.01, to - from)
-        readonly property real tee: Math.max(0, Math.min(1, (zone + (step + 0.5) / steps) / 3))
-        readonly property real ringRadius: ring === 2 ? gauge.fillerRadius
-                                           : ring === 1 ? gauge.innerRadius
-                                           : gauge.radius
         fillColor: "transparent"
         strokeWidth: live ? gauge.stroke : 0
-        strokeColor: gauge.paintOnCard(Theme.paceColor(tee, gauge.paintTheme), 0.42)
-        capStyle: (atStart || atEnd) ? ShapePath.RoundCap : ShapePath.FlatCap
+        strokeColor: "transparent"
+        capStyle: ShapePath.RoundCap
+        strokeGradient: PaceGradient {
+            alpha: track.gauge.paintTheme === Material.Dark ? 0.36 : 0.42
+        }
 
         PathAngleArc {
-            centerX: slice.gauge.cx
-            centerY: slice.gauge.cy
-            radiusX: slice.ringRadius
-            radiusY: slice.ringRadius
-            startAngle: slice.from
-            sweepAngle: slice.drawn
+            centerX: track.gauge.cx
+            centerY: track.gauge.cy
+            radiusX: track.gauge.ringRadius(track.ring)
+            radiusY: track.gauge.ringRadius(track.ring)
+            startAngle: track.gauge.startAngle
+            sweepAngle: track.gauge.sweepAngle
         }
+    }
+
+    // Thin cuts in the card colour at the slow/average and average/fast borders.
+    component ZoneNotches: ShapePath {
+        id: notches
+        property int ring: 0
+        property var gauge: root
+        readonly property bool live: ring === 1 ? gauge.dual : true
+        readonly property real r: gauge.ringRadius(ring)
+        readonly property real half: gauge.stroke / 2 + 1
+        readonly property real a1: gauge.startAngle + gauge.sweepAngle / 3
+        readonly property real a2: gauge.startAngle + gauge.sweepAngle * 2 / 3
+        readonly property point p1: gauge.pointAt(a1, r - half)
+        readonly property point q1: gauge.pointAt(a1, r + half)
+        readonly property point p2: gauge.pointAt(a2, r - half)
+        readonly property point q2: gauge.pointAt(a2, r + half)
+        fillColor: "transparent"
+        strokeWidth: live ? Math.max(2, gauge.stroke * 0.09) : 0
+        strokeColor: gauge.cardColor
+        capStyle: ShapePath.FlatCap
+
+        PathMove { x: notches.p1.x; y: notches.p1.y }
+        PathLine { x: notches.q1.x; y: notches.q1.y }
+        PathMove { x: notches.p2.x; y: notches.p2.y }
+        PathLine { x: notches.q2.x; y: notches.q2.y }
     }
 
     component ValueArc: ShapePath {
         id: valueArc
-        property bool inner: false
+        property int ring: 0
+        property real fraction: 0
+        property color ink: "black"
         property var gauge: root
-        readonly property bool live: !inner || gauge.dual
-        readonly property real sweep: !gauge.hasValue ? 0
-                                      : (inner ? gauge.secondValueAngle : gauge.valueAngle) - gauge.startAngle
+        readonly property bool live: ring === 1 ? gauge.dual : true
+        readonly property real sweep: gauge.hasValue ? fraction * gauge.sweepAngle : 0
         fillColor: "transparent"
         strokeWidth: live && sweep > 0.4 ? gauge.valueStroke : 0
-        strokeColor: inner ? gauge.secondArcColor : gauge.arcColor
+        strokeColor: "transparent"
         capStyle: ShapePath.RoundCap
+        strokeGradient: TrailGradient {
+            ink: valueArc.ink
+            head: valueArc.fraction
+        }
 
         PathAngleArc {
             centerX: valueArc.gauge.cx
             centerY: valueArc.gauge.cy
-            radiusX: valueArc.inner ? valueArc.gauge.innerRadius : valueArc.gauge.radius
-            radiusY: valueArc.inner ? valueArc.gauge.innerRadius : valueArc.gauge.radius
+            radiusX: valueArc.gauge.ringRadius(valueArc.ring)
+            radiusY: valueArc.gauge.ringRadius(valueArc.ring)
             startAngle: valueArc.gauge.startAngle
             sweepAngle: Math.max(0.01, valueArc.sweep)
         }
@@ -277,60 +327,15 @@ Item {
         anchors.fill: parent
         preferredRendererType: Shape.CurveRenderer
 
-        ZoneSlice { zone: 0; step: 0 } ZoneSlice { zone: 0; step: 1 } ZoneSlice { zone: 0; step: 2 } ZoneSlice { zone: 0; step: 3 }
-        ZoneSlice { zone: 0; step: 4 } ZoneSlice { zone: 0; step: 5 } ZoneSlice { zone: 0; step: 6 } ZoneSlice { zone: 0; step: 7 }
-        ZoneSlice { zone: 0; step: 8 } ZoneSlice { zone: 0; step: 9 } ZoneSlice { zone: 0; step: 10 } ZoneSlice { zone: 0; step: 11 }
-        ZoneSlice { zone: 0; step: 12 } ZoneSlice { zone: 0; step: 13 } ZoneSlice { zone: 0; step: 14 } ZoneSlice { zone: 0; step: 15 }
-        ZoneSlice { zone: 1; step: 0 } ZoneSlice { zone: 1; step: 1 } ZoneSlice { zone: 1; step: 2 } ZoneSlice { zone: 1; step: 3 }
-        ZoneSlice { zone: 1; step: 4 } ZoneSlice { zone: 1; step: 5 } ZoneSlice { zone: 1; step: 6 } ZoneSlice { zone: 1; step: 7 }
-        ZoneSlice { zone: 1; step: 8 } ZoneSlice { zone: 1; step: 9 } ZoneSlice { zone: 1; step: 10 } ZoneSlice { zone: 1; step: 11 }
-        ZoneSlice { zone: 1; step: 12 } ZoneSlice { zone: 1; step: 13 } ZoneSlice { zone: 1; step: 14 } ZoneSlice { zone: 1; step: 15 }
-        ZoneSlice { zone: 2; step: 0 } ZoneSlice { zone: 2; step: 1 } ZoneSlice { zone: 2; step: 2 } ZoneSlice { zone: 2; step: 3 }
-        ZoneSlice { zone: 2; step: 4 } ZoneSlice { zone: 2; step: 5 } ZoneSlice { zone: 2; step: 6 } ZoneSlice { zone: 2; step: 7 }
-        ZoneSlice { zone: 2; step: 8 } ZoneSlice { zone: 2; step: 9 } ZoneSlice { zone: 2; step: 10 } ZoneSlice { zone: 2; step: 11 }
-        ZoneSlice { zone: 2; step: 12 } ZoneSlice { zone: 2; step: 13 } ZoneSlice { zone: 2; step: 14 } ZoneSlice { zone: 2; step: 15 }
-        ZoneSlice { zone: 0; step: 0; ring: 1 } ZoneSlice { zone: 0; step: 1; ring: 1 } ZoneSlice { zone: 0; step: 2; ring: 1 } ZoneSlice { zone: 0; step: 3; ring: 1 }
-        ZoneSlice { zone: 0; step: 4; ring: 1 } ZoneSlice { zone: 0; step: 5; ring: 1 } ZoneSlice { zone: 0; step: 6; ring: 1 } ZoneSlice { zone: 0; step: 7; ring: 1 }
-        ZoneSlice { zone: 0; step: 8; ring: 1 } ZoneSlice { zone: 0; step: 9; ring: 1 } ZoneSlice { zone: 0; step: 10; ring: 1 } ZoneSlice { zone: 0; step: 11; ring: 1 }
-        ZoneSlice { zone: 0; step: 12; ring: 1 } ZoneSlice { zone: 0; step: 13; ring: 1 } ZoneSlice { zone: 0; step: 14; ring: 1 } ZoneSlice { zone: 0; step: 15; ring: 1 }
-        ZoneSlice { zone: 1; step: 0; ring: 1 } ZoneSlice { zone: 1; step: 1; ring: 1 } ZoneSlice { zone: 1; step: 2; ring: 1 } ZoneSlice { zone: 1; step: 3; ring: 1 }
-        ZoneSlice { zone: 1; step: 4; ring: 1 } ZoneSlice { zone: 1; step: 5; ring: 1 } ZoneSlice { zone: 1; step: 6; ring: 1 } ZoneSlice { zone: 1; step: 7; ring: 1 }
-        ZoneSlice { zone: 1; step: 8; ring: 1 } ZoneSlice { zone: 1; step: 9; ring: 1 } ZoneSlice { zone: 1; step: 10; ring: 1 } ZoneSlice { zone: 1; step: 11; ring: 1 }
-        ZoneSlice { zone: 1; step: 12; ring: 1 } ZoneSlice { zone: 1; step: 13; ring: 1 } ZoneSlice { zone: 1; step: 14; ring: 1 } ZoneSlice { zone: 1; step: 15; ring: 1 }
-        ZoneSlice { zone: 2; step: 0; ring: 1 } ZoneSlice { zone: 2; step: 1; ring: 1 } ZoneSlice { zone: 2; step: 2; ring: 1 } ZoneSlice { zone: 2; step: 3; ring: 1 }
-        ZoneSlice { zone: 2; step: 4; ring: 1 } ZoneSlice { zone: 2; step: 5; ring: 1 } ZoneSlice { zone: 2; step: 6; ring: 1 } ZoneSlice { zone: 2; step: 7; ring: 1 }
-        ZoneSlice { zone: 2; step: 8; ring: 1 } ZoneSlice { zone: 2; step: 9; ring: 1 } ZoneSlice { zone: 2; step: 10; ring: 1 } ZoneSlice { zone: 2; step: 11; ring: 1 }
-        ZoneSlice { zone: 2; step: 12; ring: 1 } ZoneSlice { zone: 2; step: 13; ring: 1 } ZoneSlice { zone: 2; step: 14; ring: 1 } ZoneSlice { zone: 2; step: 15; ring: 1 }
-        ZoneSlice { zone: 0; step: 0; ring: 2 } ZoneSlice { zone: 0; step: 1; ring: 2 } ZoneSlice { zone: 0; step: 2; ring: 2 } ZoneSlice { zone: 0; step: 3; ring: 2 }
-        ZoneSlice { zone: 0; step: 4; ring: 2 } ZoneSlice { zone: 0; step: 5; ring: 2 } ZoneSlice { zone: 0; step: 6; ring: 2 } ZoneSlice { zone: 0; step: 7; ring: 2 }
-        ZoneSlice { zone: 0; step: 8; ring: 2 } ZoneSlice { zone: 0; step: 9; ring: 2 } ZoneSlice { zone: 0; step: 10; ring: 2 } ZoneSlice { zone: 0; step: 11; ring: 2 }
-        ZoneSlice { zone: 0; step: 12; ring: 2 } ZoneSlice { zone: 0; step: 13; ring: 2 } ZoneSlice { zone: 0; step: 14; ring: 2 } ZoneSlice { zone: 0; step: 15; ring: 2 }
-        ZoneSlice { zone: 1; step: 0; ring: 2 } ZoneSlice { zone: 1; step: 1; ring: 2 } ZoneSlice { zone: 1; step: 2; ring: 2 } ZoneSlice { zone: 1; step: 3; ring: 2 }
-        ZoneSlice { zone: 1; step: 4; ring: 2 } ZoneSlice { zone: 1; step: 5; ring: 2 } ZoneSlice { zone: 1; step: 6; ring: 2 } ZoneSlice { zone: 1; step: 7; ring: 2 }
-        ZoneSlice { zone: 1; step: 8; ring: 2 } ZoneSlice { zone: 1; step: 9; ring: 2 } ZoneSlice { zone: 1; step: 10; ring: 2 } ZoneSlice { zone: 1; step: 11; ring: 2 }
-        ZoneSlice { zone: 1; step: 12; ring: 2 } ZoneSlice { zone: 1; step: 13; ring: 2 } ZoneSlice { zone: 1; step: 14; ring: 2 } ZoneSlice { zone: 1; step: 15; ring: 2 }
-        ZoneSlice { zone: 2; step: 0; ring: 2 } ZoneSlice { zone: 2; step: 1; ring: 2 } ZoneSlice { zone: 2; step: 2; ring: 2 } ZoneSlice { zone: 2; step: 3; ring: 2 }
-        ZoneSlice { zone: 2; step: 4; ring: 2 } ZoneSlice { zone: 2; step: 5; ring: 2 } ZoneSlice { zone: 2; step: 6; ring: 2 } ZoneSlice { zone: 2; step: 7; ring: 2 }
-        ZoneSlice { zone: 2; step: 8; ring: 2 } ZoneSlice { zone: 2; step: 9; ring: 2 } ZoneSlice { zone: 2; step: 10; ring: 2 } ZoneSlice { zone: 2; step: 11; ring: 2 }
-        ZoneSlice { zone: 2; step: 12; ring: 2 } ZoneSlice { zone: 2; step: 13; ring: 2 } ZoneSlice { zone: 2; step: 14; ring: 2 } ZoneSlice { zone: 2; step: 15; ring: 2 }
-        ValueArc { }
-        ValueArc { inner: true }
-
-        ShapePath {
-            id: fillerValueArc
-            fillColor: "transparent"
-            strokeWidth: root.hasValue && root.fillerFraction > 0.004 ? root.valueStroke : 0
-            strokeColor: root.fillerColor
-            capStyle: ShapePath.RoundCap
-            PathAngleArc {
-                centerX: root.cx
-                centerY: root.cy
-                radiusX: root.fillerRadius
-                radiusY: root.fillerRadius
-                startAngle: root.startAngle
-                sweepAngle: Math.max(0.01, root.fillerAngle - root.startAngle)
-            }
-        }
+        TrackArc { ring: 0 }
+        TrackArc { ring: 1 }
+        TrackArc { ring: 2 }
+        ZoneNotches { ring: 0 }
+        ZoneNotches { ring: 1 }
+        ZoneNotches { ring: 2 }
+        ValueArc { ring: 0; fraction: root.fraction; ink: root.arcColor }
+        ValueArc { ring: 1; fraction: root.secondFraction; ink: root.secondArcColor }
+        ValueArc { ring: 2; fraction: root.fillerFraction; ink: root.fillerColor }
     }
 
     Repeater {
@@ -357,46 +362,52 @@ Item {
         }
     }
 
-    Rectangle {
-        id: innerKnob
-        readonly property point center: root.pointAt(root.secondValueAngle, root.innerRadius)
+    // Value head: a soft halo in the ring colour, then a solid disc with a
+    // rim in the card colour so it reads on top of the track.
+    component Knob: Item {
+        id: knobItem
+        property int ring: 0
+        property real angle: root.startAngle
+        property color ink: "black"
+        readonly property point center: root.pointAt(angle, root.ringRadius(ring))
+        width: root.stroke * 1.5
+        height: width
+        x: center.x - width / 2
+        y: center.y - height / 2
+
+        Rectangle {
+            anchors.fill: parent
+            radius: width / 2
+            color: Qt.alpha(knobItem.ink, root.paintTheme === Material.Dark ? 0.30 : 0.22)
+        }
+        Rectangle {
+            anchors.centerIn: parent
+            width: root.stroke * 1.08
+            height: width
+            radius: width / 2
+            color: knobItem.ink
+            border.width: Math.max(2, root.stroke * 0.16)
+            border.color: root.cardColor
+        }
+    }
+
+    Knob {
         visible: root.dual && root.hasValue
-        width: root.stroke * 1.35
-        height: width
-        radius: width / 2
-        x: center.x - width / 2
-        y: center.y - height / 2
-        color: root.cardColor
-        border.width: Math.max(3, root.stroke * 0.28)
-        border.color: root.secondArcColor
+        ring: 1
+        angle: root.secondValueAngle
+        ink: root.secondArcColor
     }
-
-    Rectangle {
-        id: knob
-        readonly property point center: root.pointAt(root.valueAngle, root.radius)
+    Knob {
         visible: root.hasValue
-        width: root.stroke * 1.35
-        height: width
-        radius: width / 2
-        x: center.x - width / 2
-        y: center.y - height / 2
-        color: root.cardColor
-        border.width: Math.max(3, root.stroke * 0.28)
-        border.color: root.arcColor
+        ring: 0
+        angle: root.valueAngle
+        ink: root.arcColor
     }
-
-    Rectangle {
-        id: fillerKnob
-        readonly property point center: root.pointAt(root.fillerAngle, root.fillerRadius)
+    Knob {
         visible: root.hasValue
-        width: root.stroke * 1.35
-        height: width
-        radius: width / 2
-        x: center.x - width / 2
-        y: center.y - height / 2
-        color: root.cardColor
-        border.width: Math.max(3, root.stroke * 0.28)
-        border.color: root.fillerColor
+        ring: 2
+        angle: root.fillerAngle
+        ink: root.fillerColor
     }
 
     // One ring: the integer above its name. Names use the ring colour.
@@ -406,21 +417,42 @@ Item {
         property string figure: ""
         property bool figureVisible: true
         property string caption: ""
+        // Small unit after the integer, such as "%". Hidden with no measurement.
+        property string suffix: ""
         property color ink: Theme.onSurfaceVariant(root.paintTheme)
         property real captionSize: root.captionPx
         width: root.blockWidth
         spacing: 0
 
-        Text {
+        Item {
             visible: block.figureVisible
             width: block.width
-            horizontalAlignment: Text.AlignHCenter
-            text: block.figure
-            font.pixelSize: root.numberPx
-            font.weight: root.hasValue ? Font.DemiBold : Font.Light
-            font.features: { "tnum": 1 }
-            color: root.hasValue ? Theme.onSurface(root.paintTheme) : Theme.outline(root.paintTheme)
-            Accessible.ignored: true
+            height: figureText.height
+
+            Row {
+                anchors.horizontalCenter: parent.horizontalCenter
+                spacing: 1
+
+                Text {
+                    id: figureText
+                    text: block.figure
+                    font.pixelSize: root.numberPx
+                    font.weight: root.hasValue ? Font.Bold : Font.Light
+                    font.letterSpacing: root.hasValue ? -0.04 * root.numberPx : 0
+                    font.features: { "tnum": 1 }
+                    color: root.hasValue ? Theme.onSurface(root.paintTheme) : Theme.outline(root.paintTheme)
+                    Accessible.ignored: true
+                }
+                Text {
+                    visible: root.hasValue && block.suffix.length > 0
+                    anchors.baseline: figureText.baseline
+                    text: block.suffix
+                    font.pixelSize: Math.max(9, Math.round(root.numberPx * 0.5))
+                    font.weight: Font.DemiBold
+                    color: Theme.onSurfaceVariant(root.paintTheme)
+                    Accessible.ignored: true
+                }
+            }
         }
         Text {
             width: block.width
@@ -482,6 +514,7 @@ Item {
                     width: root.apexWidth
                     captionSize: root.apexCaptionPx
                     figure: readout.fillerFigure
+                    suffix: "%"
                     figureVisible: readout.figures
                     caption: qsTranslate("HomePage", "Fillers")
                     ink: root.captionInk(root.hasValue && root.fillerValue > 0, root.fillerColor)
@@ -543,6 +576,7 @@ Item {
 
             ValueBlock {
                 figure: readout.fillerFigure
+                suffix: "%"
                 figureVisible: readout.figures
                 caption: qsTranslate("HomePage", "Fillers")
                 ink: root.captionInk(root.hasValue && root.fillerValue > 0, root.fillerColor)
