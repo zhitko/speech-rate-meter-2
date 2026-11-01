@@ -302,13 +302,19 @@ Item {
                 return top + (1 - (value - yMin) / valueSpan) * plotHeight
             }
 
-            // Horizontal bands match the gauge tracks. Fast is the top band
-            // and is a light gold, Slow the bottom.
+            // Horizontal bands match the gauge scale. Each zone blends across
+            // its third. Fast is the top band and lightens to gold.
             var bandH = plotHeight / 3
             for (var zone = 0; zone < 3; ++zone) {
                 var yTop = top + (2 - zone) * bandH
                 var yBot = zone === 0 ? top + plotHeight : yTop + bandH
-                ctx.fillStyle = Theme.zoneTrackColor(zone, root.paintTheme)
+                var wash = ctx.createLinearGradient(0, yBot, 0, yTop)
+                var stops = 4
+                for (var stop = 0; stop <= stops; ++stop) {
+                    var u = stop / stops
+                    wash.addColorStop(u, Qt.alpha(Theme.paceColor((zone + u) / 3, root.paintTheme), 0.22))
+                }
+                ctx.fillStyle = wash
                 ctx.fillRect(left, yTop, plotWidth, Math.max(1, yBot - yTop))
             }
 

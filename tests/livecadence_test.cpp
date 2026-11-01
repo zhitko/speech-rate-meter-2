@@ -703,6 +703,7 @@ void testLiveChartCountdown()
     // Target is 1.5 s of speech plus one interval. Round up. Never negative.
     // Home draws this on top of the chart and the arcs; it does not hide them.
     // The fillers ring is the innermost of those arcs, not a separate semicircle.
+    // Its scale is the same zone gradient as the pace tracks. The value stroke is one colour.
     expect(liveUpdateIntervalMs(12) == 5000, "standard interval is 5 s");
     expect(liveUpdateIntervalMs(120) == 500, "fast interval is 0.5 s");
 

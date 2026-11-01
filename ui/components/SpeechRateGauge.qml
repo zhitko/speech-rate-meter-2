@@ -137,6 +137,8 @@ Item {
     readonly property real segmentSweep: (sweepAngle - 2 * gapAngle) / 3
     readonly property real innerGapAngle: stroke / Math.max(1, innerRadius) * 180 / Math.PI + 2
     readonly property real innerSegmentSweep: (sweepAngle - 2 * innerGapAngle) / 3
+    readonly property real fillerGapAngle: stroke / Math.max(1, fillerRadius) * 180 / Math.PI + 2
+    readonly property real fillerSegmentSweep: (sweepAngle - 2 * fillerGapAngle) / 3
 
     function segmentStart(index) {
         return startAngle + index * (segmentSweep + gapAngle)
@@ -144,6 +146,10 @@ Item {
 
     function innerSegmentStart(index) {
         return startAngle + index * (innerSegmentSweep + innerGapAngle)
+    }
+
+    function fillerSegmentStart(index) {
+        return startAngle + index * (fillerSegmentSweep + fillerGapAngle)
     }
 
     function pointAt(angleDeg, r, centerY) {
@@ -160,28 +166,48 @@ Item {
                        bg.b + (color.b - bg.b) * a, 1)
     }
 
-    // One zone of the track the pace arc runs along. The value itself is a
-    // thinner stroke in the chart colour, drawn on top.
-    component ZoneTrack: ShapePath {
-        id: track
+    // One step of the scale. Short flat strokes stand in for a stroke
+    // gradient. The gap between zones is the thin border. The value is a
+    // separate stroke in the chart colour, drawn on top.
+    component ZoneSlice: ShapePath {
+        id: slice
         property int zone: 0
-        property bool inner: false
+        property int step: 0
+        property int steps: 16
+        // 0 speech (or the single pace), 1 articulation, 2 fillers.
+        property int ring: 0
         property var gauge: root
-        readonly property bool live: !inner || gauge.dual
-        readonly property real from: inner ? gauge.innerSegmentStart(zone) : gauge.segmentStart(zone)
-        readonly property real sweep: inner ? gauge.innerSegmentSweep : gauge.segmentSweep
+        readonly property bool live: ring === 1 ? gauge.dual : true
+        readonly property real z0: ring === 2 ? gauge.fillerSegmentStart(zone)
+                                   : ring === 1 ? gauge.innerSegmentStart(zone)
+                                   : gauge.segmentStart(zone)
+        readonly property real zoneSweep: ring === 2 ? gauge.fillerSegmentSweep
+                                         : ring === 1 ? gauge.innerSegmentSweep
+                                         : gauge.segmentSweep
+        readonly property real sliceSweep: zoneSweep / steps
+        readonly property real a0: z0 + step * sliceSweep
+        readonly property real a1: z0 + (step + 1) * sliceSweep
+        readonly property bool atStart: step === 0
+        readonly property bool atEnd: step === steps - 1
+        readonly property real from: atStart ? a0 : a0 - 0.7
+        readonly property real to: atEnd ? a1 : a1 + 0.7
+        readonly property real drawn: Math.max(0.01, to - from)
+        readonly property real tee: Math.max(0, Math.min(1, (zone + (step + 0.5) / steps) / 3))
+        readonly property real ringRadius: ring === 2 ? gauge.fillerRadius
+                                           : ring === 1 ? gauge.innerRadius
+                                           : gauge.radius
         fillColor: "transparent"
         strokeWidth: live ? gauge.stroke : 0
-        strokeColor: Theme.zoneTrackColor(zone, gauge.paintTheme)
-        capStyle: ShapePath.RoundCap
+        strokeColor: gauge.paintOnCard(Theme.paceColor(tee, gauge.paintTheme), 0.42)
+        capStyle: (atStart || atEnd) ? ShapePath.RoundCap : ShapePath.FlatCap
 
         PathAngleArc {
-            centerX: track.gauge.cx
-            centerY: track.gauge.cy
-            radiusX: track.inner ? track.gauge.innerRadius : track.gauge.radius
-            radiusY: track.inner ? track.gauge.innerRadius : track.gauge.radius
-            startAngle: track.from
-            sweepAngle: Math.max(0.01, track.sweep)
+            centerX: slice.gauge.cx
+            centerY: slice.gauge.cy
+            radiusX: slice.ringRadius
+            radiusY: slice.ringRadius
+            startAngle: slice.from
+            sweepAngle: slice.drawn
         }
     }
 
@@ -211,30 +237,44 @@ Item {
         anchors.fill: parent
         preferredRendererType: Shape.CurveRenderer
 
-        ZoneTrack { zone: 0 }
-        ZoneTrack { zone: 1 }
-        ZoneTrack { zone: 2 }
-        ZoneTrack { zone: 0; inner: true }
-        ZoneTrack { zone: 1; inner: true }
-        ZoneTrack { zone: 2; inner: true }
+        ZoneSlice { zone: 0; step: 0 } ZoneSlice { zone: 0; step: 1 } ZoneSlice { zone: 0; step: 2 } ZoneSlice { zone: 0; step: 3 }
+        ZoneSlice { zone: 0; step: 4 } ZoneSlice { zone: 0; step: 5 } ZoneSlice { zone: 0; step: 6 } ZoneSlice { zone: 0; step: 7 }
+        ZoneSlice { zone: 0; step: 8 } ZoneSlice { zone: 0; step: 9 } ZoneSlice { zone: 0; step: 10 } ZoneSlice { zone: 0; step: 11 }
+        ZoneSlice { zone: 0; step: 12 } ZoneSlice { zone: 0; step: 13 } ZoneSlice { zone: 0; step: 14 } ZoneSlice { zone: 0; step: 15 }
+        ZoneSlice { zone: 1; step: 0 } ZoneSlice { zone: 1; step: 1 } ZoneSlice { zone: 1; step: 2 } ZoneSlice { zone: 1; step: 3 }
+        ZoneSlice { zone: 1; step: 4 } ZoneSlice { zone: 1; step: 5 } ZoneSlice { zone: 1; step: 6 } ZoneSlice { zone: 1; step: 7 }
+        ZoneSlice { zone: 1; step: 8 } ZoneSlice { zone: 1; step: 9 } ZoneSlice { zone: 1; step: 10 } ZoneSlice { zone: 1; step: 11 }
+        ZoneSlice { zone: 1; step: 12 } ZoneSlice { zone: 1; step: 13 } ZoneSlice { zone: 1; step: 14 } ZoneSlice { zone: 1; step: 15 }
+        ZoneSlice { zone: 2; step: 0 } ZoneSlice { zone: 2; step: 1 } ZoneSlice { zone: 2; step: 2 } ZoneSlice { zone: 2; step: 3 }
+        ZoneSlice { zone: 2; step: 4 } ZoneSlice { zone: 2; step: 5 } ZoneSlice { zone: 2; step: 6 } ZoneSlice { zone: 2; step: 7 }
+        ZoneSlice { zone: 2; step: 8 } ZoneSlice { zone: 2; step: 9 } ZoneSlice { zone: 2; step: 10 } ZoneSlice { zone: 2; step: 11 }
+        ZoneSlice { zone: 2; step: 12 } ZoneSlice { zone: 2; step: 13 } ZoneSlice { zone: 2; step: 14 } ZoneSlice { zone: 2; step: 15 }
+        ZoneSlice { zone: 0; step: 0; ring: 1 } ZoneSlice { zone: 0; step: 1; ring: 1 } ZoneSlice { zone: 0; step: 2; ring: 1 } ZoneSlice { zone: 0; step: 3; ring: 1 }
+        ZoneSlice { zone: 0; step: 4; ring: 1 } ZoneSlice { zone: 0; step: 5; ring: 1 } ZoneSlice { zone: 0; step: 6; ring: 1 } ZoneSlice { zone: 0; step: 7; ring: 1 }
+        ZoneSlice { zone: 0; step: 8; ring: 1 } ZoneSlice { zone: 0; step: 9; ring: 1 } ZoneSlice { zone: 0; step: 10; ring: 1 } ZoneSlice { zone: 0; step: 11; ring: 1 }
+        ZoneSlice { zone: 0; step: 12; ring: 1 } ZoneSlice { zone: 0; step: 13; ring: 1 } ZoneSlice { zone: 0; step: 14; ring: 1 } ZoneSlice { zone: 0; step: 15; ring: 1 }
+        ZoneSlice { zone: 1; step: 0; ring: 1 } ZoneSlice { zone: 1; step: 1; ring: 1 } ZoneSlice { zone: 1; step: 2; ring: 1 } ZoneSlice { zone: 1; step: 3; ring: 1 }
+        ZoneSlice { zone: 1; step: 4; ring: 1 } ZoneSlice { zone: 1; step: 5; ring: 1 } ZoneSlice { zone: 1; step: 6; ring: 1 } ZoneSlice { zone: 1; step: 7; ring: 1 }
+        ZoneSlice { zone: 1; step: 8; ring: 1 } ZoneSlice { zone: 1; step: 9; ring: 1 } ZoneSlice { zone: 1; step: 10; ring: 1 } ZoneSlice { zone: 1; step: 11; ring: 1 }
+        ZoneSlice { zone: 1; step: 12; ring: 1 } ZoneSlice { zone: 1; step: 13; ring: 1 } ZoneSlice { zone: 1; step: 14; ring: 1 } ZoneSlice { zone: 1; step: 15; ring: 1 }
+        ZoneSlice { zone: 2; step: 0; ring: 1 } ZoneSlice { zone: 2; step: 1; ring: 1 } ZoneSlice { zone: 2; step: 2; ring: 1 } ZoneSlice { zone: 2; step: 3; ring: 1 }
+        ZoneSlice { zone: 2; step: 4; ring: 1 } ZoneSlice { zone: 2; step: 5; ring: 1 } ZoneSlice { zone: 2; step: 6; ring: 1 } ZoneSlice { zone: 2; step: 7; ring: 1 }
+        ZoneSlice { zone: 2; step: 8; ring: 1 } ZoneSlice { zone: 2; step: 9; ring: 1 } ZoneSlice { zone: 2; step: 10; ring: 1 } ZoneSlice { zone: 2; step: 11; ring: 1 }
+        ZoneSlice { zone: 2; step: 12; ring: 1 } ZoneSlice { zone: 2; step: 13; ring: 1 } ZoneSlice { zone: 2; step: 14; ring: 1 } ZoneSlice { zone: 2; step: 15; ring: 1 }
+        ZoneSlice { zone: 0; step: 0; ring: 2 } ZoneSlice { zone: 0; step: 1; ring: 2 } ZoneSlice { zone: 0; step: 2; ring: 2 } ZoneSlice { zone: 0; step: 3; ring: 2 }
+        ZoneSlice { zone: 0; step: 4; ring: 2 } ZoneSlice { zone: 0; step: 5; ring: 2 } ZoneSlice { zone: 0; step: 6; ring: 2 } ZoneSlice { zone: 0; step: 7; ring: 2 }
+        ZoneSlice { zone: 0; step: 8; ring: 2 } ZoneSlice { zone: 0; step: 9; ring: 2 } ZoneSlice { zone: 0; step: 10; ring: 2 } ZoneSlice { zone: 0; step: 11; ring: 2 }
+        ZoneSlice { zone: 0; step: 12; ring: 2 } ZoneSlice { zone: 0; step: 13; ring: 2 } ZoneSlice { zone: 0; step: 14; ring: 2 } ZoneSlice { zone: 0; step: 15; ring: 2 }
+        ZoneSlice { zone: 1; step: 0; ring: 2 } ZoneSlice { zone: 1; step: 1; ring: 2 } ZoneSlice { zone: 1; step: 2; ring: 2 } ZoneSlice { zone: 1; step: 3; ring: 2 }
+        ZoneSlice { zone: 1; step: 4; ring: 2 } ZoneSlice { zone: 1; step: 5; ring: 2 } ZoneSlice { zone: 1; step: 6; ring: 2 } ZoneSlice { zone: 1; step: 7; ring: 2 }
+        ZoneSlice { zone: 1; step: 8; ring: 2 } ZoneSlice { zone: 1; step: 9; ring: 2 } ZoneSlice { zone: 1; step: 10; ring: 2 } ZoneSlice { zone: 1; step: 11; ring: 2 }
+        ZoneSlice { zone: 1; step: 12; ring: 2 } ZoneSlice { zone: 1; step: 13; ring: 2 } ZoneSlice { zone: 1; step: 14; ring: 2 } ZoneSlice { zone: 1; step: 15; ring: 2 }
+        ZoneSlice { zone: 2; step: 0; ring: 2 } ZoneSlice { zone: 2; step: 1; ring: 2 } ZoneSlice { zone: 2; step: 2; ring: 2 } ZoneSlice { zone: 2; step: 3; ring: 2 }
+        ZoneSlice { zone: 2; step: 4; ring: 2 } ZoneSlice { zone: 2; step: 5; ring: 2 } ZoneSlice { zone: 2; step: 6; ring: 2 } ZoneSlice { zone: 2; step: 7; ring: 2 }
+        ZoneSlice { zone: 2; step: 8; ring: 2 } ZoneSlice { zone: 2; step: 9; ring: 2 } ZoneSlice { zone: 2; step: 10; ring: 2 } ZoneSlice { zone: 2; step: 11; ring: 2 }
+        ZoneSlice { zone: 2; step: 12; ring: 2 } ZoneSlice { zone: 2; step: 13; ring: 2 } ZoneSlice { zone: 2; step: 14; ring: 2 } ZoneSlice { zone: 2; step: 15; ring: 2 }
         ValueArc { }
         ValueArc { inner: true }
-
-        ShapePath {
-            id: fillerTrack
-            fillColor: "transparent"
-            strokeWidth: root.stroke
-            strokeColor: root.paintOnCard(root.fillerColor, 0.34)
-            capStyle: ShapePath.RoundCap
-            PathAngleArc {
-                centerX: root.cx
-                centerY: root.cy
-                radiusX: root.fillerRadius
-                radiusY: root.fillerRadius
-                startAngle: root.startAngle
-                sweepAngle: root.sweepAngle
-            }
-        }
 
         ShapePath {
             id: fillerValueArc
