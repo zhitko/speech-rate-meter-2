@@ -2,7 +2,7 @@
 
 Speech Rate Meter 2 shows how fast you are speaking, in words per minute. It does not recognize words, and the recording stays on this device.
 
-While you speak, the chart and the arcs stay hidden until two live readings have arrived. Until then Home shows “Everything is working. Calculating. About N s left.”, blinking. After that they follow you. The numbers appear when you press **Stop**. If you stop sooner, the result is shown at once.
+While you speak, the chart and the arcs stay on screen. Until two live readings have arrived, “Everything is working. Calculating. About N s left.” blinks on top of them. After that the message goes away and they follow you. The numbers appear when you press **Stop**. If you stop sooner, the result is shown at once.
 
 ## Record a session
 
@@ -14,7 +14,7 @@ While you speak, the chart and the arcs stay hidden until two live readings have
 
 Home before **Start**. The tempo chart is empty, the gauge has no number, and **Start** is on screen. The chip reads **Ready**.
 
-Until two live readings have arrived, the chart and the arcs stay hidden, and “Everything is working. Calculating. About N s left.” blinks in their place. N is the estimated seconds until the second reading. It uses the update interval and the speech already collected, rounded up. It does not go below zero, and if it would reach zero early the line says “Everything is working. Calculating. A little longer.” After the second reading the line grows from the left. When it reaches the right edge, older points slide off. Pressing **Stop** before two readings shows the result at once. **Open File** does not wait.
+Until two live readings have arrived, the chart and the arcs stay on screen, and “Everything is working. Calculating. About N s left.” blinks on top of them. You can still see the chart and the arcs around that message. N is the estimated seconds until the second reading. It uses the update interval and the speech already collected, rounded up. It does not go below zero, and if it would reach zero early the line says “Everything is working. Calculating. A little longer.” After the second reading the message goes away and the line grows from the left. When it reaches the right edge, older points slide off. Pressing **Stop** before two readings shows the result at once. **Open File** does not wait.
 
 ![Home while recording](images/en/02-home-recording.png)
 
@@ -149,7 +149,7 @@ A change applies to the next phrase.
 - **The arc has no number.** That is normal while a session is running. Press **Stop** to see the summary.
 - **The chip says Listening.** The app is waiting for speech. Speak when you are ready. With automatic detection, give it a quiet moment first so it can measure the room.
 - **The chip says Too short to save.** That phrase was under one second, so it was not kept. Speak a little longer.
-- **The chart and the arcs are missing while you speak.** That lasts until two live readings have arrived. “Everything is working. Calculating. About N s left.” blinks until then. After **Stop**, they are shown even if fewer than two readings arrived.
+- **A message covers the chart while you speak.** That lasts until two live readings have arrived. “Everything is working. Calculating. About N s left.” blinks on top of the chart and the arcs, which stay visible. After the second reading, and after **Stop**, the message is gone.
 - **There is no Open File button.** That button is only on a computer.
 
 ## Other pages

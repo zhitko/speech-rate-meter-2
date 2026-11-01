@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Effects
 import QtQuick.Layouts
 import QtQuick.Dialogs
 import QtQuick.Controls.Material 6.8
@@ -51,8 +52,9 @@ Page {
         NumberAnimation { to: 0.25; duration: 700; easing.type: Easing.InOutSine }
         NumberAnimation { to: 1; duration: 700; easing.type: Easing.InOutSine }
     }
-    // Live recording only. Home hides the chart and the arcs until two live
-    // readings have arrived. Stop and Open File are not an active session.
+    // Live recording only. The chart and the arcs stay visible. This overlay
+    // counts down until two live readings have arrived. Stop and Open File
+    // are not an active session, so they do not show it.
     readonly property bool liveVisualsHeld: active && !!sessionApi
                                              && sessionApi.liveReadingCount < 2
     property real warmupBlink: 1
@@ -60,14 +62,9 @@ Page {
         running: root.liveVisualsHeld
         loops: Animation.Infinite
         alwaysRunToEnd: true
-        NumberAnimation { to: 0.28; duration: 480; easing.type: Easing.InOutSine }
+        NumberAnimation { to: 0.45; duration: 480; easing.type: Easing.InOutSine }
         NumberAnimation { to: 1; duration: 480; easing.type: Easing.InOutSine }
     }
-    // The chart and the arcs stay together once two live readings have
-    // arrived, after Stop, after Open File, and while idle.
-    readonly property bool showTempoChart: !liveVisualsHeld
-    readonly property bool showGaugeArcs: !liveVisualsHeld
-    readonly property bool chartAndGauge: showTempoChart && showGaugeArcs
     // Integers in the arc centre appear after the session and after Open File.
     // While recording the arcs and the chart keep moving and the value cards
     // stay off. After Stop or Open File the switches choose which cards show.
@@ -754,61 +751,8 @@ Page {
                         anchors.margins: 16
                         spacing: 4
 
-                        Item {
-                            visible: root.liveVisualsHeld
-                            Layout.fillWidth: true
-                            Layout.fillHeight: true
-                            Layout.topMargin: 32
-                            Layout.minimumHeight: 180
-
-                            Column {
-                                id: warmupColumn
-                                anchors.centerIn: parent
-                                width: Math.min(parent.width - 24, 480)
-                                spacing: 16
-
-                                Text {
-                                    width: parent.width
-                                    horizontalAlignment: Text.AlignHCenter
-                                    font.family: Icons.familySolid
-                                    font.weight: Font.Black
-                                    font.pixelSize: AppScale.fs(28)
-                                    text: Icons.faMicrophone
-                                    color: Theme.primary(Material.theme)
-                                    opacity: root.warmupBlink
-                                }
-
-                                Rectangle {
-                                    width: parent.width
-                                    height: warmupTitle.implicitHeight + 24
-                                    radius: 16
-                                    color: Qt.alpha(Theme.primary(Material.theme), 0.16)
-
-                                    Text {
-                                        id: warmupTitle
-                                        anchors.left: parent.left
-                                        anchors.right: parent.right
-                                        anchors.leftMargin: 16
-                                        anchors.rightMargin: 16
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        horizontalAlignment: Text.AlignHCenter
-                                        wrapMode: Text.Wrap
-                                        text: sessionApi && sessionApi.liveChartAlmost
-                                              ? qsTr("Everything is working. Calculating. A little longer.")
-                                              : qsTr("Everything is working. Calculating. About %1 s left.")
-                                                    .arg(sessionApi ? sessionApi.liveChartRemainingSec : 1)
-                                        color: Theme.onSurface(Material.theme)
-                                        font.pixelSize: AppScale.fs(26)
-                                        font.weight: Font.Bold
-                                        opacity: root.warmupBlink
-                                    }
-                                }
-                            }
-                        }
-
                         TempoChart {
                             id: tempoChart
-                            visible: root.showTempoChart
                             compactHeader: true
                             Layout.alignment: Qt.AlignHCenter
                             Layout.preferredWidth: root.visualsWidth
@@ -835,7 +779,6 @@ Page {
 
                         Item {
                             id: gaugeSlot
-                            visible: root.showGaugeArcs
                             Layout.alignment: Qt.AlignHCenter
                             Layout.preferredWidth: root.visualsWidth
                             Layout.maximumWidth: root.visualsWidth
@@ -885,6 +828,91 @@ Page {
                                 color: root.phase() === SessionApi.MicDenied
                                        ? Theme.error(Material.theme)
                                        : Theme.onSurfaceVariant(Material.theme)
+                            }
+                        }
+                    }
+
+                    // Sits on the chart and the arcs. Disabled so presses reach them.
+                    Item {
+                        id: warmupOverlay
+                        z: 2
+                        visible: root.liveVisualsHeld
+                        enabled: false
+                        anchors.left: gaugeColumn.left
+                        anchors.right: gaugeColumn.right
+                        anchors.top: gaugeColumn.top
+                        anchors.bottom: gaugeColumn.bottom
+                        anchors.topMargin: 32
+
+                        Column {
+                            anchors.centerIn: parent
+                            width: Math.min(parent.width - 24, 440)
+                            spacing: 10
+
+                            Text {
+                                width: parent.width
+                                horizontalAlignment: Text.AlignHCenter
+                                font.family: Icons.familySolid
+                                font.weight: Font.Black
+                                font.pixelSize: AppScale.fs(26)
+                                text: Icons.faMicrophone
+                                color: Theme.primary(Material.theme)
+                                opacity: root.warmupBlink
+                            }
+
+                            Item {
+                                id: warmupPlate
+                                width: parent.width
+                                height: warmupTitle.implicitHeight + 40
+                                readonly property int feather: 24
+                                // Opaque centre. The blur feathers only the edge,
+                                // so the words stay readable on both themes.
+                                readonly property color plate: Material.theme === Material.Dark
+                                                               ? Qt.rgba(0.17, 0.18, 0.21, 1)
+                                                               : Qt.rgba(0.98, 0.98, 0.99, 1)
+
+                                // Blur only this small plate, not the chart. The
+                                // text stays sharp on top. The texture is rebuilt
+                                // when the plate size or theme changes, not on
+                                // each blink frame.
+                                MultiEffect {
+                                    x: -warmupPlate.feather
+                                    y: -warmupPlate.feather
+                                    width: warmupPlate.width + warmupPlate.feather * 2
+                                    height: warmupPlate.height + warmupPlate.feather * 2
+                                    blurEnabled: true
+                                    blur: 0.5
+                                    blurMax: 28
+                                    autoPaddingEnabled: false
+                                    source: Rectangle {
+                                        x: warmupPlate.feather
+                                        y: warmupPlate.feather
+                                        width: warmupPlate.width
+                                        height: warmupPlate.height
+                                        radius: 22
+                                        color: warmupPlate.plate
+                                        border.width: 0
+                                    }
+                                }
+
+                                Text {
+                                    id: warmupTitle
+                                    anchors.left: parent.left
+                                    anchors.right: parent.right
+                                    anchors.leftMargin: 18
+                                    anchors.rightMargin: 18
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    horizontalAlignment: Text.AlignHCenter
+                                    wrapMode: Text.Wrap
+                                    text: sessionApi && sessionApi.liveChartAlmost
+                                          ? qsTr("Everything is working. Calculating. A little longer.")
+                                          : qsTr("Everything is working. Calculating. About %1 s left.")
+                                                .arg(sessionApi ? sessionApi.liveChartRemainingSec : 1)
+                                    color: Theme.onSurface(Material.theme)
+                                    font.pixelSize: AppScale.fs(22)
+                                    font.weight: Font.Bold
+                                    opacity: root.warmupBlink
+                                }
                             }
                         }
                     }

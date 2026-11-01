@@ -701,6 +701,7 @@ void testLiveChartCountdown()
 {
     // Standard preset: 12 updates/min → 5000 ms. Fast: 120 → 500 ms.
     // Target is 1.5 s of speech plus one interval. Round up. Never negative.
+    // Home draws this on top of the chart and the arcs; it does not hide them.
     expect(liveUpdateIntervalMs(12) == 5000, "standard interval is 5 s");
     expect(liveUpdateIntervalMs(120) == 500, "fast interval is 0.5 s");
 
