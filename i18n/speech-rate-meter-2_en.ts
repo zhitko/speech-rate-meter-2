@@ -167,6 +167,16 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <location filename="../ui/pages/HomePage.qml" line="798"/>
+        <source>Everything is working. Calculating. About %1 s left.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/HomePage.qml" line="797"/>
+        <source>Everything is working. Calculating. A little longer.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <location filename="../ui/pages/HomePage.qml" line="180"/>
         <source>Too short to save</source>
         <translation type="unfinished"></translation>

@@ -60,7 +60,9 @@ class SessionApi : public QObject {
     Q_PROPERTY(bool recordingSummaryPending READ recordingSummaryPending NOTIFY recordingSummaryChanged)
     Q_PROPERTY(QVariantMap recordingSummary READ recordingSummary NOTIFY recordingSummaryChanged)
     Q_PROPERTY(QVariantList tempoPoints READ tempoPoints NOTIFY tempoPointsChanged)
-    Q_PROPERTY(int liveChartSpeechSec READ liveChartSpeechSec CONSTANT)
+    Q_PROPERTY(int liveReadingCount READ liveReadingCount NOTIFY liveChartWaitChanged)
+    Q_PROPERTY(int liveChartRemainingSec READ liveChartRemainingSec NOTIFY liveChartWaitChanged)
+    Q_PROPERTY(bool liveChartAlmost READ liveChartAlmost NOTIFY liveChartWaitChanged)
     Q_PROPERTY(bool openFileAvailable READ openFileAvailable CONSTANT)
     Q_PROPERTY(bool openFileBusy READ openFileBusy NOTIFY openFileBusyChanged)
     Q_PROPERTY(QString openFileError READ openFileError NOTIFY openFileErrorChanged)
@@ -102,10 +104,15 @@ public:
     bool recordingSummaryPending() const { return m_recordingSummaryPending; }
     QVariantMap recordingSummary() const { return m_recordingSummary; }
     QVariantList tempoPoints() const { return m_tempoPoints; }
-    // Home hides the live chart and arcs until the speech clock reaches this.
-    // Wall time is not used. Stop and Open File do not wait.
-    static constexpr int kLiveChartSpeechSec = 30;
-    int liveChartSpeechSec() const { return kLiveChartSpeechSec; }
+    // Live publishes accepted during this take. Home holds the chart and the
+    // arcs until this reaches 2. Stop and Open File are not an active session.
+    int liveReadingCount() const { return m_liveReadingCount; }
+    // Rounded-up seconds of collected speech still expected before the second
+    // live reading. Never negative. 0 when the chart is not being held, or
+    // when liveChartAlmost() is set.
+    int liveChartRemainingSec() const { return m_liveChartRemainingSec; }
+    // The estimate ran out and the second reading has not arrived.
+    bool liveChartAlmost() const { return m_liveChartAlmost; }
     bool openFileAvailable() const;
     bool openFileBusy() const { return m_openFileBusy; }
     QString openFileError() const { return m_openFileError; }
@@ -139,6 +146,7 @@ signals:
     void metricsChanged();
     void recordingSummaryChanged();
     void tempoPointsChanged();
+    void liveChartWaitChanged();
     void sessionsChanged();
     void openFileBusyChanged();
     void openFileErrorChanged();
@@ -177,6 +185,8 @@ private:
     void clearRecordingSummary();
     void rememberShown(const QVariantMap& shown, double speechSeconds);
     void noteTempoPoint(const QVariantMap& shown);
+    void noteLiveReading();
+    void refreshLiveChartWait();
     void replaceTempoPoints(const QVariantList& points);
     void clearListenFiles();
     double medianOf(std::deque<double>& window, double rate, bool live);
@@ -218,6 +228,10 @@ private:
     bool m_recordingSummaryPending = false;
     QVariantMap m_recordingSummary;
     QVariantList m_tempoPoints;
+    int m_liveReadingCount = 0;
+    int m_liveChartRemainingSec = 0;
+    bool m_liveChartAlmost = false;
+    bool m_liveChartWaitLatched = false;
     double m_lastTempoSeconds = -1;
     qint64 m_sessionStartedMs = 0;
     QStringList m_listenFiles;

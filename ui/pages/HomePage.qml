@@ -51,11 +51,10 @@ Page {
         NumberAnimation { to: 0.25; duration: 700; easing.type: Easing.InOutSine }
         NumberAnimation { to: 1; duration: 700; easing.type: Easing.InOutSine }
     }
-    // Speech time, not the badge clock. Home hides the live chart and arcs
-    // until this many seconds. SessionApi::kLiveChartSpeechSec is the same number.
-    readonly property int liveChartSpeechSec: sessionApi ? sessionApi.liveChartSpeechSec : 30
+    // Live recording only. Home hides the chart and the arcs until two live
+    // readings have arrived. Stop and Open File are not an active session.
     readonly property bool liveVisualsHeld: active && !!sessionApi
-                                             && sessionApi.speechDuration < liveChartSpeechSec
+                                             && sessionApi.liveReadingCount < 2
     property real warmupBlink: 1
     SequentialAnimation on warmupBlink {
         running: root.liveVisualsHeld
@@ -64,8 +63,8 @@ Page {
         NumberAnimation { to: 0.28; duration: 480; easing.type: Easing.InOutSine }
         NumberAnimation { to: 1; duration: 480; easing.type: Easing.InOutSine }
     }
-    // The chart and the arcs stay together after the speech clock passes
-    // 30 s, after Stop, after Open File, and while idle.
+    // The chart and the arcs stay together once two live readings have
+    // arrived, after Stop, after Open File, and while idle.
     readonly property bool showTempoChart: !liveVisualsHeld
     readonly property bool showGaugeArcs: !liveVisualsHeld
     readonly property bool chartAndGauge: showTempoChart && showGaugeArcs
@@ -794,7 +793,10 @@ Page {
                                         anchors.verticalCenter: parent.verticalCenter
                                         horizontalAlignment: Text.AlignHCenter
                                         wrapMode: Text.Wrap
-                                        text: qsTranslate("TempoChart", "Everything is working. Keep speaking.")
+                                        text: sessionApi && sessionApi.liveChartAlmost
+                                              ? qsTr("Everything is working. Calculating. A little longer.")
+                                              : qsTr("Everything is working. Calculating. About %1 s left.")
+                                                    .arg(sessionApi ? sessionApi.liveChartRemainingSec : 1)
                                         color: Theme.onSurface(Material.theme)
                                         font.pixelSize: AppScale.fs(26)
                                         font.weight: Font.Bold

@@ -697,6 +697,82 @@ void testOpenFileTempoMatchesLive()
     expectFileMatchesLive(slow, "English Slow, all readings", kWindowSec, kUpdates, kChartSec, 1, true);
 }
 
+void testLiveChartCountdown()
+{
+    // Standard preset: 12 updates/min → 5000 ms. Fast: 120 → 500 ms.
+    // Target is 1.5 s of speech plus one interval. Round up. Never negative.
+    expect(liveUpdateIntervalMs(12) == 5000, "standard interval is 5 s");
+    expect(liveUpdateIntervalMs(120) == 500, "fast interval is 0.5 s");
+
+    const LiveChartWait standardStart = estimateLiveChartWait(12, 0, 0);
+    expect(standardStart.seconds == 7 && !standardStart.almost,
+        "standard countdown starts at 7 s");
+    const LiveChartWait fastStart = estimateLiveChartWait(120, 0, 0);
+    expect(fastStart.seconds == 2 && !fastStart.almost,
+        "fast countdown starts at 2 s");
+    const LiveChartWait codeDefault = estimateLiveChartWait(60, 0, 0);
+    expect(codeDefault.seconds == 3 && !codeDefault.almost,
+        "60 per minute starts at 3 s");
+
+    // 12/min target is 6500 ms. 1001 ms left rounds up to 2; 1000 ms is 1.
+    const LiveChartWait roundUp = estimateLiveChartWait(12, 5499, 0);
+    expect(roundUp.seconds == 2 && !roundUp.almost, "5499 ms collected rounds up to 2 s");
+    const LiveChartWait exact = estimateLiveChartWait(12, 5500, 1);
+    expect(exact.seconds == 1 && !exact.almost, "5500 ms collected is 1 s");
+    const LiveChartWait oneMs = estimateLiveChartWait(12, 6499, 1);
+    expect(oneMs.seconds == 1 && !oneMs.almost, "1 ms left is still 1 s");
+
+    const LiveChartWait spent = estimateLiveChartWait(12, 6500, 1);
+    expect(spent.seconds == 0 && spent.almost,
+        "a spent estimate stays on the neutral line while the second reading is missing");
+    const LiveChartWait late = estimateLiveChartWait(120, 100000, 0);
+    expect(late.seconds == 0 && late.almost, "a late fast wait is not negative");
+    const LiveChartWait negativeElapsed = estimateLiveChartWait(12, -50, 0);
+    expect(negativeElapsed.seconds == 7 && !negativeElapsed.almost,
+        "negative collected speech is treated as none");
+
+    const LiveChartWait done = estimateLiveChartWait(12, 0, 2);
+    expect(done.seconds == 0 && !done.almost, "two readings clear the countdown");
+    const LiveChartWait doneLater = estimateLiveChartWait(120, 0, 3);
+    expect(doneLater.seconds == 0 && !doneLater.almost, "more than two readings stay clear");
+
+    // The real second publish is firstReadingMs + one interval (the 300 ms
+    // pad makes the first reading a little early). Just before it, the
+    // 1.5 s estimate is still 1 s, not zero and not a jump upward.
+    const int standardSecond = static_cast<int>(firstReadingMs() + liveUpdateIntervalMs(12));
+    const LiveChartWait beforeSecond = estimateLiveChartWait(12, standardSecond, 1);
+    expect(beforeSecond.seconds == 1 && !beforeSecond.almost,
+        "standard still shows 1 s at the real second publish");
+    const int fastSecond = static_cast<int>(firstReadingMs() + liveUpdateIntervalMs(120));
+    const LiveChartWait beforeFast = estimateLiveChartWait(120, fastSecond, 1);
+    expect(beforeFast.seconds == 1 && !beforeFast.almost,
+        "fast still shows 1 s at the real second publish");
+
+    LiveChartWait shown = estimateLiveChartWait(12, 0, 0);
+    int previous = shown.seconds;
+    for (int elapsed = 0; elapsed <= 8000; elapsed += 100) {
+        const LiveChartWait next = estimateLiveChartWait(12, elapsed, 1);
+        shown = holdLiveChartWait(shown, next);
+        expect(shown.seconds <= previous, "countdown does not rise as speech is collected");
+        expect(shown.seconds >= 0, "held countdown is not negative");
+        if (next.almost)
+            expect(shown.almost && shown.seconds == 0, "a spent estimate stays neutral");
+        previous = shown.seconds;
+    }
+    expect(shown.almost, "standard wait ends on the neutral line before two readings");
+
+    const LiveChartWait slower = estimateLiveChartWait(1, 0, 0);
+    const LiveChartWait held = holdLiveChartWait(standardStart, slower);
+    expect(held.seconds == standardStart.seconds && !held.almost,
+        "a slower update rate does not raise the number");
+    const LiveChartWait back = holdLiveChartWait(spent, standardStart);
+    expect(back.almost && back.seconds == 0,
+        "the neutral line does not flip back to a count");
+    const LiveChartWait released = holdLiveChartWait(spent, done);
+    expect(released.seconds == 0 && !released.almost,
+        "two readings clear a neutral line");
+}
+
 } // namespace
 
 int main(int argc, char** argv)
@@ -714,6 +790,7 @@ int main(int argc, char** argv)
     testSegmentEndDoesNotPublish();
     testShortPhraseIsNotAReading();
     testOpenFileTempoMatchesLive();
+    testLiveChartCountdown();
     if (failures == 0) {
         std::cout << "live cadence tests passed\n";
         return 0;

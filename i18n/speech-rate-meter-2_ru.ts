@@ -237,6 +237,16 @@
         <translation>Главная</translation>
     </message>
     <message>
+        <location filename="../ui/pages/HomePage.qml" line="798"/>
+        <source>Everything is working. Calculating. About %1 s left.</source>
+        <translation>Всё в порядке. Идёт расчёт. Осталось ~%1 с</translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/HomePage.qml" line="797"/>
+        <source>Everything is working. Calculating. A little longer.</source>
+        <translation>Всё в порядке. Идёт расчёт. Ещё немного.</translation>
+    </message>
+    <message>
         <source>Press Start to measure again.</source>
         <translation type="vanished">Нажмите «Старт», чтобы измерить снова.</translation>
     </message>
