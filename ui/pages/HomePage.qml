@@ -797,8 +797,8 @@ Page {
                                 hasValue: root.hasResult || root.active
                                 showSecond: root.gaugeMode === 2
                                 // Both draws speech rate on the outer arc (value, top number)
-                                // and articulation on the inner arc. A single arc uses the pace
-                                // the Gauge setting names.
+                                // and articulation one ring inside. Fillers is the innermost
+                                // ring either way. A single pace arc uses the Gauge setting.
                                 metricLabel: root.gaugeMode === 1 ? qsTr("Articulation") : qsTr("Speech rate")
                                 secondMetricLabel: qsTr("Articulation")
                                 arcColor: root.gaugeMode === 1

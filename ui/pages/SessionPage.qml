@@ -131,7 +131,7 @@ Page {
                         }
                         hasValue: sessionData.speechRate !== undefined
                         showSecond: root.gaugeMode === 2
-                        // Both: speech rate on the outer arc, articulation on the inner arc.
+                        // Both: speech rate outside, articulation inside, fillers innermost.
                         metricLabel: root.gaugeMode === 1 ? qsTr("Articulation") : qsTr("Speech rate")
                         secondMetricLabel: qsTr("Articulation")
                         arcColor: root.gaugeMode === 1

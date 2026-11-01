@@ -492,23 +492,13 @@ Item {
     function gaugePlotSpan(radius) {
         return radius * 2 + gaugeStroke(radius);
     }
-    function fillerRadiusFor(paceRadius) {
-        return Math.max(58, Math.min(86, paceRadius * 0.34));
-    }
-    function fillerStrokeFor(paceRadius) {
-        return Math.max(8, fillerRadiusFor(paceRadius) * 0.18);
-    }
     function paceCy(radius) {
         return gaugeStroke(radius) * 0.55 + radius;
     }
-    function fillerCy(radius) {
-        let stroke = gaugeStroke(radius);
-        let fr = fillerRadiusFor(radius);
-        let fs = fillerStrokeFor(radius);
-        return paceCy(radius) + stroke * 0.5 + 24 + fs * 0.5 + fr;
-    }
+    // The fillers ring is concentric, so it does not add a row under the arc.
+    // The 22 px is the Min/Max captions under the shared diameter.
     function gaugeBlockHeight(radius) {
-        return fillerCy(radius) + fillerStrokeFor(radius) * 0.5 + 22;
+        return paceCy(radius) + gaugeStroke(radius) * 0.5 + 22;
     }
     // Shrink the semicircle until the chart above it still has room.
     // The caller then gives the chart and the arcs that same width.

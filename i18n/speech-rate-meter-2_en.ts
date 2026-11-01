@@ -1142,7 +1142,7 @@
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="541"/>
-        <source>Which pace the gauge shows. Speech rate: one arc. Articulation rate: one arc. Both: speech rate on the outer arc and articulation on the inner arc. This changes only the display; the values are the same. Each arc position is the median set by Gauge median, placed on the scale from Slow to Fast.</source>
+        <source>Which pace the gauge shows. Speech rate: one arc. Articulation rate: one arc. Both: speech rate on the outer arc and articulation on the inner arc. Fillers is always the innermost arc, from 0 to 100 percent, and it stays when Show Fillers tile is off. This changes only the display; the values are the same. Each pace arc position is the median set by Gauge median, placed on the scale from Slow to Fast.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -1406,7 +1406,7 @@
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="554"/>
-        <source>One pace, or both: speech rate outside, articulation inside.</source>
+        <source>One pace, or both: speech rate outside, articulation inside. Fillers is the innermost arc.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>

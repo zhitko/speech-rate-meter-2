@@ -8,15 +8,15 @@ Item {
     id: root
     property real value: 0
     property real secondValue: 0
-    // Both paces: an inner arc and a second number. The outer arc is `value`
-    // and the top number (speech rate, Rs). The inner arc is `secondValue`
-    // and the number under it (articulation, Ra).
+    // Both paces: speech rate on the outer arc (`value`) and articulation one
+    // ring inside it (`secondValue`). Fillers is always the innermost ring.
     property bool showSecond: false
     property string metricLabel: qsTr("Speech rate")
     property string secondMetricLabel: qsTr("Articulation")
     property real minimum: 70
     property real maximum: 210
-    // Fillers arc under the pace arcs. 0…100 percent of filler share.
+    // Innermost arc. 0…100 percent of filler share. Drawn with the pace arcs
+    // even when the fillers card is hidden.
     property real fillerValue: 0
     // Without a value the arcs stay empty and the readouts show a dash.
     property bool hasValue: true
@@ -108,24 +108,34 @@ Item {
     readonly property real radius: Theme.gaugeRadiusForSpan(plotSpan)
     readonly property real stroke: Theme.gaugeStroke(radius)
     readonly property real valueStroke: Math.max(4, stroke * 0.46)
-    readonly property real innerStroke: Math.max(8, stroke * 0.68)
-    readonly property real innerValueStroke: Math.max(3, innerStroke * 0.46)
-    readonly property real dualGap: Math.max(8, stroke * 0.55)
+    // Same stroke on every ring. The gap keeps the round caps from touching.
+    readonly property real ringGap: Math.max(8, stroke * 0.28)
+    readonly property real ringStep: stroke + ringGap
+    // Outer ring meets the chart. Articulation is one step in, when shown.
+    // Fillers is the next step in, always.
     readonly property real innerRadius: dual
-                                        ? Math.max(16, radius - (stroke + innerStroke) / 2 - dualGap)
+                                        ? Math.max(16, radius - ringStep)
                                         : radius
-    readonly property real fillerRadius: Theme.fillerRadiusFor(radius)
-    readonly property real fillerStroke: Theme.fillerStrokeFor(radius)
-    readonly property real fillerValueStroke: Math.max(3, fillerStroke * 0.5)
+    readonly property real fillerRadius: Math.max(16, (dual ? innerRadius : radius) - ringStep)
     readonly property real cx: plotInset + plotSpan / 2
     readonly property real cy: Theme.paceCy(radius)
-    readonly property real fillerCy: Theme.fillerCy(radius)
     readonly property real blockHeight: Theme.gaugeBlockHeight(radius)
     readonly property real labelBand: 22
+    readonly property real holeRadius: Math.max(12, fillerRadius - stroke * 0.5 - 4)
+    // Shared integers. Shrink only when the innermost hole cannot hold them.
+    readonly property real readoutNumberSize: {
+        var paceCap = dual
+                ? Math.min(28, Math.max(16, innerRadius * 0.34))
+                : Math.min(40, Math.max(22, radius * 0.28))
+        var fixed = AppScale.fs(11) * (dual ? 3 : 2) + AppScale.fs(12) + (dual ? 4 : 28)
+        var lines = dual ? 3 : 2
+        var fit = (holeRadius - fixed) / lines
+        return Math.max(14, Math.min(paceCap, fit))
+    }
 
     readonly property real gapAngle: stroke / Math.max(1, radius) * 180 / Math.PI + 2
     readonly property real segmentSweep: (sweepAngle - 2 * gapAngle) / 3
-    readonly property real innerGapAngle: innerStroke / Math.max(1, innerRadius) * 180 / Math.PI + 2
+    readonly property real innerGapAngle: stroke / Math.max(1, innerRadius) * 180 / Math.PI + 2
     readonly property real innerSegmentSweep: (sweepAngle - 2 * innerGapAngle) / 3
 
     function segmentStart(index) {
@@ -161,7 +171,7 @@ Item {
         readonly property real from: inner ? gauge.innerSegmentStart(zone) : gauge.segmentStart(zone)
         readonly property real sweep: inner ? gauge.innerSegmentSweep : gauge.segmentSweep
         fillColor: "transparent"
-        strokeWidth: live ? (inner ? gauge.innerStroke : gauge.stroke) : 0
+        strokeWidth: live ? gauge.stroke : 0
         strokeColor: Theme.zoneTrackColor(zone, gauge.paintTheme)
         capStyle: ShapePath.RoundCap
 
@@ -183,7 +193,7 @@ Item {
         readonly property real sweep: !gauge.hasValue ? 0
                                       : (inner ? gauge.secondValueAngle : gauge.valueAngle) - gauge.startAngle
         fillColor: "transparent"
-        strokeWidth: live && sweep > 0.4 ? (inner ? gauge.innerValueStroke : gauge.valueStroke) : 0
+        strokeWidth: live && sweep > 0.4 ? gauge.valueStroke : 0
         strokeColor: inner ? gauge.secondArcColor : gauge.arcColor
         capStyle: ShapePath.RoundCap
 
@@ -213,12 +223,12 @@ Item {
         ShapePath {
             id: fillerTrack
             fillColor: "transparent"
-            strokeWidth: root.fillerStroke
+            strokeWidth: root.stroke
             strokeColor: root.paintOnCard(root.fillerColor, 0.34)
             capStyle: ShapePath.RoundCap
             PathAngleArc {
                 centerX: root.cx
-                centerY: root.fillerCy
+                centerY: root.cy
                 radiusX: root.fillerRadius
                 radiusY: root.fillerRadius
                 startAngle: root.startAngle
@@ -229,12 +239,12 @@ Item {
         ShapePath {
             id: fillerValueArc
             fillColor: "transparent"
-            strokeWidth: root.hasValue && root.fillerFraction > 0.004 ? root.fillerValueStroke : 0
+            strokeWidth: root.hasValue && root.fillerFraction > 0.004 ? root.valueStroke : 0
             strokeColor: root.fillerColor
             capStyle: ShapePath.RoundCap
             PathAngleArc {
                 centerX: root.cx
-                centerY: root.fillerCy
+                centerY: root.cy
                 radiusX: root.fillerRadius
                 radiusY: root.fillerRadius
                 startAngle: root.startAngle
@@ -252,7 +262,8 @@ Item {
             readonly property real angle: root.startAngle + index / 8 * root.sweepAngle
             readonly property real tickRadius: root.radius - root.stroke / 2 - 6 - height / 2
             readonly property point center: root.pointAt(angle, tickRadius)
-            visible: !root.dual && tickRadius > 8
+            visible: !root.dual
+                     && tickRadius - height / 2 > root.fillerRadius + root.stroke / 2 + 2
             width: 2
             height: major ? 8 : 5
             radius: 1
@@ -270,13 +281,13 @@ Item {
         id: innerKnob
         readonly property point center: root.pointAt(root.secondValueAngle, root.innerRadius)
         visible: root.dual && root.hasValue
-        width: root.innerStroke * 1.35
+        width: root.stroke * 1.35
         height: width
         radius: width / 2
         x: center.x - width / 2
         y: center.y - height / 2
         color: root.cardColor
-        border.width: Math.max(2, root.innerStroke * 0.28)
+        border.width: Math.max(3, root.stroke * 0.28)
         border.color: root.secondArcColor
     }
 
@@ -296,15 +307,15 @@ Item {
 
     Rectangle {
         id: fillerKnob
-        readonly property point center: root.pointAt(root.fillerAngle, root.fillerRadius, root.fillerCy)
+        readonly property point center: root.pointAt(root.fillerAngle, root.fillerRadius)
         visible: root.hasValue
-        width: root.fillerStroke * 1.45
+        width: root.stroke * 1.35
         height: width
         radius: width / 2
         x: center.x - width / 2
         y: center.y - height / 2
         color: root.cardColor
-        border.width: Math.max(2, root.fillerStroke * 0.28)
+        border.width: Math.max(3, root.stroke * 0.28)
         border.color: root.fillerColor
     }
 
@@ -312,16 +323,19 @@ Item {
         id: readout
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.horizontalCenterOffset: root.plotInset / 2
-        y: root.cy - root.radius * (root.dual ? 0.46 : 0.42) - height / 2
+        y: {
+            var top = Math.max(0, root.cy - root.holeRadius + 2)
+            var prefer = root.cy - root.holeRadius * 0.5 - height / 2
+            var aboveDiameter = root.cy - 4 - height
+            return Math.max(top, Math.min(prefer, aboveDiameter))
+        }
         spacing: root.dual ? 0 : 2
 
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
             visible: !root.hasValue || root.showNumbers
             text: root.hasValue ? root.animatedValue.toFixed(0) : "– –"
-            font.pixelSize: root.dual
-                             ? Math.max(16, Math.min(28, root.innerRadius * 0.34))
-                             : Math.max(22, root.radius * 0.28)
+            font.pixelSize: root.readoutNumberSize
             font.weight: root.hasValue ? Font.DemiBold : Font.Light
             font.features: { "tnum": 1 }
             color: root.hasValue ? Theme.onSurface(Material.theme) : Theme.outline(Material.theme)
@@ -345,7 +359,7 @@ Item {
             visible: root.dual && (!root.hasValue || root.showNumbers)
             topPadding: 2
             text: root.hasValue ? root.animatedSecond.toFixed(0) : "– –"
-            font.pixelSize: Math.max(16, Math.min(28, root.innerRadius * 0.34))
+            font.pixelSize: root.readoutNumberSize
             font.weight: root.hasValue ? Font.DemiBold : Font.Light
             font.features: { "tnum": 1 }
             color: root.hasValue ? Theme.onSurface(Material.theme) : Theme.outline(Material.theme)
@@ -371,6 +385,31 @@ Item {
             text: root.unit
             font.pixelSize: AppScale.fs(root.dual ? 12 : 13)
             color: Theme.onSurfaceVariant(Material.theme)
+        }
+
+        Text {
+            anchors.horizontalCenter: parent.horizontalCenter
+            visible: !root.hasValue || root.showNumbers
+            topPadding: 2
+            text: root.hasValue ? root.animatedFiller.toFixed(0) : "– –"
+            font.pixelSize: root.readoutNumberSize
+            font.weight: root.hasValue ? Font.DemiBold : Font.Light
+            font.features: { "tnum": 1 }
+            color: root.hasValue ? Theme.onSurface(Material.theme) : Theme.outline(Material.theme)
+        }
+
+        Text {
+            anchors.horizontalCenter: parent.horizontalCenter
+            width: Math.max(48, root.holeRadius * 1.6)
+            horizontalAlignment: Text.AlignHCenter
+            elide: Text.ElideRight
+            text: qsTranslate("HomePage", "Fillers")
+            font.pixelSize: AppScale.fs(11)
+            font.weight: Font.DemiBold
+            color: root.hasValue && root.fillerValue > 0
+                   ? root.fillerColor
+                   : Theme.onSurfaceVariant(Material.theme)
+            Accessible.ignored: true
         }
 
         Item { width: 1; height: root.dual ? 1 : 4; visible: !root.dual || root.micActive }
@@ -448,31 +487,6 @@ Item {
         }
     }
 
-    Column {
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.horizontalCenterOffset: root.plotInset / 2
-        y: root.fillerCy - root.fillerRadius * 0.62 - height / 2
-        spacing: 0
-
-        Text {
-            anchors.horizontalCenter: parent.horizontalCenter
-            visible: !root.hasValue || root.showNumbers
-            text: root.hasValue ? root.animatedFiller.toFixed(0) : "– –"
-            font.pixelSize: Math.max(16, Math.min(26, root.fillerRadius * 0.42))
-            font.weight: root.hasValue ? Font.DemiBold : Font.Light
-            font.features: { "tnum": 1 }
-            color: root.hasValue ? Theme.onSurface(Material.theme) : Theme.outline(Material.theme)
-        }
-
-        Text {
-            anchors.horizontalCenter: parent.horizontalCenter
-            text: qsTranslate("HomePage", "Fillers")
-            font.pixelSize: AppScale.fs(11)
-            font.weight: Font.DemiBold
-            color: root.fillerColor
-        }
-    }
-
     Text {
         readonly property point tip: root.pointAt(root.startAngle, root.radius)
         x: tip.x - width / 2
@@ -488,24 +502,6 @@ Item {
         y: tip.y + root.stroke / 2 + 2
         text: root.maximum.toFixed(0)
         font.pixelSize: AppScale.fs(12)
-        color: Theme.onSurfaceVariant(Material.theme)
-    }
-
-    Text {
-        readonly property point tip: root.pointAt(root.startAngle, root.fillerRadius, root.fillerCy)
-        x: tip.x - width / 2
-        y: tip.y + root.fillerStroke / 2 + 1
-        text: "0"
-        font.pixelSize: AppScale.fs(11)
-        color: Theme.onSurfaceVariant(Material.theme)
-    }
-
-    Text {
-        readonly property point tip: root.pointAt(root.startAngle + root.sweepAngle, root.fillerRadius, root.fillerCy)
-        x: tip.x - width / 2
-        y: tip.y + root.fillerStroke / 2 + 1
-        text: "100"
-        font.pixelSize: AppScale.fs(11)
         color: Theme.onSurfaceVariant(Material.theme)
     }
 }
