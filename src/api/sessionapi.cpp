@@ -1115,11 +1115,6 @@ bool SessionApi::openFileAvailable() const
 #endif
 }
 
-double SessionApi::firstReadingSec() const
-{
-    return static_cast<double>(kMinWindowSamples) / kSampleRate;
-}
-
 double SessionApi::sessionElapsedSec() const
 {
     if (m_sessionStartedMs <= 0)
@@ -1215,6 +1210,7 @@ void SessionApi::beginCapture()
     m_phase = Listening;
     m_phraseSeconds = 0;
     m_audioLevel = 0;
+    refreshLiveChartWait();
     emit sessionActiveChanged();
     emit phaseChanged();
     emit phraseSecondsChanged();
@@ -1249,6 +1245,9 @@ void SessionApi::resetResultState()
         m_lastTempoSeconds = -1;
     }
     m_sessionStartedMs = 0;
+    m_liveReadingCount = 0;
+    m_liveChartWaitLatched = false;
+    refreshLiveChartWait();
     if (hadResult)
         emit hasResultChanged();
     emit metricsChanged();
@@ -1366,6 +1365,7 @@ void SessionApi::applySpeechSeconds(int seconds, quint64 generation)
     if (m_speechDuration == value)
         return;
     m_speechDuration = value;
+    refreshLiveChartWait();
     emit metricsChanged();
 }
 
@@ -1422,6 +1422,9 @@ void SessionApi::applyMetrics(const QVariantMap& metrics)
     SessionAccumulator& acc = *m_accumulator;
     const double storedSpeech = acc.ready ? acc.metrics.speechDuration : 0.0;
     if (live) {
+        // Every live publish counts, including one analysis marks invalid.
+        // The chart and the arcs wait for two of these, not for a speech clock.
+        noteLiveReading();
         setNoSpeech(!valid);
         if (valid)
             showMetrics(metrics, storedSpeech + metrics.value(QStringLiteral("openSeconds")).toDouble());
@@ -1598,6 +1601,47 @@ void SessionApi::showMetrics(const QVariantMap& shown, double speechSeconds)
         m_phase = IdleReady;
         emit phaseChanged();
     }
+}
+
+void SessionApi::noteLiveReading()
+{
+    if (m_liveReadingCount >= 2)
+        return;
+    ++m_liveReadingCount;
+    const int beforeSec = m_liveChartRemainingSec;
+    const bool beforeAlmost = m_liveChartAlmost;
+    refreshLiveChartWait();
+    // The first reading does not change the countdown. Home still needs the
+    // new count so it can release the chart on the second one.
+    if (beforeSec == m_liveChartRemainingSec && beforeAlmost == m_liveChartAlmost)
+        emit liveChartWaitChanged();
+}
+
+void SessionApi::refreshLiveChartWait()
+{
+    LiveChartWait next;
+    if (m_sessionActive && m_liveReadingCount < 2) {
+        const double speechMs = std::max(0.0, m_speechDuration) * 1000.0;
+        const int collectedMs = speechMs >= 36000000.0
+            ? 36000000
+            : static_cast<int>(std::llround(speechMs));
+        next = estimateLiveChartWait(
+            Settings::loadSettings().updatesPerMinute, collectedMs, m_liveReadingCount);
+        if (m_liveChartWaitLatched) {
+            LiveChartWait shown;
+            shown.seconds = m_liveChartRemainingSec;
+            shown.almost = m_liveChartAlmost;
+            next = holdLiveChartWait(shown, next);
+        }
+        m_liveChartWaitLatched = true;
+    } else {
+        m_liveChartWaitLatched = false;
+    }
+    if (next.seconds == m_liveChartRemainingSec && next.almost == m_liveChartAlmost)
+        return;
+    m_liveChartRemainingSec = next.seconds;
+    m_liveChartAlmost = next.almost;
+    emit liveChartWaitChanged();
 }
 
 void SessionApi::noteTempoPoint(const QVariantMap& shown)
@@ -1787,14 +1831,32 @@ void SessionApi::loadPreview(const QString& mode)
     m_gaugeArticulationRate = 178.0;
     m_phrasePauses = 0.53;
     m_speechDuration = 313.0;
-    m_fillerScore = 125.0;
+    // fillerMin 120 … fillerMax 240 maps 180 to 50 percent on the fillers arc.
+    m_fillerScore = 180.0;
     m_hasResult = true;
-    const bool live = mode == QLatin1String("live");
+    const bool early = mode == QLatin1String("early");
+    const bool live = mode == QLatin1String("live") || early;
+    if (early) {
+        m_tempoPoints.clear();
+        m_lastTempoSeconds = -1;
+        // One second of speech collected, so the overlay shows a countdown
+        // and not the full estimate or the neutral line.
+        m_speechDuration = 1.0;
+        m_hasResult = false;
+        m_fillerScore = 0.0;
+    }
     m_audioLevel = live ? 0.45 : 0.0;
     m_sessionActive = live;
-    m_showingMean = !live;
-    m_phase = live ? Measuring : IdleReady;
-    m_sessionStartedMs = live ? QDateTime::currentMSecsSinceEpoch() - 314000 : 0;
+    m_showingMean = !live && !early;
+    m_phase = early ? Listening : (live ? Measuring : IdleReady);
+    // A finished take and a live chart already have their readings. The early
+    // grab is still waiting for the first two.
+    m_liveReadingCount = early ? 0 : 2;
+    m_liveChartWaitLatched = false;
+    m_sessionStartedMs = early
+        ? QDateTime::currentMSecsSinceEpoch() - 2000
+        : (live ? QDateTime::currentMSecsSinceEpoch() - 314000 : 0);
+    refreshLiveChartWait();
     emit sessionActiveChanged();
     emit phaseChanged();
     emit hasResultChanged();

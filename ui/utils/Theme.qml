@@ -30,11 +30,11 @@ Item {
         readonly property color errorContainer: "#FFDAD6"
         readonly property color colorOnErrorContainer: "#93000A"
         readonly property color success: '#1f6d21'
-        readonly property color background: "#F9F9FF"
+        readonly property color background: "#D4D7DC"
         readonly property color colorOnBackground: "#191C20"
-        readonly property color surface: "#F9F9FF"
+        readonly property color surface: "#D4D7DC"
         readonly property color colorOnSurface: "#191C20"
-        readonly property color surfaceVariant: "#E0E2EC"
+        readonly property color surfaceVariant: "#C5C9D0"
         readonly property color colorOnSurfaceVariant: "#44474E"
         readonly property color outline: "#74777F"
         readonly property color outlineVariant: "#C4C6D0"
@@ -55,13 +55,13 @@ Item {
         readonly property color colorOnTertiaryFixed: "#28132E"
         readonly property color tertiaryFixedDim: "#DDBCE0"
         readonly property color colorOnTertiaryFixedVariant: "#573E5C"
-        readonly property color surfaceDim: "#D9D9E0"
-        readonly property color surfaceBright: "#F9F9FF"
-        readonly property color surfaceContainerLowest: "#FFFFFF"
-        readonly property color surfaceContainerLow: "#F3F3FA"
-        readonly property color surfaceContainer: "#EDEDF4"
-        readonly property color surfaceContainerHigh: "#E7E8EE"
-        readonly property color surfaceContainerHighest: "#E2E2E9"
+        readonly property color surfaceDim: "#C2C6CC"
+        readonly property color surfaceBright: "#E3E5E9"
+        readonly property color surfaceContainerLowest: "#E8EAEE"
+        readonly property color surfaceContainerLow: "#E3E5E9"
+        readonly property color surfaceContainer: "#DCE0E5"
+        readonly property color surfaceContainerHigh: "#D0D4D9"
+        readonly property color surfaceContainerHighest: "#C6CAD0"
     }
 
     Item {
@@ -436,70 +436,61 @@ Item {
     }
 
     // Speech-rate zones: 0 = Slow, 1 = Average, 2 = Fast.
-    // These inks stay dark enough for the zone name, history badges, and
-    // other small text. The arc stroke and the tempo lines use the brighter
-    // pace anchors below, the same hues at a higher saturation.
-    readonly property var zoneColorsLight: ["#1A4FE0", "#0E7C36", "#D32722"]
-    readonly property var zoneColorsDark: ["#6B96FF", "#3DDE6A", "#FF5C48"]
-    // Bright anchors for the pace arc and the tempo curves.
-    // Each zone blends across its own third: deep blue to bright blue,
-    // deep green to yellow-green, then yellow → orange → red.
-    readonly property color paceSlowLight: "#1A4FE0"
-    readonly property color paceSlowDeepLight: "#0C2F9C"
-    readonly property color paceSlowBrightLight: "#6A9BFF"
-    readonly property color paceMidLight: "#1BB34A"
-    readonly property color paceMidDeepLight: "#0B6B2E"
-    readonly property color paceMidBrightLight: "#C6DE45"
-    readonly property color paceYellowLight: "#F0C400"
-    readonly property color paceOrangeLight: "#F07800"
-    readonly property color paceFastLight: "#E0312B"
-    readonly property color paceSlowDark: "#6B96FF"
-    readonly property color paceSlowDeepDark: "#3A62D6"
-    readonly property color paceSlowBrightDark: "#A9C7FF"
-    readonly property color paceMidDark: "#3DDE6A"
-    readonly property color paceMidDeepDark: "#149448"
-    readonly property color paceMidBrightDark: "#C8F06A"
-    readonly property color paceYellowDark: "#FFE14A"
-    readonly property color paceOrangeDark: "#FF9A2E"
-    readonly property color paceFastDark: "#FF5C48"
+    // These inks are for the zone name and other small text. Fast is a dark
+    // gold on a light page and a light gold on a dark page, so it stays
+    // readable and is not the green of Average.
+    readonly property var zoneColorsLight: ["#1A4FE0", "#0E7C36", "#8F5A00"]
+    readonly property var zoneColorsDark: ["#6B96FF", "#3DDE6A", "#FFE08A"]
+    // Tracks and chart bands. Fast is a light gold, lighter than the green
+    // medium field, so the two zones do not blend.
+    readonly property var zoneTracksLight: ["#B9CFFF", "#A9E3BC", "#FFE08A"]
+    readonly property var zoneTracksDark: ["#2C4C86", "#1F6A40", "#E6C35A"]
+    // Pace curves. The chart line and the arc that follows it use the same
+    // colour: articulation blue, speech rate green. They do not change
+    // with the zone.
+    readonly property color speechSeriesLight: "#1BB34A"
+    readonly property color speechSeriesDark: "#3DDE6A"
+    readonly property color articulationSeriesLight: "#1A4FE0"
+    readonly property color articulationSeriesDark: "#6B96FF"
+    readonly property color fillerSeriesLight: "#E0312B"
+    readonly property color fillerSeriesDark: "#FF5C48"
+    // Left inset of the tempo plot. Zone words sit here. The pace arc ends
+    // line up with the coloured plot, not with this gutter.
+    readonly property real chartZoneGutter: AppScale.fs(11) + 16
+
     function zoneColor(zone, theme) {
         let colors = theme === Material.Dark ? zoneColorsDark : zoneColorsLight;
         return colors[Math.max(0, Math.min(2, zone))];
     }
-    function paceAnchor(zone, theme) {
-        let dark = theme === Material.Dark;
-        if (zone <= 0)
-            return dark ? paceSlowDark : paceSlowLight;
-        if (zone === 1)
-            return dark ? paceMidDark : paceMidLight;
-        return dark ? paceFastDark : paceFastLight;
+    function zoneTrackColor(zone, theme) {
+        let colors = theme === Material.Dark ? zoneTracksDark : zoneTracksLight;
+        return colors[Math.max(0, Math.min(2, zone))];
     }
+    // Scale gradient from main, before the flat zone bands. Slow holds blue,
+    // Average holds green, then Fast lightens. The fast tip is the light gold
+    // from this PR, not the old orange-to-red tip, so Fast stays lighter than
+    // Average and is not the red of the fillers value.
+    readonly property color paceSlowLight: "#1A4FE0"
+    readonly property color paceMidLight: "#1BB34A"
+    readonly property color paceYellowLight: "#F0C400"
+    readonly property color paceFastLight: "#FFE08A"
+    readonly property color paceSlowDark: "#6B96FF"
+    readonly property color paceMidDark: "#3DDE6A"
+    readonly property color paceYellowDark: "#FFE14A"
+    readonly property color paceFastDark: "#E6C35A"
     function mixColor(c1, c2, t) {
         let u = Math.max(0, Math.min(1, t));
         return Qt.rgba(c1.r + (c2.r - c1.r) * u,
                        c1.g + (c2.g - c1.g) * u,
                        c1.b + (c2.b - c1.b) * u, 1);
     }
-    // t is 0 at the slow end and 1 at the fast end. Slow and Average each
-    // blend across their third. Fast keeps the yellow-to-red gradient.
+    // t is 0 at the slow end and 1 at the fast end.
     function paceColor(t, theme) {
         let dark = theme === Material.Dark;
         let x = Math.max(0, Math.min(1, t));
-        if (x < 1 / 3) {
-            let deep = dark ? paceSlowDeepDark : paceSlowDeepLight;
-            let bright = dark ? paceSlowBrightDark : paceSlowBrightLight;
-            return mixColor(deep, bright, x / (1 / 3));
-        }
-        if (x < 2 / 3) {
-            let deep = dark ? paceMidDeepDark : paceMidDeepLight;
-            let bright = dark ? paceMidBrightDark : paceMidBrightLight;
-            return mixColor(deep, bright, (x - 1 / 3) / (1 / 3));
-        }
-        // Same yellow → orange → red the Fast arc already used.
         let slow = dark ? paceSlowDark : paceSlowLight;
         let mid = dark ? paceMidDark : paceMidLight;
         let yellow = dark ? paceYellowDark : paceYellowLight;
-        let orange = dark ? paceOrangeDark : paceOrangeLight;
         let fast = dark ? paceFastDark : paceFastLight;
         let stops = [
             { p: 0.00, c: slow },
@@ -507,7 +498,7 @@ Item {
             { p: 0.40, c: mid },
             { p: 0.58, c: mid },
             { p: 0.70, c: yellow },
-            { p: 0.85, c: orange },
+            { p: 0.85, c: fast },
             { p: 1.00, c: fast }
         ];
         let i = 0;
@@ -516,6 +507,56 @@ Item {
         let a = stops[i];
         let b = stops[i + 1];
         return mixColor(a.c, b.c, (x - a.p) / Math.max(0.0001, b.p - a.p));
+    }
+    function speechSeriesColor(theme) {
+        return theme === Material.Dark ? speechSeriesDark : speechSeriesLight;
+    }
+    function articulationSeriesColor(theme) {
+        return theme === Material.Dark ? articulationSeriesDark : articulationSeriesLight;
+    }
+    function fillerSeriesColor(theme) {
+        return theme === Material.Dark ? fillerSeriesDark : fillerSeriesLight;
+    }
+
+    // 180° pace arc. The stroke is centred on the radius, so the painted
+    // width is radius * 2 + stroke. stroke is 15% of the radius, and at
+    // least 10 px.
+    function gaugeStroke(radius) {
+        return Math.max(10, radius * 0.15);
+    }
+    function gaugeRadiusForSpan(span) {
+        let s = Math.max(48, span);
+        let r = s / 2.15;
+        if (r * 0.15 < 10)
+            r = s / 2 - 5;
+        return Math.max(24, r);
+    }
+    function gaugePlotSpan(radius) {
+        return radius * 2 + gaugeStroke(radius);
+    }
+    function paceCy(radius) {
+        return gaugeStroke(radius) * 0.55 + radius;
+    }
+    // The fillers ring is concentric, so it does not add a row under the arc.
+    // The 22 px is the Min/Max captions under the shared diameter. The value
+    // and name triangle sits inside the rings and does not add height.
+    function gaugeBlockHeight(radius) {
+        return paceCy(radius) + gaugeStroke(radius) * 0.5 + 22;
+    }
+    // Shrink the semicircle until the chart above it still has room.
+    // The caller then gives the chart and the arcs that same width.
+    function fitPaceRadius(columnWidth, bodyHeight, gutter) {
+        let chartMin = 140;
+        let overhead = 56;
+        let room = Math.max(180, bodyHeight - chartMin - overhead);
+        let r = gaugeRadiusForSpan(Math.max(48, columnWidth - gutter));
+        for (let i = 0; i < 4; ++i) {
+            let block = gaugeBlockHeight(r);
+            if (block <= room + 0.5)
+                break;
+            r = Math.max(72, r * room / block);
+        }
+        return r;
     }
     function zoneForValue(value, minimum, maximum) {
         if (!(maximum > minimum))

@@ -125,25 +125,24 @@ Page {
                         Layout.preferredWidth: root.wideLayout ? 1 : -1
                         Layout.columnSpan: root.wideLayout && root.visibleMetricTiles === 0 ? 2 : 1
                         Layout.preferredHeight: {
-                            var legacy = root.wideLayout
-                                         ? 240
-                                         : Math.max(190, Math.min(root.layoutWidth * 0.55, 260))
-                            var room = root.wideLayout
-                                       ? Math.min(root.height * 0.55, root.layoutWidth * 0.42)
-                                       : root.layoutWidth * 0.9
-                            // Same arc size as Home. A saved result does not enlarge it.
-                            // The min and max captions stay the gauge's small labels.
-                            return Math.min(legacy * 1.5, Math.max(legacy, room))
+                            var span = Math.max(160, root.wideLayout ? root.layoutWidth * 0.46 : root.layoutWidth - 32)
+                            var radius = Theme.gaugeRadiusForSpan(span)
+                            return Theme.gaugeBlockHeight(radius)
                         }
                         hasValue: sessionData.speechRate !== undefined
                         showSecond: root.gaugeMode === 2
-                        // Both: speech rate on the outer arc, articulation on the inner arc.
+                        // Both: speech rate outside, articulation inside, fillers innermost.
                         metricLabel: root.gaugeMode === 1 ? qsTr("Articulation") : qsTr("Speech rate")
                         secondMetricLabel: qsTr("Articulation")
+                        arcColor: root.gaugeMode === 1
+                                  ? Theme.articulationSeriesColor(Material.theme)
+                                  : Theme.speechSeriesColor(Material.theme)
+                        secondArcColor: Theme.articulationSeriesColor(Material.theme)
                         value: !hasValue ? 0
                                : (root.gaugeMode === 1 ? Number(sessionData.articulationRate)
                                                        : Number(sessionData.speechRate))
                         secondValue: sessionData.articulationRate !== undefined ? Number(sessionData.articulationRate) : 0
+                        fillerValue: sessionData.fillerPercent !== undefined ? Number(sessionData.fillerPercent) : 0
                         minimum: settingsApi ? settingsApi.slowWpm : 70
                         maximum: settingsApi ? settingsApi.fastWpm : 210
                     }

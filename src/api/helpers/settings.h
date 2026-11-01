@@ -129,4 +129,52 @@ inline int liveUpdateIntervalMs(int updatesPerMinute)
     return interval < 1 ? 1 : interval;
 }
 
+// Speech the first live reading needs in the window. LiveCapture publishes
+// once this much audio is buffered (1.5 s), then again one update interval
+// later. The countdown uses this minimum plus that interval.
+inline constexpr int kLiveReadingMinSpeechMs = 1500;
+
+// Seconds still to show until the second live reading, and whether that
+// estimate has already run out. `seconds` is rounded up and is never
+// negative. With fewer than two readings, a spent estimate is `almost`
+// (the neutral “a little longer” line) instead of 0.
+struct LiveChartWait {
+    int seconds = 0;
+    bool almost = false;
+};
+
+inline LiveChartWait estimateLiveChartWait(int updatesPerMinute, int collectedSpeechMs, int liveReadings)
+{
+    LiveChartWait wait;
+    if (liveReadings >= 2)
+        return wait;
+    const int elapsed = collectedSpeechMs < 0 ? 0 : collectedSpeechMs;
+    const int target = kLiveReadingMinSpeechMs + liveUpdateIntervalMs(updatesPerMinute);
+    const int left = target - elapsed;
+    if (left <= 0) {
+        wait.almost = true;
+        return wait;
+    }
+    wait.seconds = (left + 999) / 1000;
+    return wait;
+}
+
+// Keep a countdown from rising. A slower update rate, or a clock that has
+// not moved, must not replace a shown number with a larger one, and the
+// neutral line must not flip back to a count. Two readings clear it.
+inline LiveChartWait holdLiveChartWait(const LiveChartWait& shown, const LiveChartWait& next)
+{
+    if (next.seconds == 0 && !next.almost)
+        return next;
+    if (!shown.almost && shown.seconds <= 0)
+        return next;
+    if (shown.almost)
+        return shown;
+    if (next.almost)
+        return next;
+    if (next.seconds > shown.seconds)
+        return shown;
+    return next;
+}
+
 #endif // SETTINGS_H

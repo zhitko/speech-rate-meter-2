@@ -237,6 +237,16 @@
         <translation>Главная</translation>
     </message>
     <message>
+        <location filename="../ui/pages/HomePage.qml" line="798"/>
+        <source>Everything is working. Calculating. About %1 s left.</source>
+        <translation>Всё в порядке. Идёт расчёт. Осталось ~%1 с</translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/HomePage.qml" line="797"/>
+        <source>Everything is working. Calculating. A little longer.</source>
+        <translation>Всё в порядке. Идёт расчёт. Ещё немного.</translation>
+    </message>
+    <message>
         <source>Press Start to measure again.</source>
         <translation type="vanished">Нажмите «Старт», чтобы измерить снова.</translation>
     </message>
@@ -1277,13 +1287,13 @@
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="541"/>
-        <source>Which pace the gauge shows. Speech rate: one arc. Articulation rate: one arc. Both: speech rate on the outer arc and articulation on the inner arc. This changes only the display; the values are the same. Each arc position is the median set by Gauge median, placed on the scale from Slow to Fast.</source>
-        <translation>Какой темп показывает шкала. Темп речи: одна дуга. Темп артикуляции: одна дуга. Оба: темп речи на внешней дуге, артикуляция на внутренней. Меняется только отображение, значения те же. Положение каждой дуги — медиана, заданная «Медианой шкалы», на шкале от «Медленно» до «Быстро».</translation>
+        <source>Which pace the gauge shows. Speech rate: one arc. Articulation rate: one arc. Both: speech rate on the outer arc and articulation on the inner arc. Fillers is always the innermost arc, from 0 to 100 percent, and it stays when Show Fillers tile is off. This changes only the display; the values are the same. Each pace arc position is the median set by Gauge median, placed on the scale from Slow to Fast.</source>
+        <translation>Какой темп показывает шкала. Темп речи: одна дуга. Темп артикуляции: одна дуга. Оба: темп речи на внешней дуге, артикуляция на внутренней. Заполнители всегда на самой внутренней дуге, от 0 до 100 процентов, и она остаётся, когда плитка заполнителей выключена. Меняется только отображение, значения те же. Положение каждой дуги темпа — медиана, заданная «Медианой шкалы», на шкале от «Медленно» до «Быстро».</translation>
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="554"/>
-        <source>One pace, or both: speech rate outside, articulation inside.</source>
-        <translation>Один темп или оба: темп речи снаружи, артикуляция внутри.</translation>
+        <source>One pace, or both: speech rate outside, articulation inside. Fillers is the innermost arc.</source>
+        <translation>Один темп или оба: темп речи снаружи, артикуляция внутри. Заполнители — самая внутренняя дуга.</translation>
     </message>
     <message>
         <location filename="../ui/pages/SettingsPage.qml" line="559"/>
@@ -2338,15 +2348,6 @@
         <location filename="../ui/components/TempoChart.qml" line="265"/>
         <source>Everything is working. Keep speaking.</source>
         <translation>Всё в порядке. Продолжайте говорить.</translation>
-    </message>
-    <message numerus="yes">
-        <location filename="../ui/components/TempoChart.qml" line="276"/>
-        <source>The tempo appears about %n second(s) after you start speaking.</source>
-        <translation>
-            <numerusform>Темп появится примерно через %n секунду после начала речи.</numerusform>
-            <numerusform>Темп появится примерно через %n секунды после начала речи.</numerusform>
-            <numerusform>Темп появится примерно через %n секунд после начала речи.</numerusform>
-        </translation>
     </message>
     <message>
         <location filename="../ui/components/TempoChart.qml" line="124"/>

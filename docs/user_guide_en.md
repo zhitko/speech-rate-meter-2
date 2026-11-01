@@ -2,7 +2,7 @@
 
 Speech Rate Meter 2 shows how fast you are speaking, in words per minute. It does not recognize words, and the recording stays on this device.
 
-While you speak, the arcs and the tempo chart follow you. The numbers appear when you press **Stop**.
+While you speak, the chart and the arcs stay on screen. Until two live readings have arrived, “Everything is working. Calculating. About N s left.” blinks on top of them. After that the message goes away and they follow you. The numbers appear when you press **Stop**. If you stop sooner, the result is shown at once.
 
 ## Record a session
 
@@ -14,7 +14,7 @@ While you speak, the arcs and the tempo chart follow you. The numbers appear whe
 
 Home before **Start**. The tempo chart is empty, the gauge has no number, and **Start** is on screen. The chip reads **Ready**.
 
-Until the first point appears, the chart says that everything is working and that the tempo shows up about two seconds after you start speaking. The line grows from the left. When it reaches the right edge, older points slide off.
+Until two live readings have arrived, the chart and the arcs stay on screen, and “Everything is working. Calculating. About N s left.” blinks on top of them. You can still see the chart and the arcs around that message. N is the estimated seconds until the second reading. It uses the update interval and the speech already collected, rounded up. It does not go below zero, and if it would reach zero early the line says “Everything is working. Calculating. A little longer.” After the second reading the message goes away and the line grows from the left. When it reaches the right edge, older points slide off. Pressing **Stop** before two readings shows the result at once. **Open File** does not wait.
 
 ![Home while recording](images/en/02-home-recording.png)
 
@@ -44,9 +44,9 @@ A measured WAV. The hint reads **This recording**. **Whole recording** compares 
 
 ## What you see on Home
 
-**The gauge.** The arc runs from **Slow** to **Fast** and is split equally into Slow, Average, and Fast. By default it shows speech rate. The printed number is the measured pace. The marker stays inside the Slow–Fast range, so a pace outside that range still prints its real number while the marker sits at the end.
+**The gauge.** The arc is a semicircle. Its ends meet the left and right edges of the chart above it. It runs from **Slow** to **Fast** and is split equally into Slow, Average, and Fast. The track is a gradient from Slow to Fast: blue, then green, then a light gold, with a thin gap between the zones. The line that marks the current pace is one colour, the same colour as that pace on the chart: green for speech rate, blue for articulation. By default it shows speech rate. The printed number is the measured pace. The marker stays inside the Slow–Fast range, so a pace outside that range still prints its real number while the marker sits at the end. Inside them, the fillers ring uses that same gradient. Its value line is red and shows **Fillers** from 0 to 100 percent. It is the innermost semicircle, with the same centre, stroke, and sweep as the pace arcs, so the outer stroke is what meets the chart. Its number appears with the other numbers, after **Stop** or **Open File**. The arc stays when **Show Fillers tile** is off. Inside the arcs, each number sits above its name. With both paces, **Fillers** is centred above, and **Speech rate** and **Articulation** sit side by side below it. With one pace, that name and **Fillers** are side by side. Each name uses the colour of its ring. **wpm** stays with the pace numbers. 70 and 210 stay at the ends. On a short window the words shrink so they stay inside the rings.
 
-**The tempo chart.** Each point is one live update, at the same pace the arcs are using. The chart keeps the last **Chart window** (5 minutes by default). It uses the same three bands as the gauge and labels them slow, medium, and fast, written upward. It does not repeat the Slow and Fast numbers. Those numbers stay under the ends of the arc.
+**The tempo chart.** Each point is one live update, at the same pace the arcs are using. The chart keeps the last **Chart window** (5 minutes by default). It uses the same gradient as the gauge tracks and labels the bands slow, medium, and fast, written upward. The fill is faint. A thin line marks each border. Fast lightens to gold, lighter than the green medium band. It does not repeat the Slow and Fast numbers. Those numbers stay under the ends of the arc. The lines use the same colours as the arcs.
 
 **The chip** in the corner of the gauge tells you the state:
 
@@ -66,7 +66,7 @@ A measured WAV. The hint reads **This recording**. **Whole recording** compares 
 
 - **Speech rate** is the overall pace, in words per minute, pauses between words included. This is the number on the gauge by default.
 - **Articulation** is the pace while you are actually speaking, with those gaps left out. Also in words per minute. It is usually close to the speech rate, and higher when you leave gaps.
-- **Fillers** is how much some sounds are drawn out, such as a long “uh”. It is a percent, not a count of words. Its card is off until you turn **Show Fillers tile** on.
+- **Fillers** is how much some sounds are drawn out, such as a long “uh”. It is a percent, not a count of words. The red value line on the innermost arc shows that percent, and the arc stays on when the card is off. The card stays off until you turn **Show Fillers tile** on.
 - **Pauses** is the length of the longer gaps, in seconds. It is not the total time you were silent.
 - **Speech** is the total time that counted as speech. From one minute the card reads `1m 30s`. While you record, the red badge shows the time since **Start** instead. Silence before speech is detected is not included, and a pause is included only up to the **Pause** setting.
 
@@ -133,8 +133,8 @@ An opened file is not listed here, because **Open File** does not save a session
 - **Phrasal pause** is the shortest silent gap that counts as a pause inside the pace calculation. The default is 200 ms. Short stop closures in a word are not counted.
 - **Detect speech automatically** waits for speech and lets a pause end the phrase. Off, measuring starts at **Start** and the recording is saved in 15-second parts.
 - **Session summary** is how the kept phrases are combined after **Stop**. **Median**, the default, takes the middle phrase. A longer phrase counts more if you pick a weighted summary. **Speech** is always the total time, whichever you pick. History uses the same choice, and the chip on Home shows its name.
-- **Gauge** chooses the pace on the arc: **Speech rate**, **Articulation rate**, or **Both**. With both, speech rate is the outer arc and articulation is the inner arc.
-- **Show Speech rate tile**, **Show Articulation rate tile**, **Show Fillers tile**, **Show Pauses tile**, **Show Speech tile**, and **Show Whole recording tile** choose which cards appear after **Stop**, after **Open File**, and on a saved session. A pace already on the gauge cannot also be a card, and that switch stays off. Fillers is off until you turn it on. The others are on by default.
+- **Gauge** chooses the pace on the arc: **Speech rate**, **Articulation rate**, or **Both**. With both, speech rate is the outer arc and articulation is inside it. Fillers is always the innermost arc.
+- **Show Speech rate tile**, **Show Articulation rate tile**, **Show Fillers tile**, **Show Pauses tile**, **Show Speech tile**, and **Show Whole recording tile** choose which cards appear after **Stop**, after **Open File**, and on a saved session. A pace already on the gauge cannot also be a card, and that switch stays off. The fillers card is off until you turn it on. The red arc stays. The others are on by default.
 - **Slow** and **Fast** are the ends of the gauge, in words per minute. The defaults are 70 and 210.
 - **Use all readings** is on by default. Each tempo-chart point is then the middle of every live reading since **Start**, and **Gauge median** cannot be changed. The arcs still use **Gauge median**. Turn it off and each chart point matches the arcs, with the tip at zero while the arcs are at rest.
 - **Gauge median** is how many latest readings the gauge takes the middle of. The default is 3, so one jump moves the arc less. Set it to 1 to show the current reading. After **Stop** the gauge shows the session summary, not this median.
@@ -149,7 +149,7 @@ A change applies to the next phrase.
 - **The arc has no number.** That is normal while a session is running. Press **Stop** to see the summary.
 - **The chip says Listening.** The app is waiting for speech. Speak when you are ready. With automatic detection, give it a quiet moment first so it can measure the room.
 - **The chip says Too short to save.** That phrase was under one second, so it was not kept. Speak a little longer.
-- **The chart says there is no tempo yet.** Keep speaking. The first point appears about two seconds after speech starts.
+- **A message covers the chart while you speak.** That lasts until two live readings have arrived. “Everything is working. Calculating. About N s left.” blinks on top of the chart and the arcs, which stay visible. After the second reading, and after **Stop**, the message is gone.
 - **There is no Open File button.** That button is only on a computer.
 
 ## Other pages
