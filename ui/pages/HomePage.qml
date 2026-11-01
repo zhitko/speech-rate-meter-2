@@ -346,6 +346,18 @@ Page {
             readonly property real gap: AppScale.isCompact ? 12 : 20
             readonly property bool showListen: !!sessionApi && !root.active && sessionApi.listenFiles.length > 0
             readonly property bool showOpenFile: !!sessionApi && sessionApi.openFileAvailable && !root.active
+            // One width for both side columns. The round buttons are centred in
+            // those columns, so equal columns put Play and Open File at the same
+            // distance from Start. The width follows the longer caption and does
+            // not follow the wrapped label, which would shrink after it wraps.
+            readonly property real labelCap: Math.max(recordControl.buttonSize * 1.6, 108)
+            readonly property real sideCaptionWidth: {
+                var listenW = Math.max(playCaptionMeasure.implicitWidth, stopCaptionMeasure.implicitWidth)
+                var openW = (sessionApi && sessionApi.openFileAvailable) ? openCaptionMeasure.implicitWidth : 0
+                return Math.max(listenW, openW)
+            }
+            readonly property real sideColumnWidth: Math.max(recordControl.buttonSize * 0.72,
+                                                              Math.min(sideCaptionWidth, labelCap))
             // Slots stay in the row on a wide window even while Listen and Open
             // File are hidden, so Stop and the chart do not shift when a result
             // opens. A phone footer only takes the width of the buttons on screen.
@@ -362,14 +374,59 @@ Page {
                                      showListen ? listenColumn.implicitHeight : 0,
                                      showOpenFile ? openFileColumn.implicitHeight : 0)
 
+            // Unwrapped captions. A width here would make implicitWidth follow
+            // the wrapped line and pull the buttons inward.
+            Item {
+                visible: false
+                width: 0
+                height: 0
+
+                Label {
+                    id: playCaptionMeasure
+                    font.pixelSize: listenLabel.font.pixelSize
+                    font.weight: listenLabel.font.weight
+                    font.family: listenLabel.font.family
+                    text: sessionApi && sessionApi.openedPlayback ? qsTr("Listen to test") : qsTr("Listen")
+                }
+                Label {
+                    id: stopCaptionMeasure
+                    font.pixelSize: listenLabel.font.pixelSize
+                    font.weight: listenLabel.font.weight
+                    font.family: listenLabel.font.family
+                    text: qsTr("Stop")
+                }
+                Label {
+                    id: openCaptionMeasure
+                    font.pixelSize: openFileLabel.font.pixelSize
+                    font.weight: openFileLabel.font.weight
+                    font.family: openFileLabel.font.family
+                    text: qsTr("Open File")
+                }
+                Label {
+                    id: playCaptionWrapped
+                    width: recordRow.sideColumnWidth
+                    wrapMode: Text.WordWrap
+                    font.pixelSize: listenLabel.font.pixelSize
+                    font.weight: listenLabel.font.weight
+                    font.family: listenLabel.font.family
+                    text: playCaptionMeasure.text
+                }
+                Label {
+                    id: stopCaptionWrapped
+                    width: recordRow.sideColumnWidth
+                    wrapMode: Text.WordWrap
+                    font.pixelSize: listenLabel.font.pixelSize
+                    font.weight: listenLabel.font.weight
+                    font.family: listenLabel.font.family
+                    text: stopCaptionMeasure.text
+                }
+            }
+
             ColumnLayout {
                 id: listenColumn
-                readonly property real labelCap: Math.max(recordControl.buttonSize * 1.6, 108)
-                readonly property real columnWidth: Math.max(recordControl.buttonSize * 0.72,
-                                                              Math.min(listenLabel.implicitWidth, labelCap))
                 visible: recordRow.showListen
                 spacing: 4
-                width: columnWidth
+                width: recordRow.sideColumnWidth
                 height: implicitHeight
                 anchors.right: centerColumn.left
                 anchors.rightMargin: recordRow.gap
@@ -434,6 +491,10 @@ Page {
                 Label {
                     id: listenLabel
                     Layout.fillWidth: true
+                    // Keep the two-line caption height while the text is "Stop",
+                    // so a bottom-anchored footer does not move the button.
+                    Layout.minimumHeight: Math.max(playCaptionWrapped.implicitHeight,
+                                                    stopCaptionWrapped.implicitHeight)
                     horizontalAlignment: Text.AlignHCenter
                     wrapMode: Text.WordWrap
                     text: listenAudio.isPlaying
@@ -548,12 +609,9 @@ Page {
 
             ColumnLayout {
                 id: openFileColumn
-                readonly property real labelCap: Math.max(recordControl.buttonSize * 1.6, 108)
-                readonly property real columnWidth: Math.max(recordControl.buttonSize * 0.72,
-                                                              Math.min(openFileLabel.implicitWidth, labelCap))
                 visible: recordRow.showOpenFile
                 spacing: 4
-                width: columnWidth
+                width: recordRow.sideColumnWidth
                 height: implicitHeight
                 anchors.left: centerColumn.right
                 anchors.leftMargin: recordRow.gap
