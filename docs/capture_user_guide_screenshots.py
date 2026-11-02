@@ -11,16 +11,21 @@ The app is copied to a temporary directory so the build's sessions and
 settings are left alone. A virtual microphone plays a short synthetic
 phrase. Pictures are written to docs/images/<lang>/.
 
-The tempo chart in these shots is 30 seconds so a short take is visible.
-The guide text says the default chart window is 5 minutes.
+Settings come from the shipped settings.ini. The only changes are the
+guide language and a light theme.
+
+The recording shot waits through the live warmup. Standard settings draw
+the first chart points after about 22 seconds of speech. The live signal
+keeps going after that, with syllable gaps and longer pauses, so speech
+rate and articulation separate and the tempo chart has a curve.
 """
 
+import array
 import math
 import os
 import re
 import shutil
 import signal
-import struct
 import subprocess
 import sys
 import tempfile
@@ -37,9 +42,10 @@ DOCS = os.path.dirname(os.path.abspath(__file__))
 PROJECT = os.path.dirname(DOCS)
 BUILD = os.path.join(PROJECT, "build")
 IMAGES = os.path.join(DOCS, "images", LANG)
-# Tall enough that Settings still shows the Additional switch when
-# Russian labels wrap, and short enough to fit a 1200-pixel screen.
-WINDOW = (1100, 980)
+# Standard mode needs 1.5 s of speech plus four 5 s updates before Home
+# draws chart points. The live take then runs long enough for that curve
+# to cross the chart instead of sitting in the corner.
+CHART_SIGNAL_SEC = 110
 
 
 def run(args, check=True):
@@ -52,36 +58,64 @@ def run(args, check=True):
     )
 
 
-def write_phrase(path):
-    """A few seconds of vowel-like bursts, loud enough for the meter."""
+def _pcm(kind, length, frequency=150, amplitude=14000):
+    """One cached chunk. Short gaps stay under a phrasal pause; the longer
+    gaps do not, so articulation comes out above speech rate."""
+    key = (kind, round(length * 1000), frequency)
+    cached = _pcm.cache.get(key)
+    if cached is not None:
+        return cached
     rate = 48000
-    samples = []
-
-    def silence(seconds):
-        samples.extend([0] * int(rate * seconds))
-
-    def vowel(seconds, amplitude=14000, frequency=150):
-        count = int(rate * seconds)
+    count = max(1, int(rate * length))
+    chunk = array.array("h")
+    if kind == "silence":
+        chunk.extend([0] * count)
+    else:
         for index in range(count):
             envelope = 0.5 - 0.5 * math.cos(2 * math.pi * index / max(1, count - 1))
-            samples.append(int(amplitude * envelope * math.sin(2 * math.pi * frequency * index / rate)))
+            sample = amplitude * envelope * math.sin(2 * math.pi * frequency * index / rate)
+            chunk.append(int(max(-32767, min(32767, sample))))
+    _pcm.cache[key] = chunk
+    return chunk
 
-    silence(0.15)
-    for _ in range(16):
-        vowel(0.11)
-        silence(0.10)
-    silence(0.35)
-    for _ in range(14):
-        vowel(0.11)
-        silence(0.10)
-    silence(0.4)
+
+_pcm.cache = {}
+
+
+def write_phrase(path, seconds=8, varied=False):
+    """Vowel-like bursts, loud enough for the meter, lasting `seconds`.
+
+    Most gaps are short syllable breaks. Every few syllables a longer
+    pause is inserted, so speech rate (pauses included) falls below
+    articulation. `varied` changes that pace over the take: quicker, then
+    slower, then quicker again, so the tempo chart is a curve.
+    """
+    samples = array.array("h")
+    samples.extend(_pcm("silence", 0.12))
+    spoken = 0.12
+    syllable = 0
+    while spoken < seconds:
+        progress = spoken / seconds
+        if not varied:
+            vowel, gap, every, pause = 0.11, 0.09, 4, 0.42
+        elif progress < 0.34:
+            vowel, gap, every, pause = 0.10, 0.07, 6, 0.30
+        elif progress < 0.68:
+            vowel, gap, every, pause = 0.13, 0.11, 3, 0.58
+        else:
+            vowel, gap, every, pause = 0.11, 0.08, 5, 0.36
+        samples.extend(_pcm("vowel", vowel))
+        spoken += vowel
+        syllable += 1
+        gap_length = pause if syllable % every == 0 else gap
+        samples.extend(_pcm("silence", gap_length))
+        spoken += gap_length
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with wave.open(path, "w") as handle:
         handle.setnchannels(1)
         handle.setsampwidth(2)
-        handle.setframerate(rate)
-        frames = b"".join(struct.pack("<h", max(-32767, min(32767, sample))) for sample in samples)
-        handle.writeframes(frames)
+        handle.setframerate(48000)
+        handle.writeframes(samples.tobytes())
 
 
 def prepare_sandbox(root):
@@ -90,10 +124,14 @@ def prepare_sandbox(root):
         raise SystemExit(f"build the app first: {binary} is missing")
     shutil.copy2(binary, os.path.join(root, "appspeech-rate-meter-2"))
     os.chmod(os.path.join(root, "appspeech-rate-meter-2"), 0o755)
-    for name in ("qt.conf", "speech-rate-meter-2_en.qm", "speech-rate-meter-2_ru.qm", "settings.ini"):
+    for name in ("qt.conf", "speech-rate-meter-2_en.qm", "speech-rate-meter-2_ru.qm"):
         source = os.path.join(BUILD, name)
         if os.path.isfile(source):
-            shutil.copy2(source, os.path.join(root, name if name != "settings.ini" else "settings.base.ini"))
+            shutil.copy2(source, os.path.join(root, name))
+    shipped = os.path.join(PROJECT, "settings.ini")
+    if not os.path.isfile(shipped):
+        raise SystemExit(f"shipped settings are missing: {shipped}")
+    shutil.copy2(shipped, os.path.join(root, "settings.base.ini"))
     sessions = os.path.join(BUILD, "data", "sessions")
     destination = os.path.join(root, "data", "sessions")
     os.makedirs(destination, exist_ok=True)
@@ -101,7 +139,11 @@ def prepare_sandbox(root):
         names = sorted(name for name in os.listdir(sessions) if name.endswith(".json"))
         for name in names[:3]:
             shutil.copy2(os.path.join(sessions, name), os.path.join(destination, name))
-    write_phrase(os.path.join(root, "data", "tests", "guide-sample.wav"))
+    # The file dialog opens in data/tests and selects the first WAV.
+    # Keep the long live signal out of that folder so Open loads the short sample.
+    tests = os.path.join(root, "data", "tests")
+    write_phrase(os.path.join(tests, "guide-sample.wav"), 12)
+    write_phrase(os.path.join(root, "data", "guide-live.wav"), CHART_SIGNAL_SEC, varied=True)
 
 
 def patch_settings(root):
@@ -112,26 +154,12 @@ def patch_settings(root):
     out = []
     # Qt stores beginGroup("General") in the [%General] section.
     in_general = False
+    # Shipped settings stay as they are. Language follows the guide being
+    # captured, and the theme stays light so the pictures match the guides.
     wanted = {
         "language": LANG,
         "languageTitle": title,
         "theme": "light",
-        "preset": "0",
-        "showNavigationMenu": "true",
-        "fontSizeMultiplier": "1",
-        "gaugeMode": "0",
-        "gaugeAverageCount": "3",
-        "analysisWindowSec": "10",
-        "updatesPerMinute": "60",
-        "chartUseAllReadings": "true",
-        "speechRateMethod": "0",
-        "articulationMethod": "0",
-        "showFillersTile": "false",
-        "showArticulationRateTile": "true",
-        "showPausesTile": "true",
-        "showSpeechTile": "true",
-        "showWholeRecordingTile": "true",
-        "tempoChartWindowSec": "30",
     }
     seen = set()
     for line in lines:
@@ -229,6 +257,64 @@ def blue_button(color):
 def red_button(color):
     red, green, blue = color
     return red > 170 and red > green + 50 and red > blue + 50
+
+
+def selected_file_row(path):
+    """The highlighted file row in the GTK dialog."""
+    image = Image.open(path).convert("RGB")
+    width, height = image.size
+    pixels = image.load()
+    best_y = None
+    best_hits = 0
+    for y in range(40, int(height * 0.45)):
+        hits = 0
+        for x in range(int(width * 0.22), int(width * 0.7), 4):
+            red, green, blue = pixels[x, y]
+            if red > 90 and abs(red - green) < 12 and abs(green - blue) < 12:
+                hits += 1
+        if hits > best_hits:
+            best_hits = hits
+            best_y = y
+    if best_y is None or best_hits < 30:
+        return None
+    return (width * 0.4, best_y)
+
+
+def open_button(path):
+    """The Open label in the GTK file dialog, the right-hand light text."""
+    image = Image.open(path).convert("RGB")
+    width, height = image.size
+    pixels = image.load()
+    points = []
+    for y in range(int(height * 0.88), height - 8):
+        for x in range(int(width * 0.7), width - 8):
+            red, green, blue = pixels[x, y]
+            if red > 180 and green > 180 and blue > 180:
+                points.append((x, y))
+    if len(points) < 20:
+        return None
+    # Cancel is the left cluster. A gap separates it from Open.
+    xs = sorted({point[0] for point in points})
+    groups = []
+    start = previous = xs[0]
+    for x in xs[1:]:
+        if x - previous > 8:
+            groups.append((start, previous))
+            start = x
+        previous = x
+    groups.append((start, previous))
+    left, right = groups[-1]
+    chosen = [point for point in points if left <= point[0] <= right]
+    # The label sits low in the button. The midpoint of the whole
+    # cluster falls in the dark padding above the word.
+    text_top = max(point[1] for point in chosen) - 16
+    letters = [point for point in chosen if point[1] >= text_top]
+    if len(letters) < 10:
+        letters = chosen
+    return (
+        sum(point[0] for point in letters) / len(letters),
+        sum(point[1] for point in letters) / len(letters),
+    )
 
 
 def pale_button(color):
@@ -354,7 +440,6 @@ class App:
             time.sleep(0.2)
         if not self.wid:
             raise SystemExit("app window did not appear")
-        run(["xdotool", "windowsize", self.wid, str(WINDOW[0]), str(WINDOW[1])])
         run(["xdotool", "windowmove", self.wid, "40", "30"])
         run(["xdotool", "windowactivate", "--sync", self.wid])
         time.sleep(0.8)
@@ -420,8 +505,16 @@ class App:
         pixels = image.load()
 
         def is_card(x, y):
+            # History cards are a cool gray, about (227, 229, 233), on a
+            # page background of about (212, 215, 220).
             red, green, blue = pixels[x, y]
-            return 232 <= red <= 246 and 232 <= green <= 246 and 244 <= blue <= 254 and (blue - red) >= 4
+            return (
+                220 <= red <= 236
+                and 222 <= green <= 238
+                and 228 <= blue <= 242
+                and blue >= red + 3
+                and blue >= green + 2
+            )
 
         bands = []
         y = 48
@@ -457,7 +550,7 @@ class App:
         raise SystemExit("history row click did not open a session")
 
     def open_wav_dialog(self, home_shot):
-        kwargs = {"x0": 0.62, "y0": 0.12, "y1": 0.9}
+        kwargs = {"x0": 0.35, "y0": 0.55, "y1": 0.92}
         pale = button_blob(home_shot, pale_button, **kwargs)
         start = button_blob(home_shot, blue_button, **kwargs)
         if pale:
@@ -478,18 +571,34 @@ class App:
             raise SystemExit("file dialog did not open")
         dialog = new_windows[-1]
         run(["xdotool", "windowactivate", "--sync", dialog])
-        run(["xdotool", "key", "--window", dialog, "ctrl+l"])
-        time.sleep(0.25)
-        run(["xdotool", "type", "--window", dialog, "--delay", "5", self.wav])
-        time.sleep(0.2)
-        run(["xdotool", "key", "--window", dialog, "Return"])
-        deadline = time.time() + 20
+        time.sleep(0.4)
+        # Keys typed into this GTK dialog do not reach the name field.
+        # The short sample is the only WAV, and it is already selected.
+        dialog_shot = os.path.join(self.shots, f"{LANG}-_dialog.png")
+        run(["import", "-window", dialog, dialog_shot])
+        opened_at = open_button(dialog_shot)
+        if not opened_at:
+            raise SystemExit("Open button not found in the file dialog")
+        print(f"dialog open at {int(opened_at[0])},{int(opened_at[1])}")
+        run(["xdotool", "mousemove", "--window", dialog, str(int(opened_at[0])), str(int(opened_at[1])), "click", "1"])
+        time.sleep(0.6)
+        still = run(["xdotool", "search", "--onlyvisible", "."], check=False).stdout.split()
+        if dialog in still:
+            row = selected_file_row(dialog_shot)
+            if row:
+                print(f"dialog row at {int(row[0])},{int(row[1])}")
+                run([
+                    "xdotool", "mousemove", "--window", dialog,
+                    str(int(row[0])), str(int(row[1])), "click", "--repeat", "2", "1",
+                ])
+        deadline = time.time() + 40
         while time.time() < deadline:
             time.sleep(0.8)
             probe = self.capture("_fileprobe")
-            if mean_diff(home_shot, probe) > 6:
+            if mean_diff(home_shot, probe) > 4:
                 time.sleep(1.2)
                 return
+        run(["import", "-window", dialog, os.path.join(self.shots, f"{LANG}-_dialog.png")], check=False)
         raise SystemExit("opened file did not change Home")
 
 
@@ -499,6 +608,7 @@ def main():
     prepare_sandbox(sandbox)
     patch_settings(sandbox)
     wav = os.path.join(sandbox, "data", "tests", "guide-sample.wav")
+    live = os.path.join(sandbox, "data", "guide-live.wav")
     app = App(sandbox, wav)
     player = None
     try:
@@ -522,21 +632,23 @@ def main():
         # session fills the side column and pushes Start and Open File
         # below the window, so a later shot of this page is not Ready.
         home = app.capture("01-home-ready")
-        app.click_button(home, blue_button, x0=0.62, y0=0.12, y1=0.9)
+        app.click_button(home, blue_button, x0=0.35, y0=0.55, y1=0.92)
         time.sleep(0.6)
         player = subprocess.Popen(
-            ["paplay", "--device=srm_guide", wav],
+            ["paplay", "--device=srm_guide", live],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
         )
-        time.sleep(6.0)
+        # Stay on the signal until the warmup releases the chart.
+        print(f"signal for {CHART_SIGNAL_SEC - 4} s", flush=True)
+        time.sleep(CHART_SIGNAL_SEC - 4)
         recording = app.capture("02-home-recording")
         if mean_diff(home, recording) < 4:
             player.kill()
             raise SystemExit("Start did not begin a session")
         # Stop is the red circle on the right. The gauge arc is also red,
         # but it is not a compact circle in that column.
-        app.click_button(recording, red_button, x0=0.62, y0=0.12, y1=0.9)
+        app.click_button(recording, red_button, x0=0.35, y0=0.55, y1=0.92)
         player.wait(timeout=30)
         time.sleep(5.0)
         result = app.capture("03-home-result")

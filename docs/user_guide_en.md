@@ -18,7 +18,7 @@ Until five live readings have arrived, the chart and the arcs stay on screen, an
 
 ![Home while recording](images/en/02-home-recording.png)
 
-A session in progress. The gauge card has a red outline, the badge shows the time, and the chart is moving. The centre of the arc shows the live numbers above their names. This picture keeps 30 seconds of the chart so a short take is easy to see. The default **Chart window** is 5 minutes.
+A session in progress. The gauge card has a red outline, the badge shows the time, and the chart is moving. The centre of the arc shows the live numbers above their names. The chart uses the default **Chart window** of 5 minutes.
 
 A halo around **Stop** follows the microphone. If you are speaking and the halo stays still, the microphone is not being heard.
 
@@ -44,7 +44,7 @@ A measured WAV. The hint reads **This recording**. **Whole recording** compares 
 
 ## What you see on Home
 
-**The gauge.** The arc is a semicircle. Its ends meet the left and right edges of the chart above it. It runs from **Slow** to **Fast** and is split equally into Slow, Average, and Fast. The track holds one colour in each third: blue through Slow, green through Average, and a bright yellow through Fast, with a thin gap between the zones. The line that marks the current pace is one colour, the same colour as that pace on the chart: green for speech rate, blue for articulation. By default it shows speech rate. The printed number is the measured pace. The marker stays inside the Slow–Fast range, so a pace outside that range still prints its real number while the marker sits at the end. Inside the arcs, each number sits above its name, low, near the bottom edge of the arcs. With both paces, **Speech rate** and **Articulation** sit side by side. With one pace, that name is centred. Each name uses the colour of its ring. **wpm** stays with the pace numbers. 70 and 210 stay at the ends. On a short window the words shrink so they stay inside the rings.
+**The gauge.** The arc is a semicircle. Its ends meet the left and right edges of the chart above it. It runs from **Slow** to **Fast** and is split equally into Slow, Average, and Fast. The track holds one colour in each third: blue through Slow, green through Average, and a bright yellow through Fast, with a thin gap between the zones. The line that marks the current pace is one colour, the same colour as that pace on the chart: green for speech rate, blue for articulation. By default it shows both paces. The printed number is the measured pace. The marker stays inside the Slow–Fast range, so a pace outside that range still prints its real number while the marker sits at the end. Inside the arcs, each number sits above its name, low, near the bottom edge of the arcs. With both paces, **Speech rate** and **Articulation** sit side by side. With one pace, that name is centred. Each name uses the colour of its ring. **wpm** stays with the pace numbers. 70 and 210 stay at the ends. On a short window the words shrink so they stay inside the rings.
 
 **The tempo chart.** Each point is one live update, at the same pace the arcs are using. The chart keeps the last **Chart window** (5 minutes by default). It uses the same three colours as the gauge track and labels the bands slow, medium, and fast, written upward. Each band is a flat wash of that colour, light enough that the curves stay in front and strong enough that medium green and the brighter fast yellow stay apart. A thin line marks each border. It does not repeat the Slow and Fast numbers. Those numbers stay under the ends of the arc. The lines use the same colours as the arcs.
 
@@ -64,7 +64,7 @@ A measured WAV. The hint reads **This recording**. **Whole recording** compares 
 
 ## What the numbers mean
 
-- **Speech rate** is the overall pace, in words per minute, pauses between words included. This is the number on the gauge by default.
+- **Speech rate** is the overall pace, in words per minute, pauses between words included. By default it is the outer arc.
 - **Articulation** is the pace while you are actually speaking, with those gaps left out. Also in words per minute. It is usually close to the speech rate, and higher when you leave gaps.
 - **Pauses** is the length of the longer gaps, in seconds. It is not the total time you were silent.
 - **Speech** is the total time that counted as speech. From one minute the card reads `1m 30s`. While you record, the red badge shows the time since **Start** instead. Silence before speech is detected is not included, and a pause is included only up to the **Pause** setting.
