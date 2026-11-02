@@ -55,12 +55,12 @@ void testWorkedExample()
     expectNear(metrics.gapMedian, 0.600, "T_c_med");
     expectNear(metrics.speechRate, 0.71 * 2.0 * 60.0 / 10.0, "R_s");
     expectNear(metrics.phrasePauses, 0.0, "P");
-    expectNear(metrics.fillerScore, 100.0 * (0.120 - 0.105) / 0.105, "F");
+    expectNear(metrics.fillerScore, 0.0, "filler score is no longer computed");
 
     const double expectedArticulation = metrics.speechRate * 10.0 / (0.210 + 1.2 * 0.600);
     expectNear(metrics.articulationRate, expectedArticulation, "R_a");
     expect(metrics.articulationRate > metrics.speechRate, "articulation stays above speech rate");
-    expectNear(speechrate::fillerPercent(metrics.fillerScore, 120, 240), 0.0, "filler label");
+    expect(std::isfinite(metrics.fillerScore), "filler score stays finite");
 }
 
 void testIntegerMedian()
@@ -330,7 +330,7 @@ void testSyllableRateSurvivesGate()
         const speechrate::Metrics metrics = speechrate::analyze(samples, referenceConfig());
         expect(metrics.valid, "syllable train is speech");
         expect(metrics.vowelCount == static_cast<int>(rate * 10), "every syllable is one nucleus");
-        expectNear(speechrate::fillerPercent(metrics.fillerScore, 120, 240), 0.0, "even syllables are not fillers");
+        expectNear(metrics.fillerScore, 0.0, "syllable train does not invent a filler score");
     }
 }
 

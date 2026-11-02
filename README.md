@@ -2,9 +2,9 @@
 
 **Speech Rate Meter 2** is a cross-platform desktop and Android application that measures how fast you are speaking. A session stays open while you talk. Each pause-bounded phrase is measured from vowel-like intensity peaks. The microphone audio stays until you leave the app, unless **Keep recording files** is on.
 
-It does not recognize words and does not use a speech-recognition model. Pace, articulation, fillers, pauses, and speech time are estimated on the device from the intensity contour of the recording.
+It does not recognize words and does not use a speech-recognition model. Pace, articulation, pauses, and speech time are estimated on the device from the intensity contour of the recording.
 
-This repository is a rebuild of the earlier [Speech Rate Meter](https://github.com/zhitko/speech-rate-meter) (Qt 5, separate Inton Core library). Version 2 keeps the same four tempo measures, adds a filler score and a live analysis window, and keeps only the numeric result.
+This repository is a rebuild of the earlier [Speech Rate Meter](https://github.com/zhitko/speech-rate-meter) (Qt 5, separate Inton Core library). Version 2 keeps the pace measures, adds a live analysis window, and keeps only the numeric result. The filler score from an earlier build of version 2 has been removed.
 
 Designed for speakers, announcers, call-center operators, language learners, and clinicians who want an objective, repeatable reading of speaking tempo — for rehearsal, self-control, or observation of oral speech.
 
@@ -18,23 +18,22 @@ Package id: `by.intoncore.SpeechRateMeter2`. Version name `1.0.0`, version code 
 
 1. Press **Start**. The microphone stays open for the whole session.
 2. With **Detect speech automatically** on, a pause ends the current phrase, the phrase is measured, and the next one starts when you speak again. With it off, measuring starts when you press Start, a pause does not end the phrase, and the take is split into 15-second parts.
-3. While you speak, speech rate, articulation, fillers, and pauses follow the **analysis window** — the most recent kept speech (10 seconds by default) — so a change of pace shows within a few seconds. Direct speech rate, direct articulation, and the pause length use that same window. They are not a running total from Start. **Speech** is the total time measured since Start.
-4. Press **Stop**. Home and History then show the mean speech rate, articulation, fillers, and pauses of every phrase kept from Start to Stop. Speech is the total time. The screen is labeled **Mean values**. A phrase shorter than one second is dropped.
+3. While you speak, speech rate, articulation, and pauses follow the **analysis window** — the most recent kept speech (10 seconds by default) — so a change of pace shows within a few seconds. Direct speech rate, direct articulation, and the pause length use that same window. They are not a running total from Start. **Speech** is the total time measured since Start.
+4. Press **Stop**. Home and History then show the selected summary of speech rate, articulation, and pauses for every phrase kept from Start to Stop. Speech is the total time. The screen names that summary. A phrase shorter than one second is dropped.
 5. The scratch WAV stays after that phrase’s numbers are stored, so **Listen** can play it after **Stop**. Unless **Keep recording files** is on, those files are deleted when you leave the app. There is no waveform.
 
 All processing is local. The Android package requests only microphone access (`RECORD_AUDIO`).
 
-### The five measures
+### The measures
 
 | On screen | Meaning | Unit |
 | --- | --- | --- |
 | **Speech rate** | Overall pace. The gauge names it Slow, Average, or Fast | words per minute |
 | **Articulation** | Pace while speaking, with the gaps left out. Never below the speech rate | words per minute |
-| **Fillers** | How much some sounds are drawn out, such as a long “uh”. Not a count of words | percent |
 | **Pauses** | Length of the longer gaps. Not the total time spent silent | seconds |
 | **Speech** | Total time that counted as speech. A saved result shows the card when Show Speech tile is on. While recording the red badge shows elapsed time. Silence before speech is detected is left out. A pause counts only up to Pause (s). From one minute the card reads `1m 30s` | seconds |
 
-Speech rate is vowels per minute scaled into words per minute (`K1`, default 0.41). With **Speech rate method** set to Direct (the default), that time runs from the first non-silent frame through the last, so silence before the first sound and after the last is left out. Legacy uses the whole buffer. Direct articulation removes measured pauses from that same span. With no such pauses the two direct rates are equal. Legacy articulation keeps the older estimate from the typical gap between vowel nuclei. Fillers are the excess of long vowel nuclei over the typical nucleus, shown as a percent of a calibrated range. The full formulas are in [docs/TECHNICAL_DESCRIPTION.md](docs/TECHNICAL_DESCRIPTION.md).
+Speech rate is vowels per minute scaled into words per minute (`K1`, default 0.41). With **Speech rate method** set to Direct (the default), that time runs from the first non-silent frame through the last, so silence before the first sound and after the last is left out. Legacy uses the whole buffer. Direct articulation removes measured pauses from that same span. With no such pauses the two direct rates are equal. Legacy articulation keeps the older estimate from the typical gap between vowel nuclei. The full formulas are in [docs/TECHNICAL_DESCRIPTION.md](docs/TECHNICAL_DESCRIPTION.md).
 
 ---
 
@@ -44,7 +43,7 @@ Speech rate is vowels per minute scaled into words per minute (`K1`, default 0.4
 
 Home is the only screen with the record button.
 
-- A **gauge** (180° semicircle, Slow / Average / Fast) shows the current pace. By default that is speech rate. Settings can switch it to articulation, or draw both paces as two arcs, speech rate outside and articulation inside. The ends of the outer arc meet the chart above them. The track is a Slow–Fast gradient, blue then green then light gold, with a thin gap between the zones. The line that marks the pace matches the chart line (green for speech rate, blue for articulation). The fillers ring uses that same track; its value line is red, on the same centre and stroke, and it stays when the fillers card is off. The marker sits between Slow and Fast (70 and 210 wpm by default). Inside the arcs, each number sits above its name. With both paces, fillers is centred above and speech rate and articulation sit side by side below it. With one pace, that name and fillers are side by side. On a short window the words shrink so they stay inside the rings. The printed number is the real value, above its name, while recording and after Stop and Open File. While a session is recording, the arcs and the tempo chart stay on screen. Until five live readings have arrived, "Everything is working. Calculating. About N s left." blinks on top of them, with a feathered edge, and does not take touches. N is the estimated seconds until the fifth reading. After that the message goes away and the integers stay on the arcs. A point is added every analysis window (10 s by default), at the same median the arcs use, and the chart keeps a sliding window (5 min by default, **Chart window** in Settings). After Stop the arcs show the averages and the chart stays above them, even when fewer than five readings had arrived. Open File does not wait. Home does not show the value cards. A halo around Start / Stop follows the microphone level.
+- A **gauge** (180° semicircle, Slow / Average / Fast) shows the current pace. By default that is speech rate. Settings can switch it to articulation, or draw both paces as two arcs, speech rate outside and articulation inside. The ends of the outer arc meet the chart above them. The track holds one colour in each third, blue then green then a bright yellow, with a thin gap between the zones. The chart bands use those same colours as a light wash, and the fast band is a stronger yellow. The line that marks the pace matches the chart line (green for speech rate, blue for articulation). The marker sits between Slow and Fast (70 and 210 wpm by default). Inside the arcs, each number sits above its name, low, near the bottom edge of the arcs. With both paces, speech rate and articulation sit side by side. With one pace, that name is centred. On a short window the words shrink so they stay inside the rings. The printed number is the real value, above its name, while recording and after Stop and Open File. While a session is recording, the arcs and the tempo chart stay on screen. Until five live readings have arrived, "Everything is working. Calculating. About N s left." blinks on top of them, with a feathered edge, and does not take touches. N is the estimated seconds until the fifth reading. After that the message goes away and the integers stay on the arcs. A point is added every analysis window (10 s by default), at the same median the arcs use, and the chart keeps a sliding window (5 min by default, **Chart window** in Settings). After Stop the arcs show the averages and the chart stays above them, even when fewer than five readings had arrived. Open File does not wait. Home does not show the value cards. A halo around Start / Stop follows the microphone level.
 - A round **Start / Stop** button. While the session is on, a halo around it grows with the microphone level. On a wide window it sits beside the chart. **Show Whole recording tile** can add that summary there after Stop or Open File.
 - A status chip names the state (Ready, Listening, Too short, Measuring, Too short to save, Microphone blocked, and Mean values after Stop). During a session the gauge card gets a pulsing red outline and a red badge with the time since Start (`mm:ss`); other pages show it in the toolbar. The gauge is labeled with the pace it shows.
 
@@ -56,7 +55,7 @@ While a session is running, a **Recording** chip stays in the toolbar on every p
 
 History lists every finished session, newest first. A row shows the date and clock span, how many phrases were kept, how many times the numbers changed, and the mean pace from Start to Stop.
 
-Opening a row repeats the session averages under a **Mean values** label, then the value cards that Settings leaves on, then five charts. A pace already on the gauge is not repeated as a card. Each point is one Home update. These are metric charts, not a waveform.
+Opening a row repeats the session summary, then the value cards that Settings leaves on, then a chart for each measure. A pace already on the gauge is not repeated as a card. Each point is one Home update. These are metric charts, not a waveform.
 
 ### 3. Settings
 
@@ -66,7 +65,7 @@ An **Additional** switch under General is not saved and turns off when you leave
 | --- | --- |
 | **General (always visible)** | UI language (EN/RU), light/dark/system theme, accent color (Blue/Green/Purple/Orange/Red), navigation menu, font size, mode preset (Standard or Fast), delete user data |
 | **Measurement (inside Additional)** | Analysis window, updates per minute, chart window, gauge (speech rate, articulation rate, or both), use all readings, gauge median, pause length, phrasal-pause minimum, speech rate method (direct or legacy), articulation method (direct, legacy, or window), session summary, Detect speech automatically, tile switches, Slow and Fast ends of the gauge |
-| **Also inside Additional** | Keep recording files, voice-activity method and thresholds, calibration, intensity frame/shift/smooth, vowel-length limit, power-mean degree, coefficients K1–K5 and the filler range |
+| **Also inside Additional** | Keep recording files, voice-activity method and thresholds, calibration, intensity frame/shift/smooth, vowel-length limit, power-mean degree, coefficients K1–K3 and K5 |
 
 **Mode** chooses a preset. Standard restores the shipped `settings.ini` (60 s analysis window, 12 updates a minute). Fast restores `settings_fast.ini` (5 s window, 120 updates a minute). Language, theme, color, font size, the navigation bar, Keep recording files, and speech-detection thresholds stay as they are.
 
@@ -76,7 +75,7 @@ An **Additional** switch under General is not saved and turns off when you leave
 
 **Delete user data** removes saved sessions and any recording files still kept in `data/records`. Settings are kept.
 
-**Open File** (desktop, to the right of Start) measures one WAV without saving a session. PCM and 32-bit float files are converted to 8000 Hz mono before analysis, including other sample rates, stereo, and files with extra header chunks. **Listen to test** plays that converted file. A file that cannot be read shows an error.
+**Open File** (to the right of Start, on a computer and on Android) measures one WAV without saving a session. PCM and 32-bit float files are converted to 8000 Hz mono before analysis, including other sample rates, stereo, and files with extra header chunks. **Listen to test** plays that converted file. A file that cannot be read shows an error. On a computer the dialog starts in `data/tests`. On Android it is the system document picker, and a content URI is copied into app data before it is read.
 
 Settings take effect on the next phrase. The in-app [User Guide](docs/user_guide_en.md) describes the same flow for someone using the app.
 
@@ -99,7 +98,7 @@ Settings take effect on the next phrase. The in-app [User Guide](docs/user_guide
 | **Session file** | One JSON file per session under `data/sessions/`: every on-screen change and every kept phrase, including the vowel and gap lengths needed to recompute the joined result. No audio path. |
 | **Recording files** | A WAV under `data/records/` is written while a phrase is stored and can be played with **Listen** after Stop. It is deleted when the app closes unless **Keep recording files** is on. |
 | **Speech gate** | A buffer whose nuclei do not rise above the noise floor is not published and not stored, so silence does not read as fast speech. |
-| **Open File** | Desktop-only whole-file analysis. PCM and float WAV files are converted to 8000 Hz mono, then measured. The result is not cut into phrases and is not written to History. Listen plays the converted file. |
+| **Open File** | Whole-file analysis on a computer and on Android. PCM and float WAV files are converted to 8000 Hz mono, then measured. The result is not cut into phrases and is not written to History. Listen plays the converted file. On Android a document-picker URI is copied into app data first. |
 | **i18n** | English and Russian UI via Qt Linguist. |
 
 ---
@@ -294,7 +293,7 @@ speech-rate-meter-2/
 │   │   ├── audioapi.{h,cpp}           # Microphone capture, VAD, live level
 │   │   ├── sessionapi.{h,cpp}         # Session list and charts
 │   │   ├── settingsapi.{h,cpp}        # Settings exposed to QML
-│   │   ├── fileapi.{h,cpp}            # Open File (desktop WAV)
+│   │   ├── fileapi.{h,cpp}            # File listing and paths
 │   │   ├── qmllogger.{h,cpp}
 │   │   └── helpers/                    # App settings, beep
 │   └── services/

@@ -55,8 +55,7 @@ Dialog {
                     [qsTr("Longest vowel (s)"), root.textOf(root.details.vowelMax, 2)],
                     [qsTr("Mean vowel (s)"), root.textOf(root.details.vowelMean, 2)],
                     [qsTr("Median vowel (s)"), root.textOf(root.details.vowelMedian)],
-                    [qsTr("Vowels per second"), root.textOf(root.details.vowelsPerSecond, 2)],
-                    [qsTr("Filler score"), root.textOf(root.details.fillerScore, 3)]
+                    [qsTr("Vowels per second"), root.textOf(root.details.vowelsPerSecond, 2)]
                 ]
                 delegate: RowLayout {
                     Layout.fillWidth: true

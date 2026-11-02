@@ -78,8 +78,6 @@ Page {
     readonly property bool showArticulationRateTile: showResultCards
                                                       && gaugeMode === 0
                                                       && (settingsApi ? settingsApi.showArticulationRateTile : true)
-    readonly property bool showFillersTile: showResultCards
-                                             && (settingsApi ? settingsApi.showFillersTile : false)
     readonly property bool showPausesTile: showResultCards
                                             && (settingsApi ? settingsApi.showPausesTile : true)
     readonly property bool showSpeechTile: showResultCards
@@ -100,7 +98,6 @@ Page {
     readonly property bool cardsBelowGauge: !wideLayout && !metricCardsHidden
     readonly property int visibleMetricTiles: (showSpeechRateTile ? 1 : 0)
                                                + (showArticulationRateTile ? 1 : 0)
-                                               + (showFillersTile ? 1 : 0)
                                                + (showPausesTile ? 1 : 0)
                                                + (showSpeechTile ? 1 : 0)
     // One row of up to three tiles on a phone. A wide window keeps one column
@@ -233,17 +230,6 @@ Page {
         }
     }
 
-    function fillerFraction() {
-        if (!sessionApi || !settingsApi)
-            return 0
-        var minValue = settingsApi.fillerMin
-        var maxValue = settingsApi.fillerMax
-        if (!(maxValue > minValue))
-            return 0
-        var clamped = Math.min(maxValue, Math.max(minValue, sessionApi.fillerScore))
-        return (clamped - minValue) / (maxValue - minValue)
-    }
-
     AudioApi {
         id: listenAudio
     }
@@ -335,7 +321,10 @@ Page {
     function openRecording() {
         if (!sessionApi || sessionApi.busy || sessionApi.sessionActive || !sessionApi.openFileAvailable)
             return
-        wavDialog.currentFolder = sessionApi.testsFolderUrl()
+        // On a computer the dialog starts in data/tests. Android uses the
+        // system document picker, which does not open an app-private folder.
+        if (Qt.platform.os !== "android")
+            wavDialog.currentFolder = sessionApi.testsFolderUrl()
         wavDialog.open()
     }
 
@@ -347,6 +336,7 @@ Page {
             readonly property real gap: AppScale.isCompact ? 12 : 20
             readonly property bool showListen: !!sessionApi && !root.active && sessionApi.listenFiles.length > 0
             readonly property bool showOpenFile: !!sessionApi && sessionApi.openFileAvailable && !root.active
+            readonly property bool showSideAction: showOpenFile
             // One width for both side columns. The round buttons are centred in
             // those columns, so equal columns put Play and Open File at the same
             // distance from Start. The width follows the longer caption and does
@@ -354,7 +344,7 @@ Page {
             readonly property real labelCap: Math.max(recordControl.buttonSize * 1.6, 108)
             readonly property real sideCaptionWidth: {
                 var listenW = Math.max(playCaptionMeasure.implicitWidth, stopCaptionMeasure.implicitWidth)
-                var openW = (sessionApi && sessionApi.openFileAvailable) ? openCaptionMeasure.implicitWidth : 0
+                var openW = recordRow.showSideAction ? openCaptionMeasure.implicitWidth : 0
                 return Math.max(listenW, openW)
             }
             readonly property real sideColumnWidth: Math.max(recordControl.buttonSize * 0.72,
@@ -363,17 +353,16 @@ Page {
             // File are hidden, so Stop and the chart do not shift when a result
             // opens. A phone footer only takes the width of the buttons on screen.
             readonly property real listenSlot: listenColumn.width + gap
-            readonly property real openSlot: (sessionApi && sessionApi.openFileAvailable)
-                                              ? openFileColumn.width + gap : 0
+            readonly property real openSlot: showSideAction ? openFileColumn.width + gap : 0
             readonly property real sideSpan: Math.max(showListen ? listenSlot : 0,
-                                                       showOpenFile ? openSlot : 0)
+                                                       showSideAction ? openSlot : 0)
             readonly property real reservedWidth: centerColumn.implicitWidth
                                                    + Math.max(listenSlot, openSlot) * 2
             implicitWidth: root.wideLayout ? reservedWidth
                                             : centerColumn.implicitWidth + sideSpan * 2
             implicitHeight: Math.max(centerColumn.implicitHeight,
                                      showListen ? listenColumn.implicitHeight : 0,
-                                     showOpenFile ? openFileColumn.implicitHeight : 0)
+                                     showSideAction ? openFileColumn.implicitHeight : 0)
 
             // Unwrapped captions. A width here would make implicitWidth follow
             // the wrapped line and pull the buttons inward.
@@ -610,7 +599,7 @@ Page {
 
             ColumnLayout {
                 id: openFileColumn
-                visible: recordRow.showOpenFile
+                visible: recordRow.showSideAction
                 spacing: 4
                 width: recordRow.sideColumnWidth
                 height: implicitHeight
@@ -856,8 +845,8 @@ Page {
                                 hasValue: (root.hasResult || root.active) && !root.liveVisualsHeld
                                 showSecond: root.gaugeMode === 2
                                 // Both draws speech rate on the outer arc (value, top number)
-                                // and articulation one ring inside. Fillers is the innermost
-                                // ring either way. A single pace arc uses the Gauge setting.
+                                // and articulation one ring inside. A single pace arc uses
+                                // the Gauge setting.
                                 metricLabel: root.gaugeMode === 1 ? qsTr("Articulation") : qsTr("Speech rate")
                                 secondMetricLabel: qsTr("Articulation")
                                 arcColor: root.gaugeMode === 1
@@ -867,7 +856,6 @@ Page {
                                 value: root.gaugeAtRest || root.liveVisualsHeld ? 0
                                        : (root.gaugeMode === 1 ? sessionApi.gaugeArticulationRate : sessionApi.speechRate)
                                 secondValue: root.gaugeAtRest || root.liveVisualsHeld ? 0 : sessionApi.gaugeArticulationRate
-                                fillerValue: !sessionApi || root.gaugeAtRest || root.liveVisualsHeld ? 0 : root.fillerFraction() * 100
                                 minimum: root.slowWpm
                                 maximum: root.fastWpm
                                 cardColor: gaugeCard.color
@@ -912,8 +900,8 @@ Page {
                                 width: parent.width
                                 horizontalAlignment: Text.AlignHCenter
                                 font.family: Icons.familySolid
-                                font.weight: Font.Black
-                                font.pixelSize: AppScale.fs(26)
+                                font.weight: Font.Normal
+                                font.pixelSize: AppScale.fs(18)
                                 text: Icons.faMicrophone
                                 color: Theme.primary(Material.theme)
                                 opacity: root.warmupBlink
@@ -922,7 +910,7 @@ Page {
                             Item {
                                 id: warmupPlate
                                 width: parent.width
-                                height: warmupTitle.implicitHeight + 40
+                                height: warmupTitle.implicitHeight + 28
                                 readonly property int feather: 24
                                 // Opaque centre. The blur feathers only the edge,
                                 // so the words stay readable on both themes.
@@ -968,8 +956,8 @@ Page {
                                           : qsTr("Everything is working. Calculating. About %1 s left.")
                                                 .arg(sessionApi ? sessionApi.liveChartRemainingSec : 1)
                                     color: Theme.onSurface(Material.theme)
-                                    font.pixelSize: AppScale.fs(22)
-                                    font.weight: Font.Bold
+                                    font.pixelSize: AppScale.fs(15)
+                                    font.weight: Font.Light
                                     opacity: root.warmupBlink
                                 }
                             }
@@ -1058,21 +1046,6 @@ Page {
                             value: root.showReadings && root.hasResult ? sessionApi.articulationRate.toFixed(0) : "—"
                             unit: qsTr("wpm")
                             accent: Theme.primary(Material.theme)
-                        }
-                        MetricTile {
-                            Layout.fillWidth: true
-                            Layout.fillHeight: true
-                            Layout.preferredWidth: 1
-                            Layout.minimumWidth: 96
-                            visible: root.showFillersTile
-                            icon: Icons.faWaveSquare
-                            label: qsTr("Fillers")
-                            labelAtBottom: true
-                            labelPixelSize: 11
-                            value: root.showReadings && root.hasResult ? (root.fillerFraction() * 100).toFixed(0) : "—"
-                            unit: "%"
-                            progress: root.showReadings && root.hasResult ? root.fillerFraction() : 0
-                            accent: Theme.tertiary(Material.theme)
                         }
                         MetricTile {
                             Layout.fillWidth: true

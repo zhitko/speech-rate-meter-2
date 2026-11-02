@@ -441,10 +441,12 @@ Item {
     // readable and is not the green of Average.
     readonly property var zoneColorsLight: ["#1A4FE0", "#0E7C36", "#8F5A00"]
     readonly property var zoneColorsDark: ["#6B96FF", "#3DDE6A", "#FFE08A"]
-    // Tracks and chart bands. Fast is a light gold, lighter than the green
-    // medium field, so the two zones do not blend.
-    readonly property var zoneTracksLight: ["#B9CFFF", "#A9E3BC", "#FFE08A"]
-    readonly property var zoneTracksDark: ["#2C4C86", "#1F6A40", "#E6C35A"]
+    // Tracks and chart bands. Medium is a clear green and fast is a bright
+    // yellow, so the two zones stay apart. The chart paints slow and medium
+    // as a light wash (zoneBandAlpha) and fast a step stronger
+    // (zoneFastBandAlpha). The gauge scale uses the same hues.
+    readonly property var zoneTracksLight: ["#2E5BDE", "#149446", "#FFD400"]
+    readonly property var zoneTracksDark: ["#8AABFF", "#3DDE6A", "#FFE03A"]
     // Pace curves. The chart line and the arc that follows it use the same
     // colour: articulation blue, speech rate green. They do not change
     // with the zone.
@@ -452,8 +454,6 @@ Item {
     readonly property color speechSeriesDark: "#3DDE6A"
     readonly property color articulationSeriesLight: "#1A4FE0"
     readonly property color articulationSeriesDark: "#6B96FF"
-    readonly property color fillerSeriesLight: "#E0312B"
-    readonly property color fillerSeriesDark: "#FF5C48"
     // Left inset of the tempo plot. Zone words sit here. The pace arc ends
     // line up with the coloured plot, not with this gutter.
     readonly property real chartZoneGutter: AppScale.fs(11) + 16
@@ -466,18 +466,24 @@ Item {
         let colors = theme === Material.Dark ? zoneTracksDark : zoneTracksLight;
         return colors[Math.max(0, Math.min(2, zone))];
     }
-    // Scale gradient from main, before the flat zone bands. Slow holds blue,
-    // Average holds green, then Fast lightens. The fast tip is the light gold
-    // from this PR, not the old orange-to-red tip, so Fast stays lighter than
-    // Average and is not the red of the fillers value.
-    readonly property color paceSlowLight: "#1A4FE0"
-    readonly property color paceMidLight: "#1BB34A"
-    readonly property color paceYellowLight: "#F0C400"
-    readonly property color paceFastLight: "#FFE08A"
-    readonly property color paceSlowDark: "#6B96FF"
+    // Gauge scale and chart bands share these hues. Each third holds its own
+    // colour: blue, then a clear green, then a bright yellow. Fast is lighter
+    // and more yellow than the green middle, on both themes.
+    readonly property color paceSlowLight: "#2E5BDE"
+    readonly property color paceMidLight: "#149446"
+    readonly property color paceFastLight: "#FFD400"
+    readonly property color paceSlowDark: "#8AABFF"
     readonly property color paceMidDark: "#3DDE6A"
-    readonly property color paceYellowDark: "#FFE14A"
-    readonly property color paceFastDark: "#E6C35A"
+    readonly property color paceFastDark: "#FFE03A"
+    // Chart zone wash. Slow and medium stay faint. Fast is a stronger, purer
+    // yellow so it stays yellow on a gray card and on a near-black card,
+    // and stays apart from the green band. The curves stay in front.
+    function zoneBandAlpha(theme) {
+        return theme === Material.Dark ? 0.26 : 0.20;
+    }
+    function zoneFastBandAlpha(theme) {
+        return theme === Material.Dark ? 0.80 : 0.52;
+    }
     function mixColor(c1, c2, t) {
         let u = Math.max(0, Math.min(1, t));
         return Qt.rgba(c1.r + (c2.r - c1.r) * u,
@@ -490,15 +496,13 @@ Item {
         let x = Math.max(0, Math.min(1, t));
         let slow = dark ? paceSlowDark : paceSlowLight;
         let mid = dark ? paceMidDark : paceMidLight;
-        let yellow = dark ? paceYellowDark : paceYellowLight;
         let fast = dark ? paceFastDark : paceFastLight;
         let stops = [
             { p: 0.00, c: slow },
-            { p: 0.22, c: slow },
-            { p: 0.40, c: mid },
-            { p: 0.58, c: mid },
-            { p: 0.70, c: yellow },
-            { p: 0.85, c: fast },
+            { p: 0.30, c: slow },
+            { p: 0.36, c: mid },
+            { p: 0.64, c: mid },
+            { p: 0.70, c: fast },
             { p: 1.00, c: fast }
         ];
         let i = 0;
@@ -514,10 +518,6 @@ Item {
     function articulationSeriesColor(theme) {
         return theme === Material.Dark ? articulationSeriesDark : articulationSeriesLight;
     }
-    function fillerSeriesColor(theme) {
-        return theme === Material.Dark ? fillerSeriesDark : fillerSeriesLight;
-    }
-
     // 180° pace arc. The stroke is centred on the radius, so the painted
     // width is radius * 2 + stroke. stroke is 15% of the radius, and at
     // least 10 px.
@@ -537,9 +537,8 @@ Item {
     function paceCy(radius) {
         return gaugeStroke(radius) * 0.55 + radius;
     }
-    // The fillers ring is concentric, so it does not add a row under the arc.
     // The 22 px is the Min/Max captions under the shared diameter. The value
-    // and name triangle sits inside the rings and does not add height.
+    // and name blocks sit inside the rings and do not add height.
     function gaugeBlockHeight(radius) {
         return paceCy(radius) + gaugeStroke(radius) * 0.5 + 22;
     }

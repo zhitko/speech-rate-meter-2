@@ -9,15 +9,12 @@ Item {
     property real value: 0
     property real secondValue: 0
     // Both paces: speech rate on the outer arc (`value`) and articulation one
-    // ring inside it (`secondValue`). Fillers is always the innermost ring.
+    // ring inside it (`secondValue`).
     property bool showSecond: false
     property string metricLabel: qsTr("Speech rate")
     property string secondMetricLabel: qsTr("Articulation")
     property real minimum: 70
     property real maximum: 210
-    // Innermost arc. 0…100 percent of filler share. Drawn with the pace arcs
-    // even when the fillers card is hidden.
-    property real fillerValue: 0
     // Without a value the arcs stay empty and the readouts show a dash.
     property bool hasValue: true
     // Integers sit above the names while recording and after Stop.
@@ -40,21 +37,18 @@ Item {
     Accessible.role: Accessible.Indicator
     Accessible.name: showSecond ? qsTr("Speech rate and articulation") : metricLabel
     Accessible.description: {
-        var filler = qsTranslate("HomePage", "Fillers") + " "
-                + (hasValue ? animatedFiller.toFixed(0) + " %" : qsTr("No measurement yet"))
         if (!hasValue)
-            return qsTr("No measurement yet") + ". " + filler
+            return qsTr("No measurement yet")
         var first = value.toFixed(0) + " " + unit + ", " + zoneLabels[targetZone]
         if (!showSecond)
-            return first + ". " + filler
+            return first
         return metricLabel + " " + first + ". "
                 + secondMetricLabel + " " + secondValue.toFixed(0) + " " + unit
-                + ", " + zoneLabels[secondTargetZone] + ". " + filler
+                + ", " + zoneLabels[secondTargetZone]
     }
 
     readonly property int paintTheme: Material.theme
     readonly property var zoneLabels: [qsTr("Slow"), qsTr("Average"), qsTr("Fast")]
-    readonly property color fillerColor: Theme.fillerSeriesColor(paintTheme)
 
     // Semicircle, open at the bottom. 180° is 9 o'clock, 360° is 3 o'clock.
     readonly property real startAngle: 180
@@ -67,12 +61,6 @@ Item {
     }
     property real animatedSecond: hasValue ? secondValue : minimum
     Behavior on animatedSecond {
-        NumberAnimation { duration: 650; easing.type: Easing.OutCubic }
-    }
-    // root.fillerValue: an id named fillerValue would hide this property.
-    property real animatedFiller: !hasValue || !(root.fillerValue > 0) ? 0
-                                   : (root.fillerValue < 100 ? root.fillerValue : 100)
-    Behavior on animatedFiller {
         NumberAnimation { duration: 650; easing.type: Easing.OutCubic }
     }
 
@@ -93,15 +81,6 @@ Item {
     readonly property real secondValueAngle: startAngle + secondFraction * sweepAngle
     readonly property int secondZone: Math.min(2, Math.floor(secondFraction * 3))
     readonly property int secondTargetZone: Theme.zoneForValue(secondValue, minimum, maximum)
-    readonly property real fillerFraction: {
-        var v = animatedFiller
-        if (!isFinite(v) || v <= 0)
-            return 0
-        if (v >= 100)
-            return 1
-        return v / 100
-    }
-    readonly property real fillerAngle: startAngle + fillerFraction * sweepAngle
 
     readonly property real plotSpan: Math.max(48, width - plotInset)
     readonly property real radius: Theme.gaugeRadiusForSpan(plotSpan)
@@ -111,71 +90,51 @@ Item {
     readonly property real ringGap: Math.max(8, stroke * 0.28)
     readonly property real ringStep: stroke + ringGap
     // Outer ring meets the chart. Articulation is one step in, when shown.
-    // Fillers is the next step in, always.
     readonly property real innerRadius: dual
                                         ? Math.max(16, radius - ringStep)
                                         : radius
-    readonly property real fillerRadius: Math.max(16, (dual ? innerRadius : radius) - ringStep)
     readonly property real cx: plotInset + plotSpan / 2
     readonly property real cy: Theme.paceCy(radius)
-    readonly property real holeRadius: Math.max(12, fillerRadius - stroke * 0.5 - 4)
+    readonly property real holeRadius: Math.max(12, innerRadius - stroke * 0.5 - 4)
     readonly property real blockHeight: Theme.gaugeBlockHeight(radius)
     // Value + name blocks live in the clear disc inside the innermost ring.
-    // Both paces: the triangle points up. Fillers is the apex, because it is
-    // the innermost ring and it does not share the wpm unit. Speech rate and
-    // articulation share the wider chord below. The apex is the narrow part,
-    // so its name shrinks to that chord and is never below 8 px. The pace
-    // names use the wider row, still capped at 11 px. Numbers use the height
-    // that is left. On a short window the disc is smaller, so both shrink.
+    // Both paces sit side by side, with the unit under them. One pace is a
+    // single block, also with the unit under it. Names shrink to the chord,
+    // and are never below 8 px. On a short window the disc is smaller, so
+    // the type shrinks with it.
     readonly property real pairGap: holeRadius < 96 ? 10 : 14
     function holeHalf(fromTop) {
         var r = Math.max(28, holeRadius)
         var dy = Math.max(0, Math.min(r - 1, r - fromTop))
         return Math.sqrt(Math.max(0, r * r - dy * dy))
     }
-    // How far down the apex name must sit for a 12-letter word at 8 px
-    // ("Заполнители") to stay inside the ring, with a margin.
-    readonly property real apexFromTop: {
-        var r = Math.max(28, holeRadius)
-        var needHalf = (12 * 0.62 * 8 + 16) / 2
-        var dy = Math.sqrt(Math.max(0, r * r - needHalf * needHalf))
-        var fromTop = Math.max(r * 0.16, r - dy)
-        return Math.min(fromTop, r * 0.46)
-    }
     readonly property real blockWidth: {
-        var fromTop = Math.max(28, holeRadius) * (dual ? 0.62 : 0.42)
+        var fromTop = Math.max(28, holeRadius) * (dual ? 0.48 : 0.36)
         var half = holeHalf(fromTop)
-        return Math.max(36, (half * 2 - 8 - pairGap) / 2)
+        if (!dual)
+            return Math.max(72, Math.min(half * 2 - 16, 200))
+        return Math.max(48, (half * 2 - 10 - pairGap) / 2)
     }
     readonly property real captionPx: {
         var r = Math.max(28, holeRadius)
-        var byWidth = blockWidth / (11 * 0.58)
-        var byHeight = r / (dual ? 6.2 : 4.2)
+        // "Articulation" / "Артикуляция" is the long caption.
+        var byWidth = blockWidth / (12 * 0.56)
+        var byHeight = r / (dual ? 5.4 : 3.8)
         return Math.max(8, Math.min(AppScale.fs(11), Math.floor(Math.min(byWidth, byHeight))))
     }
     readonly property real numberPx: {
         var unit = Math.min(AppScale.fs(11), captionPx + 1)
-        var room = holeRadius - captionPx * (dual ? 2 : 1) - unit - (dual ? 14 : 8)
-        var fit = room / (dual ? 2 : 1)
-        return Math.max(11, Math.min(dual ? 28 : 38, Math.floor(fit)))
-    }
-    readonly property real apexWidth: {
-        var half = holeHalf(apexFromTop)
-        var chord = Math.max(28, half * 2 - 16)
-        return Math.min(chord, blockWidth * 2 + pairGap)
-    }
-    readonly property real apexCaptionPx: {
-        var byWidth = apexWidth / (12 * 0.62)
-        return Math.max(8, Math.min(captionPx, Math.floor(byWidth)))
+        var room = holeRadius * 0.78 - captionPx - unit - (dual ? 10 : 6)
+        return Math.max(12, Math.min(dual ? 32 : 42, Math.floor(room)))
     }
 
     function captionInk(active, series) {
         return active ? series : Theme.onSurfaceVariant(paintTheme)
     }
 
-    // 0 speech (or the single pace), 1 articulation, 2 fillers.
+    // 0 speech (or the single pace), 1 articulation when both are shown.
     function ringRadius(ring) {
-        return ring === 2 ? fillerRadius : ring === 1 ? innerRadius : radius
+        return ring === 1 ? innerRadius : radius
     }
 
     function pointAt(angleDeg, r, centerY) {
@@ -206,7 +165,12 @@ Item {
         property real alpha: 0.4
         property var gauge: root
         function tone(f) {
-            return pace.gauge.paintOnCard(Theme.paceColor(f, pace.gauge.paintTheme), pace.alpha)
+            // Fast is a brighter yellow than a single wash would show, on the
+            // scale as well as on the chart. Slow and medium stay faint.
+            var a = pace.alpha
+            if (f >= 0.70)
+                a = pace.gauge.paintTheme === Material.Dark ? 0.88 : 0.72
+            return pace.gauge.paintOnCard(Theme.paceColor(f, pace.gauge.paintTheme), a)
         }
         centerX: gauge.cx
         centerY: gauge.cy
@@ -329,13 +293,10 @@ Item {
 
         TrackArc { ring: 0 }
         TrackArc { ring: 1 }
-        TrackArc { ring: 2 }
         ZoneNotches { ring: 0 }
         ZoneNotches { ring: 1 }
-        ZoneNotches { ring: 2 }
         ValueArc { ring: 0; fraction: root.fraction; ink: root.arcColor }
         ValueArc { ring: 1; fraction: root.secondFraction; ink: root.secondArcColor }
-        ValueArc { ring: 2; fraction: root.fillerFraction; ink: root.fillerColor }
     }
 
     Repeater {
@@ -348,7 +309,6 @@ Item {
             readonly property real tickRadius: root.radius - root.stroke / 2 - 6 - height / 2
             readonly property point center: root.pointAt(angle, tickRadius)
             visible: !root.dual
-                     && tickRadius - height / 2 > root.fillerRadius + root.stroke / 2 + 2
             width: 2
             height: major ? 8 : 5
             radius: 1
@@ -402,12 +362,6 @@ Item {
         ring: 0
         angle: root.valueAngle
         ink: root.arcColor
-    }
-    Knob {
-        visible: root.hasValue
-        ring: 2
-        angle: root.fillerAngle
-        ink: root.fillerColor
     }
 
     // One ring: the integer above its name. Names use the ring colour.
@@ -469,33 +423,24 @@ Item {
         }
     }
 
-    // Inside the rings. Both paces: the triangle points up. Fillers is the
-    // apex, speech rate and articulation sit side by side below, and wpm is
-    // under those two only. One pace: that block and fillers side by side,
-    // with wpm under the pace block only.
+    // Inside the rings, low, near the open bottom edge. Both paces sit side
+    // by side, with the unit under them. One pace is that block alone, with
+    // the unit under it.
     Item {
         id: readout
         readonly property bool figures: !root.hasValue || root.showNumbers
         readonly property string paceFigure: root.hasValue ? root.animatedValue.toFixed(0) : "– –"
         readonly property string secondFigure: root.hasValue ? root.animatedSecond.toFixed(0) : "– –"
-        readonly property string fillerFigure: root.hasValue ? root.animatedFiller.toFixed(0) : "– –"
-        width: root.blockWidth * 2 + root.pairGap
-        height: dualColumn.visible ? dualColumn.implicitHeight : singleRow.implicitHeight
+        width: root.dual ? root.blockWidth * 2 + root.pairGap : root.blockWidth
+        height: dualColumn.visible ? dualColumn.implicitHeight : singleColumn.implicitHeight
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.horizontalCenterOffset: root.plotInset / 2
         y: {
-            var top = root.cy - root.holeRadius + 3
-            var aboveDiameter = root.cy - 2 - height
-            if (!root.dual) {
-                var prefer = root.cy - root.holeRadius * 0.42 - height / 2
-                return Math.max(top, Math.min(prefer, aboveDiameter))
-            }
-            // Put the apex name on the chord that was measured for it.
-            // The integer is the top line when it is shown, so the name
-            // stays on that chord and does not climb into the tip of the ring.
-            var captionOffset = figures ? root.numberPx : 0
-            var want = root.cy - root.holeRadius + root.apexFromTop - captionOffset
-            return Math.max(top, Math.min(want, aboveDiameter))
+            // Sit on the open bottom of the semicircle. The diameter is the
+            // lower edge of the arcs; a few pixels keep the unit above it.
+            var ceiling = root.cy - root.holeRadius + 2
+            var floor = root.cy - 8 - height
+            return Math.max(ceiling, floor)
         }
 
         Column {
@@ -503,23 +448,6 @@ Item {
             visible: root.dual
             width: parent.width
             spacing: 1
-
-            Item {
-                width: parent.width
-                height: apexBlock.implicitHeight
-
-                ValueBlock {
-                    id: apexBlock
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    width: root.apexWidth
-                    captionSize: root.apexCaptionPx
-                    figure: readout.fillerFigure
-                    suffix: "%"
-                    figureVisible: readout.figures
-                    caption: qsTranslate("HomePage", "Fillers")
-                    ink: root.captionInk(root.hasValue && root.fillerValue > 0, root.fillerColor)
-                }
-            }
 
             Row {
                 width: parent.width
@@ -548,38 +476,25 @@ Item {
             }
         }
 
-        Row {
-            id: singleRow
+        Column {
+            id: singleColumn
             visible: !root.dual
-            spacing: root.pairGap
-            anchors.horizontalCenter: parent.horizontalCenter
-
-            Column {
-                width: root.blockWidth
-                spacing: 1
-
-                ValueBlock {
-                    width: parent.width
-                    figure: readout.paceFigure
-                    figureVisible: readout.figures
-                    caption: root.metricLabel
-                    ink: root.captionInk(root.hasValue && root.value > 0, root.arcColor)
-                }
-                Text {
-                    width: parent.width
-                    horizontalAlignment: Text.AlignHCenter
-                    text: root.unit
-                    font.pixelSize: Math.min(AppScale.fs(11), root.captionPx + 1)
-                    color: Theme.onSurfaceVariant(root.paintTheme)
-                }
-            }
+            width: parent.width
+            spacing: 1
 
             ValueBlock {
-                figure: readout.fillerFigure
-                suffix: "%"
+                width: parent.width
+                figure: readout.paceFigure
                 figureVisible: readout.figures
-                caption: qsTranslate("HomePage", "Fillers")
-                ink: root.captionInk(root.hasValue && root.fillerValue > 0, root.fillerColor)
+                caption: root.metricLabel
+                ink: root.captionInk(root.hasValue && root.value > 0, root.arcColor)
+            }
+            Text {
+                width: parent.width
+                horizontalAlignment: Text.AlignHCenter
+                text: root.unit
+                font.pixelSize: Math.min(AppScale.fs(11), root.captionPx + 1)
+                color: Theme.onSurfaceVariant(root.paintTheme)
             }
         }
     }

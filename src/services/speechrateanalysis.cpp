@@ -467,10 +467,9 @@ Metrics metricsFromLengths(const std::vector<int>& vowelLengths,
     else
         metrics.phrasePauses = cfg.k3 * (metrics.gapMean - metrics.gapMedian) / metrics.gapMedian;
 
-    if (metrics.vowelMean < metrics.vowelMedian || metrics.vowelMedian == 0)
-        metrics.fillerScore = 0;
-    else
-        metrics.fillerScore = cfg.k4 * (metrics.vowelMean - metrics.vowelMedian) / metrics.vowelMedian;
+    // The filler score is no longer computed. The field stays at 0 so a stored
+    // segment from an older build still has a finite value when blended.
+    metrics.fillerScore = 0;
 
     metrics.valid = std::isfinite(metrics.speechRate) && std::isfinite(metrics.articulationRate)
         && std::isfinite(metrics.phrasePauses) && std::isfinite(metrics.fillerScore);
@@ -629,14 +628,6 @@ Measurement measure(const std::vector<float>& samples, const Config& cfg)
 Metrics analyze(const std::vector<float>& samples, const Config& cfg)
 {
     return measure(samples, cfg).metrics;
-}
-
-double fillerPercent(double fillerScore, double fillerMin, double fillerMax)
-{
-    if (!(fillerMax > fillerMin))
-        return 0;
-    const double clamped = std::clamp(fillerScore, fillerMin, fillerMax);
-    return (clamped - fillerMin) / (fillerMax - fillerMin) * 100.0;
 }
 
 namespace {

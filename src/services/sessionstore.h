@@ -60,9 +60,7 @@ public:
     /** Stores the lengths and coefficients needed to rebuild a session result. */
     static void insertMeasurement(QVariantMap& target,
         const speechrate::Parts& parts,
-        const speechrate::Config& config,
-        double fillerMin,
-        double fillerMax);
+        const speechrate::Config& config);
 
     /**
      * Reads a stored phrase measurement.
@@ -70,9 +68,7 @@ public:
      */
     static bool takeMeasurement(const QVariantMap& source,
         speechrate::Parts& parts,
-        speechrate::Config& config,
-        double& fillerMin,
-        double& fillerMax);
+        speechrate::Config& config);
 
     /** Writes one scratch WAV. Returns the absolute path, or empty on failure. */
     static QString writeScratch(const std::vector<float>& samples);

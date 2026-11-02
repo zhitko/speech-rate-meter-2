@@ -415,7 +415,6 @@ QVariantMap SessionStore::summarize(const QVariantMap& root)
             root.contains(QStringLiteral("speechCountedSec"))
                 ? root.value(QStringLiteral("speechCountedSec"))
                 : last.value(QStringLiteral("speechDuration")));
-        summary.insert(QStringLiteral("fillerPercent"), last.value(QStringLiteral("fillerPercent")));
         return summary;
     }
 
@@ -429,15 +428,12 @@ QVariantMap SessionStore::summarize(const QVariantMap& root)
         summary.insert(QStringLiteral("speechDuration"), root.value(QStringLiteral("speechCountedSec")));
     else
         summary.insert(QStringLiteral("speechDuration"), sumOf(segments, QStringLiteral("speechDuration")));
-    summary.insert(QStringLiteral("fillerPercent"), summarizeColumn(segments, QStringLiteral("fillerPercent"), method));
     return summary;
 }
 
 void SessionStore::insertMeasurement(QVariantMap& target,
     const speechrate::Parts& parts,
-    const speechrate::Config& config,
-    double fillerMin,
-    double fillerMax)
+    const speechrate::Config& config)
 {
     target.insert(QStringLiteral("vowelLengths"), variantList(parts.vowelLengths));
     target.insert(QStringLiteral("gapLengths"), variantList(parts.gapLengths));
@@ -459,15 +455,13 @@ void SessionStore::insertMeasurement(QVariantMap& target,
     target.insert(QStringLiteral("pauseCount"), parts.pauseCount);
     target.insert(QStringLiteral("pauseTotalSec"), parts.pauseTotalSec);
     target.insert(QStringLiteral("speechSpanSec"), parts.speechSpanSec);
-    target.insert(QStringLiteral("fillerMin"), fillerMin);
-    target.insert(QStringLiteral("fillerMax"), fillerMax);
+    // fillerMin, fillerMax, and fillerPercent may still be present on an
+    // older segment. They are not written, and takeMeasurement ignores them.
 }
 
 bool SessionStore::takeMeasurement(const QVariantMap& source,
     speechrate::Parts& parts,
-    speechrate::Config& config,
-    double& fillerMin,
-    double& fillerMax)
+    speechrate::Config& config)
 {
     if (!source.contains(QStringLiteral("vowelLengths")) || !source.contains(QStringLiteral("gapLengths")))
         return false;
@@ -505,8 +499,11 @@ bool SessionStore::takeMeasurement(const QVariantMap& source,
             ? speechrate::SpeechMethod::Legacy
             : speechrate::SpeechMethod::Direct;
     }
-    fillerMin = source.value(QStringLiteral("fillerMin")).toDouble();
-    fillerMax = source.value(QStringLiteral("fillerMax")).toDouble();
+    // Older segments store fillerMin, fillerMax, and fillerPercent. They are
+    // not required and do not change the rebuilt pace.
+    (void)source.value(QStringLiteral("fillerMin"));
+    (void)source.value(QStringLiteral("fillerMax"));
+    (void)source.value(QStringLiteral("fillerPercent"));
     return config.shift > 0 && parts.speechDuration > 0;
 }
 
@@ -563,7 +560,6 @@ QVariantMap SessionStore::loadSession(const QString& sessionId)
         point.insert(QStringLiteral("articulationRate"), row.value(QStringLiteral("articulationRate")));
         point.insert(QStringLiteral("phrasePauses"), row.value(QStringLiteral("phrasePauses")));
         point.insert(QStringLiteral("speechDuration"), row.value(QStringLiteral("speechDuration")));
-        point.insert(QStringLiteral("fillerPercent"), row.value(QStringLiteral("fillerPercent")));
         point.insert(QStringLiteral("clock"),
             ended.isValid() ? ended.toString(QStringLiteral("HH:mm:ss"))
                             : when);

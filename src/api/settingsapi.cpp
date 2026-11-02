@@ -405,19 +405,6 @@ void SettingsApi::setShowArticulationRateTile(bool show)
     emit showArticulationRateTileChanged();
 }
 
-bool SettingsApi::showFillersTile() const
-{
-    return m_settings.showFillersTile;
-}
-
-void SettingsApi::setShowFillersTile(bool show)
-{
-    if (!assignIfChanged(m_settings.showFillersTile, show))
-        return;
-    save();
-    emit showFillersTileChanged();
-}
-
 bool SettingsApi::showPausesTile() const
 {
     return m_settings.showPausesTile;
@@ -594,15 +581,6 @@ void SettingsApi::setK3(double value)
     emit k3Changed();
 }
 
-double SettingsApi::k4() const { return m_settings.fillerK4; }
-void SettingsApi::setK4(double value)
-{
-    if (!assignIfChanged(m_settings.fillerK4, value))
-        return;
-    save();
-    emit k4Changed();
-}
-
 double SettingsApi::k5() const { return m_settings.windowK5; }
 void SettingsApi::setK5(double value)
 {
@@ -646,24 +624,6 @@ void SettingsApi::setSegmentMinLengthMs(int value)
         return;
     save();
     emit segmentMinLengthMsChanged();
-}
-
-double SettingsApi::fillerMin() const { return m_settings.fillerMin; }
-void SettingsApi::setFillerMin(double value)
-{
-    if (!assignIfChanged(m_settings.fillerMin, value))
-        return;
-    save();
-    emit fillerMinChanged();
-}
-
-double SettingsApi::fillerMax() const { return m_settings.fillerMax; }
-void SettingsApi::setFillerMax(double value)
-{
-    if (!assignIfChanged(m_settings.fillerMax, value))
-        return;
-    save();
-    emit fillerMaxChanged();
 }
 
 void SettingsApi::setPreset(int preset)
@@ -735,7 +695,6 @@ void SettingsApi::publish()
     emit gaugeModeChanged();
     emit showSpeechRateTileChanged();
     emit showArticulationRateTileChanged();
-    emit showFillersTileChanged();
     emit showPausesTileChanged();
     emit showSpeechTileChanged();
     emit showWholeRecordingTileChanged();
@@ -750,14 +709,11 @@ void SettingsApi::publish()
     emit k1Changed();
     emit k2Changed();
     emit k3Changed();
-    emit k4Changed();
     emit k5Changed();
     emit intensityFrameChanged();
     emit intensityShiftChanged();
     emit intensitySmoothChanged();
     emit segmentMinLengthMsChanged();
-    emit fillerMinChanged();
-    emit fillerMaxChanged();
     emit settingsChanged();
 }
 
