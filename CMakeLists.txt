@@ -188,7 +188,6 @@ qt_add_qml_module(appspeech-rate-meter-2
         ui/components/MetricChart.qml
         ui/components/MetricTile.qml
         ui/components/DetailsDialog.qml
-        ui/components/ExamplesDialog.qml
         ui/components/RecordingSummaryCard.qml
         ui/components/DecimalSpinBox.qml
         ui/components/VadCalibrationDialog.qml
@@ -237,17 +236,6 @@ qt_add_resources(appspeech-rate-meter-2 "presets"
     FILES
         settings.ini
         settings_fast.ini
-)
-
-# Example tempos. A new wav next to examples/manifest.json is picked up on
-# the next configure (CONFIGURE_DEPENDS). No C++ or QML edit is required.
-file(GLOB srm_example_files CONFIGURE_DEPENDS
-    "${CMAKE_CURRENT_SOURCE_DIR}/examples/*.wav"
-    "${CMAKE_CURRENT_SOURCE_DIR}/examples/manifest.json")
-qt_add_resources(appspeech-rate-meter-2 "examples"
-    PREFIX "/examples"
-    BASE "${CMAKE_CURRENT_SOURCE_DIR}/examples"
-    FILES ${srm_example_files}
 )
 
 qt_add_translations(appspeech-rate-meter-2

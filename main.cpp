@@ -165,8 +165,8 @@ int main(int argc, char* argv[])
 
     // SRM_PREVIEW=mode,width,height,theme,language,outfile[,gaugeMode]
     // Seeds Home and writes one window grab. Screenshot aid only.
-    // gaugeMode defaults to 2 (both paces). "examples" opens the example
-    // dialog. "ready" leaves the chart empty. "early" holds the waiting overlay.
+    // gaugeMode defaults to 2 (both paces). "ready" leaves the chart empty.
+    // "early" holds the waiting overlay.
     const QByteArray preview = qgetenv("SRM_PREVIEW");
     if (!preview.isEmpty()) {
         const QString spec = QString::fromUtf8(preview);
@@ -188,10 +188,8 @@ int main(int argc, char* argv[])
                 settings->setProperty("gaugeMode", gaugeMode);
                 settings->setProperty("showNavigationMenu", false);
             }
-            const bool examples = parts.at(0) == QLatin1String("examples");
-            window->setProperty("previewExamples", examples);
             QObject* session = root->property("sessionApi").value<QObject*>();
-            if (session && !examples)
+            if (session)
                 QMetaObject::invokeMethod(session, "loadPreview", Q_ARG(QString, parts.at(0)));
             const QString outfile = parts.at(5);
             const int shotWidth = parts.at(1).toInt();

@@ -19,9 +19,6 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QHash>
-#include <QJsonArray>
-#include <QJsonDocument>
-#include <QJsonObject>
 #include <QIODevice>
 #include <QMediaDevices>
 #include <QMetaObject>
@@ -167,14 +164,20 @@ QString playbackDir()
     return Settings::getAppDataDir() + QStringLiteral("/data/playback");
 }
 
+QString pickedSourceDir()
+{
+    return Settings::getAppDataDir() + QStringLiteral("/data/opened");
+}
+
 void removeOpenedPlaybackFiles()
 {
     QDir dir(playbackDir());
-    if (!dir.exists())
-        return;
-    const QFileInfoList files = dir.entryInfoList({ QStringLiteral("opened-test-*.wav") }, QDir::Files);
-    for (const QFileInfo& info : files)
-        QFile::remove(info.absoluteFilePath());
+    if (dir.exists()) {
+        const QFileInfoList files = dir.entryInfoList({ QStringLiteral("opened-test-*.wav") }, QDir::Files);
+        for (const QFileInfo& info : files)
+            QFile::remove(info.absoluteFilePath());
+    }
+    QFile::remove(pickedSourceDir() + QStringLiteral("/picked.wav"));
 }
 
 QString prepareOpenedPlayback(const std::vector<float>& samples, quint64 generation)
@@ -188,51 +191,60 @@ QString prepareOpenedPlayback(const std::vector<float>& samples, quint64 generat
     return QFileInfo(path).absoluteFilePath();
 }
 
-QString localPathFromUrl(const QUrl& url)
+// Android's document picker returns a content:// URI. The WAV reader and
+// QMediaPlayer both need a filesystem path, so the bytes are copied into
+// app data while the picker grant is still valid.
+constexpr qint64 kMaxPickedBytes = 80LL * 1024LL * 1024LL;
+
+QString copyPickedFile(const QUrl& url)
+{
+    if (!QDir().mkpath(pickedSourceDir()))
+        return {};
+    const QString dest = QFileInfo(pickedSourceDir() + QStringLiteral("/picked.wav")).absoluteFilePath();
+    QFile::remove(dest);
+
+    QFile input(url.toString(QUrl::FullyEncoded));
+    if (!input.open(QIODevice::ReadOnly)) {
+        input.setFileName(url.toString());
+        if (!input.open(QIODevice::ReadOnly))
+            return {};
+    }
+    if (input.size() > kMaxPickedBytes)
+        return {};
+
+    QFile output(dest);
+    if (!output.open(QIODevice::WriteOnly))
+        return {};
+    qint64 written = 0;
+    while (!input.atEnd()) {
+        const QByteArray chunk = input.read(256 * 1024);
+        if (chunk.isEmpty())
+            break;
+        written += chunk.size();
+        if (written > kMaxPickedBytes || output.write(chunk) != chunk.size()) {
+            output.close();
+            QFile::remove(dest);
+            return {};
+        }
+    }
+    output.close();
+    if (written <= 0) {
+        QFile::remove(dest);
+        return {};
+    }
+    QFile::setPermissions(dest,
+        QFileDevice::ReadOwner | QFileDevice::WriteOwner
+            | QFileDevice::ReadUser | QFileDevice::WriteUser);
+    return dest;
+}
+
+QString pathForOpenedUrl(const QUrl& url)
 {
     if (url.isLocalFile() || url.scheme() == QLatin1String("file"))
         return url.toLocalFile();
     if (url.scheme().isEmpty())
         return url.toString();
-    return {};
-}
-
-// A manifest name is a single wav file. Reject separators so a row cannot
-// point outside the bundled examples directory.
-bool exampleNameAllowed(const QString& name)
-{
-    if (name.isEmpty() || name.size() > 180)
-        return false;
-    if (!name.endsWith(QLatin1String(".wav"), Qt::CaseInsensitive))
-        return false;
-    if (name.contains(QLatin1Char('/')) || name.contains(QLatin1Char('\\'))
-        || name.contains(QLatin1String("..")) || name.startsWith(QLatin1Char('.')))
-        return false;
-    return true;
-}
-
-QVariantList loadExampleManifest()
-{
-    QVariantList items;
-    QFile file(QStringLiteral(":/examples/manifest.json"));
-    if (!file.open(QIODevice::ReadOnly))
-        return items;
-    const QJsonArray array = QJsonDocument::fromJson(file.readAll()).object()
-                                 .value(QStringLiteral("items"))
-                                 .toArray();
-    for (const QJsonValue& value : array) {
-        const QJsonObject object = value.toObject();
-        const QString name = object.value(QStringLiteral("file")).toString();
-        if (!exampleNameAllowed(name))
-            continue;
-        QVariantMap row;
-        row.insert(QStringLiteral("file"), name);
-        row.insert(QStringLiteral("group"), object.value(QStringLiteral("group")).toString());
-        row.insert(QStringLiteral("title"), object.value(QStringLiteral("title")).toString());
-        row.insert(QStringLiteral("placeholder"), object.value(QStringLiteral("placeholder")).toBool(false));
-        items.append(row);
-    }
-    return items;
+    return copyPickedFile(url);
 }
 
 QString analysisCacheKey(const QString& path,
@@ -1129,11 +1141,9 @@ SessionApi::~SessionApi()
 
 bool SessionApi::openFileAvailable() const
 {
-#ifdef Q_OS_ANDROID
-    return false;
-#else
+    // The same Open File button is used on Android. The dialog there is the
+    // system document picker; a content URI is copied before it is read.
     return true;
-#endif
 }
 
 double SessionApi::sessionElapsedSec() const
@@ -1289,55 +1299,11 @@ void SessionApi::openWavFile(const QUrl& url)
 {
     if (!openFileAvailable())
         return;
-    beginOpenFile(localPathFromUrl(url));
-}
-
-QVariantList SessionApi::exampleTempos() const
-{
-    static const QVariantList items = loadExampleManifest();
-    return items;
-}
-
-QString SessionApi::materializeExample(const QString& fileName)
-{
-    bool listed = false;
-    for (const QVariant& item : exampleTempos()) {
-        if (item.toMap().value(QStringLiteral("file")).toString() == fileName) {
-            listed = true;
-            break;
-        }
-    }
-    const QString resource = QStringLiteral(":/examples/") + fileName;
-    if (!listed || !exampleNameAllowed(fileName) || !QFile::exists(resource)) {
-        const QString error = QCoreApplication::translate("SessionApi", "The selected file cannot be opened.");
-        setOpenFileError(error);
-        return {};
-    }
-    const QString dir = Settings::getAppDataDir() + QStringLiteral("/data/examples");
-    if (!QDir().mkpath(dir)) {
-        const QString error = QCoreApplication::translate("SessionApi", "The selected file cannot be opened.");
-        setOpenFileError(error);
-        return {};
-    }
-    const QString dest = QFileInfo(dir + QLatin1Char('/') + fileName).absoluteFilePath();
-    QFile::remove(dest);
-    if (!QFile::copy(resource, dest)) {
-        const QString error = QCoreApplication::translate("SessionApi", "The selected file cannot be opened.");
-        setOpenFileError(error);
-        return {};
-    }
-    QFile::setPermissions(dest,
-        QFileDevice::ReadOwner | QFileDevice::WriteOwner
-            | QFileDevice::ReadUser | QFileDevice::WriteUser);
-    setOpenFileError({});
-    return dest;
-}
-
-void SessionApi::openExample(const QString& fileName)
-{
-    const QString path = materializeExample(fileName);
+    const QString path = pathForOpenedUrl(url);
     if (path.isEmpty()) {
-        emit openFileFinished(false, m_openFileError);
+        const QString error = QCoreApplication::translate("SessionApi", "The selected file cannot be opened.");
+        setOpenFileError(error);
+        emit openFileFinished(false, error);
         return;
     }
     beginOpenFile(path);

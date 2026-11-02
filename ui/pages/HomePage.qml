@@ -17,9 +17,6 @@ Page {
 
     readonly property var settingsApi: ApplicationWindow.window ? ApplicationWindow.window.settingsApi : null
     readonly property var sessionApi: ApplicationWindow.window ? ApplicationWindow.window.sessionApi : null
-    readonly property bool previewExamples: ApplicationWindow.window
-                                             ? ApplicationWindow.window.previewExamples === true
-                                             : false
 
     readonly property bool active: !!sessionApi && sessionApi.sessionActive
     readonly property bool hasResult: !!sessionApi && sessionApi.hasResult
@@ -290,16 +287,6 @@ Page {
             sessionApi.openWavFile(selectedFile)
     }
 
-    ExamplesDialog {
-        id: examplesDialog
-        sessionApi: root.sessionApi
-    }
-
-    onPreviewExamplesChanged: if (previewExamples)
-        examplesDialog.open()
-    Component.onCompleted: if (previewExamples)
-        examplesDialog.open()
-
     VadCalibrationDialog {
         id: startCalibrationDialog
         onCalibrationComplete: {
@@ -334,7 +321,10 @@ Page {
     function openRecording() {
         if (!sessionApi || sessionApi.busy || sessionApi.sessionActive || !sessionApi.openFileAvailable)
             return
-        wavDialog.currentFolder = sessionApi.testsFolderUrl()
+        // On a computer the dialog starts in data/tests. Android uses the
+        // system document picker, which does not open an app-private folder.
+        if (Qt.platform.os !== "android")
+            wavDialog.currentFolder = sessionApi.testsFolderUrl()
         wavDialog.open()
     }
 
@@ -346,9 +336,7 @@ Page {
             readonly property real gap: AppScale.isCompact ? 12 : 20
             readonly property bool showListen: !!sessionApi && !root.active && sessionApi.listenFiles.length > 0
             readonly property bool showOpenFile: !!sessionApi && sessionApi.openFileAvailable && !root.active
-            // Android has no file dialog. The same slot opens the bundled examples.
-            readonly property bool showExamplesFooter: !!sessionApi && !sessionApi.openFileAvailable && !root.active
-            readonly property bool showSideAction: showOpenFile || showExamplesFooter
+            readonly property bool showSideAction: showOpenFile
             // One width for both side columns. The round buttons are centred in
             // those columns, so equal columns put Play and Open File at the same
             // distance from Start. The width follows the longer caption and does
@@ -402,7 +390,7 @@ Page {
                     font.pixelSize: openFileLabel.font.pixelSize
                     font.weight: openFileLabel.font.weight
                     font.family: openFileLabel.font.family
-                    text: recordRow.showExamplesFooter ? qsTr("Examples") : qsTr("Open File")
+                    text: qsTr("Open File")
                 }
                 Label {
                     id: playCaptionWrapped
@@ -634,8 +622,8 @@ Page {
                         hoverEnabled: true
                         focusPolicy: Qt.StrongFocus
                         Accessible.role: Accessible.Button
-                        Accessible.name: recordRow.showExamplesFooter ? qsTr("Examples") : qsTr("Open File")
-                        onClicked: recordRow.showExamplesFooter ? examplesDialog.open() : root.openRecording()
+                        Accessible.name: qsTr("Open File")
+                        onClicked: root.openRecording()
                         scale: pressed ? 0.94 : 1
                         Behavior on scale { NumberAnimation { duration: 120 } }
 
@@ -656,7 +644,7 @@ Page {
                             verticalAlignment: Text.AlignVCenter
                             font.family: Icons.familySolid
                             font.weight: Font.Black
-                            text: recordRow.showExamplesFooter ? Icons.faHeadphones : Icons.faFolderOpen
+                            text: Icons.faFolderOpen
                             font.pixelSize: openFileButton.width / 2.6
                             color: !openFileButton.enabled
                                    ? Theme.onSurfaceVariant(Material.theme)
@@ -670,7 +658,7 @@ Page {
                     Layout.fillWidth: true
                     horizontalAlignment: Text.AlignHCenter
                     wrapMode: Text.WordWrap
-                    text: recordRow.showExamplesFooter ? qsTr("Examples") : qsTr("Open File")
+                    text: qsTr("Open File")
                     font.pixelSize: AppScale.fs(root.wideLayout ? 16 : 14)
                     font.weight: Font.DemiBold
                     color: Theme.onSurface(Material.theme)
@@ -768,49 +756,6 @@ Page {
                         }
 
                         Item { Layout.fillWidth: true }
-
-                        AbstractButton {
-                            id: examplesChip
-                            visible: !root.active && !!sessionApi
-                            Layout.alignment: Qt.AlignVCenter
-                            padding: 0
-                            leftPadding: 10
-                            rightPadding: 10
-                            topPadding: 6
-                            bottomPadding: 6
-                            hoverEnabled: true
-                            focusPolicy: Qt.StrongFocus
-                            Accessible.role: Accessible.Button
-                            Accessible.name: qsTr("Examples")
-                            onClicked: examplesDialog.open()
-
-                            background: Rectangle {
-                                radius: height / 2
-                                color: Qt.alpha(Theme.primary(Material.theme),
-                                                examplesChip.hovered ? 0.18 : 0.10)
-                                border.width: examplesChip.visualFocus ? 2 : 0
-                                border.color: Theme.primary(Material.theme)
-                            }
-
-                            contentItem: Row {
-                                spacing: 6
-
-                                Text {
-                                    text: Icons.faHeadphones
-                                    font.family: Icons.familySolid
-                                    font.pixelSize: AppScale.fs(12)
-                                    color: Theme.primary(Material.theme)
-                                    anchors.verticalCenter: parent.verticalCenter
-                                }
-                                Text {
-                                    text: qsTr("Examples")
-                                    font.pixelSize: AppScale.fs(12)
-                                    font.weight: Font.DemiBold
-                                    color: Theme.primary(Material.theme)
-                                    anchors.verticalCenter: parent.verticalCenter
-                                }
-                            }
-                        }
 
                         Rectangle {
                             visible: root.active

@@ -36,9 +36,7 @@ After **Stop** the arc shows the summary of the phrases that were kept. The chip
 
 ## Open a recording
 
-On a computer, **Open File** sits to the right of **Start**. It measures one WAV file and does not save a session. PCM and 32-bit float files are accepted, including other sample rates, stereo, and files with extra header data. The app converts them to 8000 Hz mono before measuring. **Listen to test** plays that recording. If a file cannot be read, the page says why. Android does not show **Open File**.
-
-**Examples** is on the gauge card on a computer and on Android. On Android it also sits in the **Open File** slot beside **Start**. It lists short recordings grouped as Slow, Medium, and Fast. **Play** listens. **Measure** runs the same analysis as **Open File** and does not save a session. The recordings shipped with this version are placeholders.
+**Open File** sits to the right of **Start** on a computer and on Android. It measures one WAV file and does not save a session. PCM and 32-bit float files are accepted, including other sample rates, stereo, and files with extra header data. The app converts them to 8000 Hz mono before measuring. **Listen to test** plays that recording. If a file cannot be read, the page says why. On a computer the dialog opens in the tests folder. On Android it is the system file picker.
 
 ![Open File](images/en/04-open-file.png)
 
@@ -46,9 +44,9 @@ A measured WAV. The hint reads **This recording**. **Whole recording** compares 
 
 ## What you see on Home
 
-**The gauge.** The arc is a semicircle. Its ends meet the left and right edges of the chart above it. It runs from **Slow** to **Fast** and is split equally into Slow, Average, and Fast. The track holds one colour in each third: blue through Slow, green through Average, and gold through Fast, with a thin gap between the zones. The line that marks the current pace is one colour, the same colour as that pace on the chart: green for speech rate, blue for articulation. By default it shows speech rate. The printed number is the measured pace. The marker stays inside the Slow–Fast range, so a pace outside that range still prints its real number while the marker sits at the end. Inside the arcs, each number sits above its name. With both paces, **Speech rate** and **Articulation** sit side by side. With one pace, that name is centred. Each name uses the colour of its ring. **wpm** stays with the pace numbers. 70 and 210 stay at the ends. On a short window the words shrink so they stay inside the rings.
+**The gauge.** The arc is a semicircle. Its ends meet the left and right edges of the chart above it. It runs from **Slow** to **Fast** and is split equally into Slow, Average, and Fast. The track holds one colour in each third: blue through Slow, green through Average, and a bright yellow through Fast, with a thin gap between the zones. The line that marks the current pace is one colour, the same colour as that pace on the chart: green for speech rate, blue for articulation. By default it shows speech rate. The printed number is the measured pace. The marker stays inside the Slow–Fast range, so a pace outside that range still prints its real number while the marker sits at the end. Inside the arcs, each number sits above its name, low, near the bottom edge of the arcs. With both paces, **Speech rate** and **Articulation** sit side by side. With one pace, that name is centred. Each name uses the colour of its ring. **wpm** stays with the pace numbers. 70 and 210 stay at the ends. On a short window the words shrink so they stay inside the rings.
 
-**The tempo chart.** Each point is one live update, at the same pace the arcs are using. The chart keeps the last **Chart window** (5 minutes by default). It uses the same three colours as the gauge track and labels the bands slow, medium, and fast, written upward. Each band is a flat wash of that colour, light enough that the curves stay in front and strong enough that medium green and fast gold stay apart. A thin line marks each border. It does not repeat the Slow and Fast numbers. Those numbers stay under the ends of the arc. The lines use the same colours as the arcs.
+**The tempo chart.** Each point is one live update, at the same pace the arcs are using. The chart keeps the last **Chart window** (5 minutes by default). It uses the same three colours as the gauge track and labels the bands slow, medium, and fast, written upward. Each band is a flat wash of that colour, light enough that the curves stay in front and strong enough that medium green and the brighter fast yellow stay apart. A thin line marks each border. It does not repeat the Slow and Fast numbers. Those numbers stay under the ends of the arc. The lines use the same colours as the arcs.
 
 **The chip** in the corner of the gauge tells you the state:
 
@@ -151,7 +149,7 @@ A change applies to the next phrase.
 - **The chip says Listening.** The app is waiting for speech. Speak when you are ready. With automatic detection, give it a quiet moment first so it can measure the room.
 - **The chip says Too short to save.** That phrase was under one second, so it was not kept. Speak a little longer.
 - **A message covers the chart while you speak.** That lasts until five live readings have arrived. “Everything is working. Calculating. About N s left.” blinks on top of the chart and the arcs, which stay visible. After the fifth reading, and after **Stop**, the message is gone.
-- **There is no Open File button.** That button is only on a computer. **Examples** is on the gauge card, and on Android it is also beside **Start**.
+- **Open File does not list a recording.** On a computer, put the WAV in the tests folder next to the app and open it from there. On Android, pick the file with the system picker. The button is beside **Start** on both.
 
 ## Other pages
 

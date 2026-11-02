@@ -71,9 +71,6 @@ class SessionApi : public QObject {
     Q_PROPERTY(QString errorMessage READ openFileError NOTIFY openFileErrorChanged)
     Q_PROPERTY(QStringList listenFiles READ listenFiles NOTIFY listenFilesChanged)
     Q_PROPERTY(bool openedPlayback READ openedPlayback NOTIFY openedPlaybackChanged)
-    // Bundled Slow / Medium / Fast examples. Each map has file, group, title,
-    // and placeholder. The list comes from examples/manifest.json.
-    Q_PROPERTY(QVariantList exampleTempos READ exampleTempos CONSTANT)
 
 public:
     enum Phase {
@@ -125,17 +122,11 @@ public:
     bool busy() const { return m_openFileBusy || m_clearPending; }
     QStringList listenFiles() const { return m_listenFiles; }
     bool openedPlayback() const { return m_openedPlayback; }
-    QVariantList exampleTempos() const;
 
     Q_INVOKABLE double sessionElapsedSec() const;
     Q_INVOKABLE void startSession();
     Q_INVOKABLE void stopSession();
     Q_INVOKABLE void openWavFile(const QUrl& url);
-    // Copies one bundled example onto a real path. Empty when the name is not
-    // in the manifest or the copy fails. Android playback needs that path.
-    Q_INVOKABLE QString materializeExample(const QString& fileName);
-    // Measures one bundled example. Unlike openWavFile, this works on Android.
-    Q_INVOKABLE void openExample(const QString& fileName);
     Q_INVOKABLE void reportMicrophoneDenied();
     Q_INVOKABLE void clearUserData();
     Q_INVOKABLE QUrl testsFolderUrl() const;

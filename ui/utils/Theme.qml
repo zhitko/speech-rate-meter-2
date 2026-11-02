@@ -441,11 +441,12 @@ Item {
     // readable and is not the green of Average.
     readonly property var zoneColorsLight: ["#1A4FE0", "#0E7C36", "#8F5A00"]
     readonly property var zoneColorsDark: ["#6B96FF", "#3DDE6A", "#FFE08A"]
-    // Tracks and chart bands. Medium is a clear green and fast is a warm
-    // gold, so the two zones stay apart. The chart paints these hues as a
-    // light wash (zoneBandAlpha); the gauge scale uses the same hues.
-    readonly property var zoneTracksLight: ["#2E5BDE", "#149446", "#D4920A"]
-    readonly property var zoneTracksDark: ["#8AABFF", "#3DDE6A", "#F0B429"]
+    // Tracks and chart bands. Medium is a clear green and fast is a bright
+    // yellow, so the two zones stay apart. The chart paints slow and medium
+    // as a light wash (zoneBandAlpha) and fast a step stronger
+    // (zoneFastBandAlpha). The gauge scale uses the same hues.
+    readonly property var zoneTracksLight: ["#2E5BDE", "#149446", "#FFD400"]
+    readonly property var zoneTracksDark: ["#8AABFF", "#3DDE6A", "#FFE03A"]
     // Pace curves. The chart line and the arc that follows it use the same
     // colour: articulation blue, speech rate green. They do not change
     // with the zone.
@@ -466,19 +467,22 @@ Item {
         return colors[Math.max(0, Math.min(2, zone))];
     }
     // Gauge scale and chart bands share these hues. Each third holds its own
-    // colour: blue, then a clear green, then a warm gold. The gold is darker
-    // than the old pale tip so a light wash still reads as gold on a gray card.
+    // colour: blue, then a clear green, then a bright yellow. Fast is lighter
+    // and more yellow than the green middle, on both themes.
     readonly property color paceSlowLight: "#2E5BDE"
     readonly property color paceMidLight: "#149446"
-    readonly property color paceFastLight: "#D4920A"
+    readonly property color paceFastLight: "#FFD400"
     readonly property color paceSlowDark: "#8AABFF"
     readonly property color paceMidDark: "#3DDE6A"
-    readonly property color paceFastDark: "#F0B429"
-    // Chart zone wash. High enough that medium and fast separate, low enough
-    // that the curves stay in front. Light cards are gray, so 0.20 is the
-    // smallest step that keeps the gold from disappearing into the card.
+    readonly property color paceFastDark: "#FFE03A"
+    // Chart zone wash. Slow and medium stay faint. Fast is a stronger, purer
+    // yellow so it stays yellow on a gray card and on a near-black card,
+    // and stays apart from the green band. The curves stay in front.
     function zoneBandAlpha(theme) {
         return theme === Material.Dark ? 0.26 : 0.20;
+    }
+    function zoneFastBandAlpha(theme) {
+        return theme === Material.Dark ? 0.80 : 0.52;
     }
     function mixColor(c1, c2, t) {
         let u = Math.max(0, Math.min(1, t));

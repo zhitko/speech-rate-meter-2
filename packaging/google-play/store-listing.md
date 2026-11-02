@@ -71,7 +71,7 @@ Measure speaking pace on your device. Audio is deleted when the app closes
 ### Full description
 
 ```
-Speech Rate Meter 2 measures how fast you are speaking. It does not recognize words. Pace, articulation, and pauses are estimated on the device from the intensity of your voice. After Stop, Listen plays the recording. The microphone audio is deleted when you leave the app. Examples plays short Slow, Medium, and Fast recordings that ship with the app.
+Speech Rate Meter 2 measures how fast you are speaking. It does not recognize words. Pace, articulation, and pauses are estimated on the device from the intensity of your voice. After Stop, Listen plays the recording. The microphone audio is deleted when you leave the app. Open File measures a WAV you choose, on a computer and on Android.
 
 How to measure
 1. Open Home and press Start.
@@ -154,7 +154,7 @@ device remains **Speech Rate Meter 2**.
 ### Full description
 
 ```
-«Измеритель темпа речи 2» измеряет, насколько быстро вы говорите. Слова он не распознаёт. Темп, артикуляция и паузы оцениваются на устройстве по интенсивности голоса. Звук с микрофона удаляется, как только числа сохранены. «Примеры» проигрывают короткие записи медленного, среднего и быстрого темпа, которые идут вместе с приложением.
+«Измеритель темпа речи 2» измеряет, насколько быстро вы говорите. Слова он не распознаёт. Темп, артикуляция и паузы оцениваются на устройстве по интенсивности голоса. Звук с микрофона удаляется, как только числа сохранены. «Открыть файл» измеряет выбранный WAV и на компьютере, и на Android.
 
 Как измерить
 1. Откройте «Главная» и нажмите «Старт».

@@ -165,7 +165,12 @@ Item {
         property real alpha: 0.4
         property var gauge: root
         function tone(f) {
-            return pace.gauge.paintOnCard(Theme.paceColor(f, pace.gauge.paintTheme), pace.alpha)
+            // Fast is a brighter yellow than a single wash would show, on the
+            // scale as well as on the chart. Slow and medium stay faint.
+            var a = pace.alpha
+            if (f >= 0.70)
+                a = pace.gauge.paintTheme === Material.Dark ? 0.88 : 0.72
+            return pace.gauge.paintOnCard(Theme.paceColor(f, pace.gauge.paintTheme), a)
         }
         centerX: gauge.cx
         centerY: gauge.cy
@@ -418,8 +423,9 @@ Item {
         }
     }
 
-    // Inside the rings. Both paces sit side by side, with the unit under
-    // them. One pace is that block alone, with the unit under it.
+    // Inside the rings, low, near the open bottom edge. Both paces sit side
+    // by side, with the unit under them. One pace is that block alone, with
+    // the unit under it.
     Item {
         id: readout
         readonly property bool figures: !root.hasValue || root.showNumbers
@@ -430,10 +436,11 @@ Item {
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.horizontalCenterOffset: root.plotInset / 2
         y: {
-            var top = root.cy - root.holeRadius + 4
-            var aboveDiameter = root.cy - 4 - height
-            var prefer = root.cy - root.holeRadius * (root.dual ? 0.58 : 0.46) - height / 2
-            return Math.max(top, Math.min(prefer, aboveDiameter))
+            // Sit on the open bottom of the semicircle. The diameter is the
+            // lower edge of the arcs; a few pixels keep the unit above it.
+            var ceiling = root.cy - root.holeRadius + 2
+            var floor = root.cy - 8 - height
+            return Math.max(ceiling, floor)
         }
 
         Column {

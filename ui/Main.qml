@@ -18,8 +18,6 @@ ApplicationWindow {
     minimumHeight: 480 * AppScale.factor
     visible: true
     title: qsTr("Speech Rate Meter 2")
-    // Screenshot aid. main.cpp sets this so Home opens the example dialog.
-    property bool previewExamples: false
 
     Binding on flags {
         when: Qt.platform.os === "android"
