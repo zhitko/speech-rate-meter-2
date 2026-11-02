@@ -28,12 +28,10 @@ Page {
                                                 && (settingsApi ? settingsApi.showSpeechRateTile : true)
     readonly property bool showArticulationRateTile: gaugeMode === 0
                                                       && (settingsApi ? settingsApi.showArticulationRateTile : true)
-    readonly property bool showFillersTile: settingsApi ? settingsApi.showFillersTile : false
     readonly property bool showPausesTile: settingsApi ? settingsApi.showPausesTile : true
     readonly property bool showSpeechTile: settingsApi ? settingsApi.showSpeechTile : true
     readonly property int visibleMetricTiles: (showSpeechRateTile ? 1 : 0)
                                                + (showArticulationRateTile ? 1 : 0)
-                                               + (showFillersTile ? 1 : 0)
                                                + (showPausesTile ? 1 : 0)
                                                + (showSpeechTile ? 1 : 0)
 
@@ -131,7 +129,7 @@ Page {
                         }
                         hasValue: sessionData.speechRate !== undefined
                         showSecond: root.gaugeMode === 2
-                        // Both: speech rate outside, articulation inside, fillers innermost.
+                        // Both: speech rate outside, articulation inside.
                         metricLabel: root.gaugeMode === 1 ? qsTr("Articulation") : qsTr("Speech rate")
                         secondMetricLabel: qsTr("Articulation")
                         arcColor: root.gaugeMode === 1
@@ -142,7 +140,6 @@ Page {
                                : (root.gaugeMode === 1 ? Number(sessionData.articulationRate)
                                                        : Number(sessionData.speechRate))
                         secondValue: sessionData.articulationRate !== undefined ? Number(sessionData.articulationRate) : 0
-                        fillerValue: sessionData.fillerPercent !== undefined ? Number(sessionData.fillerPercent) : 0
                         minimum: settingsApi ? settingsApi.slowWpm : 70
                         maximum: settingsApi ? settingsApi.fastWpm : 210
                     }
@@ -181,20 +178,6 @@ Page {
                             value: root.number("articulationRate", 0)
                             unit: qsTr("wpm")
                             accent: Theme.primary(Material.theme)
-                        }
-                        MetricTile {
-                            Layout.fillWidth: true
-                            Layout.fillHeight: true
-                            Layout.preferredWidth: 1
-                            visible: root.showFillersTile
-                            color: Theme.surfaceContainer(Material.theme)
-                            icon: Icons.faWaveSquare
-                            label: qsTr("Fillers")
-                            hint: qsTr("Drawn-out sounds, not words")
-                            value: root.number("fillerPercent", 0)
-                            unit: "%"
-                            progress: sessionData.fillerPercent !== undefined ? Number(sessionData.fillerPercent) / 100 : 0
-                            accent: Theme.tertiary(Material.theme)
                         }
                         MetricTile {
                             Layout.fillWidth: true
@@ -271,17 +254,6 @@ Page {
                     unit: qsTr("wpm")
                     decimals: 0
                     valueKey: "articulationRate"
-                    points: root.segments
-                }
-                MetricChart {
-                    Layout.fillWidth: true
-                    Layout.preferredWidth: 1
-                    chartTitle: qsTr("Fillers")
-                    icon: Icons.faWaveSquare
-                    lineColor: Theme.tertiary(Material.theme)
-                    unit: "%"
-                    decimals: 0
-                    valueKey: "fillerPercent"
                     points: root.segments
                 }
                 MetricChart {

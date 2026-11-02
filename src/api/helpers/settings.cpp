@@ -190,7 +190,9 @@ bool readSettingsFile(QSettings& qsettings, AppSettings* out, bool writeMigratio
     settings.gaugeMode = std::clamp(qsettings.value("gaugeMode", 0).toInt(), 0, 2);
     settings.showSpeechRateTile = qsettings.value("showSpeechRateTile", true).toBool();
     settings.showArticulationRateTile = qsettings.value("showArticulationRateTile", true).toBool();
-    settings.showFillersTile = qsettings.value("showFillersTile", false).toBool();
+    // General/showFillersTile used to show the fillers card. Fillers are gone.
+    // Read the key so an older file still loads, then drop it on the next save.
+    (void)qsettings.value(QStringLiteral("showFillersTile"));
     settings.showPausesTile = qsettings.value("showPausesTile", true).toBool();
     settings.showSpeechTile = qsettings.value("showSpeechTile", true).toBool();
     settings.showWholeRecordingTile = qsettings.value("showWholeRecordingTile", true).toBool();
@@ -231,11 +233,11 @@ bool readSettingsFile(QSettings& qsettings, AppSettings* out, bool writeMigratio
     settings.segmentMinLengthMs = std::clamp(qsettings.value("minimumLength", 8).toInt(), 0, 2000);
     qsettings.endGroup();
 
-    qsettings.beginGroup("fillerSounds");
-    settings.fillerK4 = qsettings.value("K4", 100).toDouble();
-    settings.fillerMin = qsettings.value("Min", 120).toDouble();
-    settings.fillerMax = qsettings.value("Max", 240).toDouble();
-    qsettings.endGroup();
+    // fillerSounds/K4, Min, and Max used to scale the filler score. The group
+    // is ignored. The next save removes it.
+    (void)qsettings.value(QStringLiteral("fillerSounds/K4"));
+    (void)qsettings.value(QStringLiteral("fillerSounds/Min"));
+    (void)qsettings.value(QStringLiteral("fillerSounds/Max"));
 
     *out = settings;
     return true;
@@ -317,7 +319,7 @@ void Settings::saveSettings(const AppSettings& settings)
     qsettings.setValue("gaugeMode", settings.gaugeMode);
     qsettings.setValue("showSpeechRateTile", settings.showSpeechRateTile);
     qsettings.setValue("showArticulationRateTile", settings.showArticulationRateTile);
-    qsettings.setValue("showFillersTile", settings.showFillersTile);
+    qsettings.remove(QStringLiteral("showFillersTile"));
     qsettings.setValue("showPausesTile", settings.showPausesTile);
     qsettings.setValue("showSpeechTile", settings.showSpeechTile);
     qsettings.setValue("showWholeRecordingTile", settings.showWholeRecordingTile);
@@ -358,10 +360,8 @@ void Settings::saveSettings(const AppSettings& settings)
     qsettings.setValue("minimumLength", settings.segmentMinLengthMs);
     qsettings.endGroup();
 
-    qsettings.beginGroup("fillerSounds");
-    qsettings.setValue("K4", settings.fillerK4);
-    qsettings.setValue("Min", settings.fillerMin);
-    qsettings.setValue("Max", settings.fillerMax);
+    qsettings.beginGroup(QStringLiteral("fillerSounds"));
+    qsettings.remove(QStringLiteral(""));
     qsettings.endGroup();
 
     qsettings.sync();

@@ -20,7 +20,7 @@ class JobQueue;
  * Process-wide recording session. Capture, pause cutting, and analysis run
  * off the UI thread. While recording, Home reads metrics of the most recent
  * analysis window from here; each pace drawn on the gauge shows the median of
- * the last few of its own readings. After Stop, speech rate, articulation, fillers, and
+ * the last few of its own readings. After Stop, speech rate, articulation, and
  * pauses become the selected session summary of every kept phrase. The default
  * is the median. Speech stays the total. Home names that state
  * with the summary. History uses the same summary. After Stop, and after Open
@@ -54,7 +54,6 @@ class SessionApi : public QObject {
     Q_PROPERTY(double gaugeArticulationRate READ gaugeArticulationRate NOTIFY metricsChanged)
     Q_PROPERTY(double phrasePauses READ phrasePauses NOTIFY metricsChanged)
     Q_PROPERTY(double speechDuration READ speechDuration NOTIFY metricsChanged)
-    Q_PROPERTY(double fillerScore READ fillerScore NOTIFY metricsChanged)
     Q_PROPERTY(QVariantMap details READ details NOTIFY metricsChanged)
     Q_PROPERTY(bool hasRecordingSummary READ hasRecordingSummary NOTIFY recordingSummaryChanged)
     Q_PROPERTY(bool recordingSummaryPending READ recordingSummaryPending NOTIFY recordingSummaryChanged)
@@ -72,6 +71,9 @@ class SessionApi : public QObject {
     Q_PROPERTY(QString errorMessage READ openFileError NOTIFY openFileErrorChanged)
     Q_PROPERTY(QStringList listenFiles READ listenFiles NOTIFY listenFilesChanged)
     Q_PROPERTY(bool openedPlayback READ openedPlayback NOTIFY openedPlaybackChanged)
+    // Bundled Slow / Medium / Fast examples. Each map has file, group, title,
+    // and placeholder. The list comes from examples/manifest.json.
+    Q_PROPERTY(QVariantList exampleTempos READ exampleTempos CONSTANT)
 
 public:
     enum Phase {
@@ -99,7 +101,6 @@ public:
     double gaugeArticulationRate() const { return m_gaugeArticulationRate; }
     double phrasePauses() const { return m_phrasePauses; }
     double speechDuration() const { return m_speechDuration; }
-    double fillerScore() const { return m_fillerScore; }
     QVariantMap details() const { return m_details; }
     bool hasRecordingSummary() const { return m_hasRecordingSummary; }
     bool recordingSummaryPending() const { return m_recordingSummaryPending; }
@@ -124,11 +125,17 @@ public:
     bool busy() const { return m_openFileBusy || m_clearPending; }
     QStringList listenFiles() const { return m_listenFiles; }
     bool openedPlayback() const { return m_openedPlayback; }
+    QVariantList exampleTempos() const;
 
     Q_INVOKABLE double sessionElapsedSec() const;
     Q_INVOKABLE void startSession();
     Q_INVOKABLE void stopSession();
     Q_INVOKABLE void openWavFile(const QUrl& url);
+    // Copies one bundled example onto a real path. Empty when the name is not
+    // in the manifest or the copy fails. Android playback needs that path.
+    Q_INVOKABLE QString materializeExample(const QString& fileName);
+    // Measures one bundled example. Unlike openWavFile, this works on Android.
+    Q_INVOKABLE void openExample(const QString& fileName);
     Q_INVOKABLE void reportMicrophoneDenied();
     Q_INVOKABLE void clearUserData();
     Q_INVOKABLE QUrl testsFolderUrl() const;
@@ -194,6 +201,7 @@ private:
     void replaceTempoPoints(const QVariantList& points);
     void clearListenFiles();
     double medianOf(std::deque<double>& window, double rate, bool live);
+    bool beginOpenFile(const QString& path);
 
     struct SessionAccumulator;
     std::unique_ptr<SessionAccumulator> m_accumulator;
@@ -225,7 +233,6 @@ private:
     // While a take is open, speech time comes from the capture clock, not the
     // analyzed buffer length. It stays in force after Stop until the next take.
     bool m_useSpeechClock = false;
-    double m_fillerScore = 0;
     QString m_openFileError;
     QVariantMap m_details;
     bool m_hasRecordingSummary = false;

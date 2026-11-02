@@ -43,9 +43,8 @@ Page {
     }
 
     function sessionLine(session) {
-        return qsTr("Articulation %1 · Fillers %2 · Pauses %3 · Speech %4")
+        return qsTr("Articulation %1 · Pauses %2 · Speech %3")
                 .arg(Number(session.articulationRate).toFixed(0) + " " + qsTr("wpm"))
-                .arg(Number(session.fillerPercent).toFixed(0) + " %")
                 .arg(Number(session.phrasePauses).toFixed(2) + " " + qsTr("sec"))
                 .arg(speechTime(session.speechDuration))
     }

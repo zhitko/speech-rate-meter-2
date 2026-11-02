@@ -163,9 +163,10 @@ int main(int argc, char* argv[])
         Qt::QueuedConnection);
     engine.loadFromModule(QLatin1String("SpeechRateMeter2"), QLatin1String("Main"));
 
-    // SRM_PREVIEW=mode,width,height,theme,language,outfile[,gaugeMode[,fillers]]
+    // SRM_PREVIEW=mode,width,height,theme,language,outfile[,gaugeMode]
     // Seeds Home and writes one window grab. Screenshot aid only.
-    // gaugeMode defaults to 2 (both paces). fillers is 1 or 0, default 1.
+    // gaugeMode defaults to 2 (both paces). "examples" opens the example
+    // dialog. "ready" leaves the chart empty. "early" holds the waiting overlay.
     const QByteArray preview = qgetenv("SRM_PREVIEW");
     if (!preview.isEmpty()) {
         const QString spec = QString::fromUtf8(preview);
@@ -184,13 +185,13 @@ int main(int argc, char* argv[])
                 settings->setProperty("theme", parts.at(3));
                 settings->setProperty("language", parts.at(4));
                 const int gaugeMode = parts.size() >= 7 ? parts.at(6).toInt() : 2;
-                const bool fillers = parts.size() < 8 || parts.at(7) != QLatin1String("0");
                 settings->setProperty("gaugeMode", gaugeMode);
                 settings->setProperty("showNavigationMenu", false);
-                settings->setProperty("showFillersTile", fillers);
             }
+            const bool examples = parts.at(0) == QLatin1String("examples");
+            window->setProperty("previewExamples", examples);
             QObject* session = root->property("sessionApi").value<QObject*>();
-            if (session)
+            if (session && !examples)
                 QMetaObject::invokeMethod(session, "loadPreview", Q_ARG(QString, parts.at(0)));
             const QString outfile = parts.at(5);
             const int shotWidth = parts.at(1).toInt();

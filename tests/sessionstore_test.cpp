@@ -51,8 +51,7 @@ QVariantMap measuredSegment()
     segment.insert(QStringLiteral("articulationRate"), metrics.articulationRate);
     segment.insert(QStringLiteral("phrasePauses"), metrics.phrasePauses);
     segment.insert(QStringLiteral("speechDuration"), metrics.speechDuration);
-    segment.insert(QStringLiteral("fillerPercent"), 12);
-    SessionStore::insertMeasurement(segment, parts, config, 120, 240);
+    SessionStore::insertMeasurement(segment, parts, config);
     return segment;
 }
 
@@ -68,7 +67,6 @@ void testRoundTripAndClear()
     shown.insert(QStringLiteral("articulationRate"), 151);
     shown.insert(QStringLiteral("phrasePauses"), 0.18);
     shown.insert(QStringLiteral("speechDuration"), 2);
-    shown.insert(QStringLiteral("fillerPercent"), 12);
     expect(SessionStore::appendShown(id, started, shown), "append shown metric");
 
     const QVariantList sessions = SessionStore::listSessions();
@@ -98,7 +96,6 @@ void testDurationWeightedSessionMean()
     second.insert(QStringLiteral("speechRate"), 180.0);
     second.insert(QStringLiteral("articulationRate"), 210.0);
     second.insert(QStringLiteral("phrasePauses"), 0.40);
-    second.insert(QStringLiteral("fillerPercent"), 30);
 
     expect(SessionStore::appendSegment(id, started, first), "append first phrase");
     expect(SessionStore::appendSegment(id, started, second), "append second phrase");
@@ -119,8 +116,8 @@ void testDurationWeightedSessionMean()
     expect(near(loaded.value(QStringLiteral("phrasePauses")).toDouble(),
                 (first.value(QStringLiteral("phrasePauses")).toDouble() * 2.0 + 0.40 * 4.0) / duration),
         "pauses are the duration-weighted mean");
-    expect(near(loaded.value(QStringLiteral("fillerPercent")).toDouble(), (12.0 * 2.0 + 30.0 * 4.0) / duration),
-        "fillers are the duration-weighted mean");
+    expect(!loaded.contains(QStringLiteral("fillerPercent")),
+        "the session summary does not publish a filler percent");
 
     SessionStore::clearAll();
 }
@@ -290,14 +287,12 @@ void testSummaryMethodChangesHistory()
     second.insert(QStringLiteral("speechRate"), 180.0);
     second.insert(QStringLiteral("articulationRate"), 210.0);
     second.insert(QStringLiteral("phrasePauses"), 0.40);
-    second.insert(QStringLiteral("fillerPercent"), 30);
     QVariantMap third = measuredSegment();
     third.insert(QStringLiteral("endedAt"), QStringLiteral("2026-10-16T21:00:12.000"));
     third.insert(QStringLiteral("speechDuration"), 2.0);
     third.insert(QStringLiteral("speechRate"), 90.0);
     third.insert(QStringLiteral("articulationRate"), 100.0);
     third.insert(QStringLiteral("phrasePauses"), 0.10);
-    third.insert(QStringLiteral("fillerPercent"), 0);
 
     expect(SessionStore::appendSegment(id, started, first), "append first summary phrase");
     expect(SessionStore::appendSegment(id, started, second), "append second summary phrase");
@@ -319,8 +314,8 @@ void testSummaryMethodChangesHistory()
         "history articulation follows the median setting");
     expect(near(loaded.value(QStringLiteral("phrasePauses")).toDouble(), 0.10),
         "history pauses follow the median setting");
-    expect(near(loaded.value(QStringLiteral("fillerPercent")).toDouble(), 12.0),
-        "history fillers follow the median setting");
+    expect(!loaded.contains(QStringLiteral("fillerPercent")),
+        "history does not publish a filler percent");
     expect(near(loaded.value(QStringLiteral("speechDuration")).toDouble(), 8.0),
         "speech duration stays the sum");
 
@@ -433,6 +428,60 @@ void testWindowUpdatesAndVowelMinimumLoad()
     Settings::saveSettings(restored);
 }
 
+void testLegacyFillerFieldsAreIgnored()
+{
+    speechrate::Parts parts;
+    parts.vowelLengths = { 4, 10 };
+    parts.gapLengths = { 40 };
+    parts.speechDuration = 2.0;
+    speechrate::Config config;
+    QVariantMap segment;
+    segment.insert(QStringLiteral("speechRate"), 100.0);
+    segment.insert(QStringLiteral("articulationRate"), 120.0);
+    segment.insert(QStringLiteral("phrasePauses"), 0.2);
+    segment.insert(QStringLiteral("speechDuration"), 2.0);
+    SessionStore::insertMeasurement(segment, parts, config);
+    expect(!segment.contains(QStringLiteral("fillerMin")), "a new segment omits fillerMin");
+    expect(!segment.contains(QStringLiteral("fillerMax")), "a new segment omits fillerMax");
+    expect(!segment.contains(QStringLiteral("fillerPercent")), "a new segment omits fillerPercent");
+    expect(segment.value(QStringLiteral("k4")).toDouble() == config.k4, "k4 is still stored");
+
+    segment.insert(QStringLiteral("fillerMin"), 10.0);
+    segment.insert(QStringLiteral("fillerMax"), 400.0);
+    segment.insert(QStringLiteral("fillerPercent"), 55);
+    speechrate::Parts loadedParts;
+    speechrate::Config loadedConfig;
+    expect(SessionStore::takeMeasurement(segment, loadedParts, loadedConfig),
+        "an old segment with filler fields still loads");
+    expect(loadedParts.vowelLengths.size() == 2, "vowel lengths survive filler fields");
+    expect(loadedConfig.k1 == config.k1, "k1 is unchanged by filler fields");
+    expect(loadedConfig.k4 == config.k4, "a stored default k4 still matches");
+
+    const QString path = Settings::getAppDataDir() + QStringLiteral("/settings.ini");
+    {
+        QSettings stored(path, QSettings::IniFormat);
+        stored.beginGroup(QStringLiteral("General"));
+        stored.setValue(QStringLiteral("showFillersTile"), true);
+        stored.endGroup();
+        stored.beginGroup(QStringLiteral("fillerSounds"));
+        stored.setValue(QStringLiteral("K4"), 250);
+        stored.setValue(QStringLiteral("Min"), 10);
+        stored.setValue(QStringLiteral("Max"), 999);
+        stored.endGroup();
+        stored.sync();
+    }
+    const AppSettings loaded = Settings::loadSettings();
+    expect(std::fabs(loaded.speechRateK1 - 0.41) < 1e-9, "ignoring filler settings leaves K1");
+    Settings::saveSettings(loaded);
+    QSettings stored(path, QSettings::IniFormat);
+    stored.beginGroup(QStringLiteral("General"));
+    expect(!stored.contains(QStringLiteral("showFillersTile")), "save drops showFillersTile");
+    stored.endGroup();
+    stored.beginGroup(QStringLiteral("fillerSounds"));
+    expect(stored.childKeys().isEmpty(), "save drops the fillerSounds group");
+    stored.endGroup();
+}
+
 void testMalformedJsonIsQuarantined()
 {
     QDir().mkpath(SessionStore::sessionsDir());
@@ -464,6 +513,7 @@ int main(int argc, char** argv)
     testCommitKeepsWavUntilClose();
     testCommitKeepsWavWhenEnabled();
     testDiscardSkipsUnsavedWav();
+    testLegacyFillerFieldsAreIgnored();
     testMalformedJsonIsQuarantined();
     testPhrasalPauseDefaultMigration();
     testSummaryMethodChangesHistory();

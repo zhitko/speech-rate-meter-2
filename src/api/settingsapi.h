@@ -39,7 +39,6 @@ class SettingsApi : public QObject {
     Q_PROPERTY(int gaugeMode READ gaugeMode WRITE setGaugeMode NOTIFY gaugeModeChanged)
     Q_PROPERTY(bool showSpeechRateTile READ showSpeechRateTile WRITE setShowSpeechRateTile NOTIFY showSpeechRateTileChanged)
     Q_PROPERTY(bool showArticulationRateTile READ showArticulationRateTile WRITE setShowArticulationRateTile NOTIFY showArticulationRateTileChanged)
-    Q_PROPERTY(bool showFillersTile READ showFillersTile WRITE setShowFillersTile NOTIFY showFillersTileChanged)
     Q_PROPERTY(bool showPausesTile READ showPausesTile WRITE setShowPausesTile NOTIFY showPausesTileChanged)
     Q_PROPERTY(bool showSpeechTile READ showSpeechTile WRITE setShowSpeechTile NOTIFY showSpeechTileChanged)
     Q_PROPERTY(bool showWholeRecordingTile READ showWholeRecordingTile WRITE setShowWholeRecordingTile NOTIFY showWholeRecordingTileChanged)
@@ -54,14 +53,11 @@ class SettingsApi : public QObject {
     Q_PROPERTY(double k1 READ k1 WRITE setK1 NOTIFY k1Changed)
     Q_PROPERTY(double k2 READ k2 WRITE setK2 NOTIFY k2Changed)
     Q_PROPERTY(double k3 READ k3 WRITE setK3 NOTIFY k3Changed)
-    Q_PROPERTY(double k4 READ k4 WRITE setK4 NOTIFY k4Changed)
     Q_PROPERTY(double k5 READ k5 WRITE setK5 NOTIFY k5Changed)
     Q_PROPERTY(int intensityFrame READ intensityFrame WRITE setIntensityFrame NOTIFY intensityFrameChanged)
     Q_PROPERTY(int intensityShift READ intensityShift WRITE setIntensityShift NOTIFY intensityShiftChanged)
     Q_PROPERTY(int intensitySmooth READ intensitySmooth WRITE setIntensitySmooth NOTIFY intensitySmoothChanged)
     Q_PROPERTY(int segmentMinLengthMs READ segmentMinLengthMs WRITE setSegmentMinLengthMs NOTIFY segmentMinLengthMsChanged)
-    Q_PROPERTY(double fillerMin READ fillerMin WRITE setFillerMin NOTIFY fillerMinChanged)
-    Q_PROPERTY(double fillerMax READ fillerMax WRITE setFillerMax NOTIFY fillerMaxChanged)
 
 public:
     explicit SettingsApi(QObject* parent = nullptr);
@@ -142,8 +138,6 @@ public:
     void setShowSpeechRateTile(bool show);
     bool showArticulationRateTile() const;
     void setShowArticulationRateTile(bool show);
-    bool showFillersTile() const;
-    void setShowFillersTile(bool show);
     bool showPausesTile() const;
     void setShowPausesTile(bool show);
     bool showSpeechTile() const;
@@ -172,8 +166,6 @@ public:
     void setK2(double value);
     double k3() const;
     void setK3(double value);
-    double k4() const;
-    void setK4(double value);
     double k5() const;
     void setK5(double value);
     int intensityFrame() const;
@@ -184,10 +176,6 @@ public:
     void setIntensitySmooth(int value);
     int segmentMinLengthMs() const;
     void setSegmentMinLengthMs(int value);
-    double fillerMin() const;
-    void setFillerMin(double value);
-    double fillerMax() const;
-    void setFillerMax(double value);
 
     Q_INVOKABLE void load();
     Q_INVOKABLE void save();
@@ -222,7 +210,6 @@ signals:
     void gaugeModeChanged();
     void showSpeechRateTileChanged();
     void showArticulationRateTileChanged();
-    void showFillersTileChanged();
     void showPausesTileChanged();
     void showSpeechTileChanged();
     void showWholeRecordingTileChanged();
@@ -237,14 +224,11 @@ signals:
     void k1Changed();
     void k2Changed();
     void k3Changed();
-    void k4Changed();
     void k5Changed();
     void intensityFrameChanged();
     void intensityShiftChanged();
     void intensitySmoothChanged();
     void segmentMinLengthMsChanged();
-    void fillerMinChanged();
-    void fillerMaxChanged();
 private:
     AppSettings m_settings;
     bool m_advanced = false;

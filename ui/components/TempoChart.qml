@@ -126,7 +126,7 @@ Item {
         // The figures are not painted while recording. A screen reader still
         // hears the latest pace, because the moving line is not announced.
         if (!(live && hasHeader))
-            return plotted.length === 0 ? qsTr("No tempo yet") : ""
+            return plotted.length === 0 ? qsTr("Ready to work") : ""
         var parts = []
         if (showArticulation)
             parts.push(qsTr("Articulation") + " " + paceText(headerArticulation))
@@ -246,7 +246,7 @@ Item {
         anchors.horizontalCenterOffset: root.zoneGutter / 2
         width: Math.max(0, canvas.width - root.zoneGutter - 32)
         visible: root.plotted.length === 0 && !root.tipActive && !root.live
-        text: qsTr("No tempo yet")
+        text: qsTr("Ready to work")
         horizontalAlignment: Text.AlignHCenter
         wrapMode: Text.Wrap
         color: Theme.onSurfaceVariant(Material.theme)
@@ -302,21 +302,15 @@ Item {
                 return top + (1 - (value - yMin) / valueSpan) * plotHeight
             }
 
-            // Horizontal bands match the gauge scale. Each zone blends across
-            // its third. The fill is the 9% wash from before the brighter
-            // bands. Fast is the top band and lightens to gold. The lines
-            // on the borders stay at full strength.
+            // Horizontal bands match the gauge scale. Each band is the hue
+            // at the middle of that third, so medium stays green and fast
+            // stays gold. The wash is only strong enough to separate them.
+            var bandAlpha = Theme.zoneBandAlpha(root.paintTheme)
             var bandH = plotHeight / 3
             for (var zone = 0; zone < 3; ++zone) {
                 var yTop = top + (2 - zone) * bandH
                 var yBot = zone === 0 ? top + plotHeight : yTop + bandH
-                var wash = ctx.createLinearGradient(0, yBot, 0, yTop)
-                var stops = 4
-                for (var stop = 0; stop <= stops; ++stop) {
-                    var u = stop / stops
-                    wash.addColorStop(u, Qt.alpha(Theme.paceColor((zone + u) / 3, root.paintTheme), 0.09))
-                }
-                ctx.fillStyle = wash
+                ctx.fillStyle = Qt.alpha(Theme.paceColor((zone + 0.5) / 3, root.paintTheme), bandAlpha)
                 ctx.fillRect(left, yTop, plotWidth, Math.max(1, yBot - yTop))
             }
 

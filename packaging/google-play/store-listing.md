@@ -71,7 +71,7 @@ Measure speaking pace on your device. Audio is deleted when the app closes
 ### Full description
 
 ```
-Speech Rate Meter 2 measures how fast you are speaking. It does not recognize words. Pace, articulation, fillers, and pauses are estimated on the device from the intensity of your voice. After Stop, Listen plays the recording. The microphone audio is deleted when you leave the app.
+Speech Rate Meter 2 measures how fast you are speaking. It does not recognize words. Pace, articulation, and pauses are estimated on the device from the intensity of your voice. After Stop, Listen plays the recording. The microphone audio is deleted when you leave the app. Examples plays short Slow, Medium, and Fast recordings that ship with the app.
 
 How to measure
 1. Open Home and press Start.
@@ -82,11 +82,10 @@ How to measure
 What the numbers mean
 - Speech rate: overall pace, in words per minute, on a Slow / Average / Fast gauge
 - Articulation: pace while you are speaking, with the gaps left out
-- Fillers: how much some sounds are drawn out, such as a long "uh", as a percent
 - Pauses: the length of the longer gaps, in seconds
 - Speech: the total time that counted as speech
 
-While a session is open, the first four numbers use the most recent kept speech (10 seconds by default). Speech keeps the total. After Stop, the first four become averages for the whole session.
+While a session is open, speech rate, articulation, and pauses use the most recent kept speech (10 seconds by default). Speech keeps the total. After Stop, those three become the session summary.
 
 History lists finished sessions. Open one to see the same averages and a chart of each measure. Each point is a moment the numbers on Home changed.
 
@@ -122,12 +121,12 @@ Filenames: `screenshots/README.md`.
 | Asset | Alt text |
 |---|---|
 | App icon | Speech Rate Meter 2 mark: a white microphone and sound bars on a blue rounded square |
-| Feature graphic | Session mean values: speech-rate gauge at 143 wpm, Average, with articulation, fillers, pauses, and speech tiles |
+| Feature graphic | Session summary: speech-rate gauge at 143 wpm, Average, with articulation, pauses, and speech tiles |
 | Phone screenshot 1 | Home screen with the tempo chart, metric tiles, and the Start button |
 | Phone screenshot 2 | History list of finished sessions with date, pace, and phrase counts |
 | Phone screenshot 3 | Session screen with the median speech rate, articulation, pauses, and speech |
 | Phone screenshot 4 | Settings for language, theme, and how speech rate is measured |
-| Phone screenshot 5 | User guide explaining the five measures and how to record |
+| Phone screenshot 5 | User guide explaining the measures and how to record |
 | Phone screenshot 6 | Privacy policy: microphone audio stays on the device and is not uploaded |
 
 ---
@@ -155,7 +154,7 @@ device remains **Speech Rate Meter 2**.
 ### Full description
 
 ```
-«Измеритель темпа речи 2» измеряет, насколько быстро вы говорите. Слова он не распознаёт. Темп, артикуляция, заполнители и паузы оцениваются на устройстве по интенсивности голоса. Звук с микрофона удаляется, как только числа сохранены.
+«Измеритель темпа речи 2» измеряет, насколько быстро вы говорите. Слова он не распознаёт. Темп, артикуляция и паузы оцениваются на устройстве по интенсивности голоса. Звук с микрофона удаляется, как только числа сохранены. «Примеры» проигрывают короткие записи медленного, среднего и быстрого темпа, которые идут вместе с приложением.
 
 Как измерить
 1. Откройте «Главная» и нажмите «Старт».
@@ -166,11 +165,10 @@ device remains **Speech Rate Meter 2**.
 Что означают числа
 - Темп речи: общий темп в словах в минуту на шкале «Медленно / Средне / Быстро»
 - Артикуляция: темп, пока вы говорите, без промежутков
-- Заполнители: насколько некоторые звуки затянуты, например долгое «э-э», в процентах
 - Паузы: длина более долгих промежутков, в секундах
 - Речь: суммарное время, засчитанное как речь
 
-Пока сеанс открыт, первые четыре числа считаются по последней сохранённой речи (по умолчанию 10 секунд). «Речь» копит всё время. После «Стоп» первые четыре становятся средними за весь сеанс.
+Пока сеанс открыт, темп речи, артикуляция и паузы считаются по последней сохранённой речи (по умолчанию 10 секунд). «Речь» копит всё время. После «Стоп» эти три показателя становятся сводкой сеанса.
 
 «История» показывает законченные сеансы. Откройте строку, чтобы увидеть те же средние и график каждого показателя. Каждая точка — момент, когда числа на главной менялись.
 
@@ -194,7 +192,7 @@ device remains **Speech Rate Meter 2**.
 ### What’s new (version 1.0.0)
 
 ```
-Первый выпуск для Android. Темп речи, артикуляция, заполнители и паузы считаются на устройстве. Числа сеанса остаются в закрытом хранилище, а звук с микрофона удаляется после каждой фразы.
+Первый выпуск для Android. Темп речи, артикуляция и паузы считаются на устройстве. Числа сеанса остаются в закрытом хранилище, а звук с микрофона удаляется после каждой фразы.
 ```
 
 ### Graphic alt text (optional, ≤140 characters each)
@@ -202,12 +200,12 @@ device remains **Speech Rate Meter 2**.
 | Asset | Alt text |
 |---|---|
 | Иконка | Знак «Измеритель темпа речи 2»: белый микрофон и полосы звука на синем скруглении |
-| Рекламный графический файл | Средние за сеанс: шкала темпа 143 сл/мин, «Средне», и карточки артикуляции, заполнителей, пауз и речи |
+| Рекламный графический файл | Сводка сеанса: шкала темпа 143 сл/мин, «Средне», и карточки артикуляции, пауз и речи |
 | Скриншот 1 | Главный экран с графиком темпа, карточками показателей и кнопкой «Старт» |
 | Скриншот 2 | История сеансов с датой, темпом и числом фраз |
 | Скриншот 3 | Сеанс: медиана темпа на шкале, артикуляция, паузы и речь |
 | Скриншот 4 | Настройки языка, темы и измерения темпа речи |
-| Скриншот 5 | Руководство: пять показателей и как записывать |
+| Скриншот 5 | Руководство: показатели и как записывать |
 | Скриншот 6 | Политика конфиденциальности: звук остаётся на устройстве и не отправляется |
 
 ---

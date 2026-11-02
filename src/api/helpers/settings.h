@@ -50,7 +50,6 @@ struct AppSettings {
     // Tiles beside the gauge. A pace already drawn on the gauge is not shown again.
     bool showSpeechRateTile = true;
     bool showArticulationRateTile = true;
-    bool showFillersTile = false;
     bool showPausesTile = true;
     bool showSpeechTile = true;
     bool showWholeRecordingTile = true;
@@ -74,11 +73,8 @@ struct AppSettings {
     int intensityShift = 32;
     int intensitySmooth = 64;
     int segmentMinLengthMs = 8;
-    double fillerK4 = 100;
     // Window articulation scale. Stored separately from K1.
     double windowK5 = 0.71;
-    double fillerMin = 120;
-    double fillerMax = 240;
 };
 
 class Settings {

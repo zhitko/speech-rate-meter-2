@@ -172,7 +172,7 @@ struct Metrics {
     double pauseTotal = 0; // sum of interior pause durations, seconds
     double pauseMean = 0; // direct T_p
     double pauseRatio = 0; // pauseTotal / T_s
-    double fillerScore = 0; // raw F
+    double fillerScore = 0; // unused; kept so older blends stay finite
     int vowelCount = 0;
     int gapCount = 0;
     double vowelLength = 0; // T_v
@@ -276,9 +276,6 @@ Measurement measure(const std::vector<float>& samples, const Config& cfg);
  * cfg.minVowels gated nuclei) returns valid == false.
  */
 Metrics analyze(const std::vector<float>& samples, const Config& cfg);
-
-/** 0…100 label after clamping F into [fillerMin, fillerMax]. */
-double fillerPercent(double fillerScore, double fillerMin, double fillerMax);
 
 struct HistogramBin {
     double startSec = 0;

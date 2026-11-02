@@ -545,7 +545,7 @@ Page {
 
                         FieldLabel {
                             text: qsTr("Session summary")
-                            help: qsTr("How the kept phrases are combined after Stop, for speech rate, articulation, pauses, and fillers. Speech stays the total time. History uses the same choice. Changing it updates the stopped session and History. Median, the default, takes the middle phrase; an even count averages the two central phrases. Weighted mean weights each phrase by its length, so a longer phrase counts more. Weighted median does the same and then takes the middle. Mean, harmonic mean, geometric mean, trimmed mean, and quadratic mean count each phrase once. A harmonic or geometric mean is zero when any phrase is zero. A trimmed mean drops the lowest and highest quarter of the phrases, and with fewer than four phrases it is the plain mean. Quadratic mean is the root mean square, so a fast phrase pulls it up. One phrase, and an opened file, stay the same number for every choice.")
+                            help: qsTr("How the kept phrases are combined after Stop, for speech rate, articulation, and pauses. Speech stays the total time. History uses the same choice. Changing it updates the stopped session and History. Median, the default, takes the middle phrase; an even count averages the two central phrases. Weighted mean weights each phrase by its length, so a longer phrase counts more. Weighted median does the same and then takes the middle. Mean, harmonic mean, geometric mean, trimmed mean, and quadratic mean count each phrase once. A harmonic or geometric mean is zero when any phrase is zero. A trimmed mean drops the lowest and highest quarter of the phrases, and with fewer than four phrases it is the plain mean. Quadratic mean is the root mean square, so a fast phrase pulls it up. One phrase, and an opened file, stay the same number for every choice.")
                             formula: "Weighted mean = Σ(value × duration) / Σ(duration)\nMean = Σ(value) / N\nMedian = middle; an even N averages the two central values\nWeighted median = value where the running duration reaches half; a point that lands between two phrases averages them\nHarmonic mean = N / Σ(1/value)\nGeometric mean = exp(Σ ln(value) / N)\nTrimmed mean = mean after dropping the lowest and highest floor(N/4) phrases\nQuadratic mean = sqrt(Σ(value²) / N)"
                         }
                         SettingComboBox {
@@ -580,7 +580,7 @@ Page {
 
                         FieldLabel {
                             text: qsTr("Gauge")
-                            help: qsTr("Which pace the gauge shows. Speech rate: one arc. Articulation rate: one arc. Both: speech rate on the outer arc and articulation on the inner arc. Fillers is always the innermost arc, from 0 to 100 percent, and it stays when Show Fillers tile is off. This changes only the display; the values are the same. Each pace arc position is the median set by Gauge median, placed on the scale from Slow to Fast.")
+                            help: qsTr("Which pace the gauge shows. Speech rate: one arc. Articulation rate: one arc. Both: speech rate on the outer arc and articulation on the inner arc. This changes only the display; the values are the same. Each pace arc position is the median set by Gauge median, placed on the scale from Slow to Fast.")
                         }
                         SettingComboBox {
                             selectedValue: settingsApi ? settingsApi.gaugeMode : 0
@@ -593,7 +593,7 @@ Page {
                                 settingsApi.gaugeMode = model[index].id
                         }
                         Hint {
-                            text: qsTr("One pace, or both: speech rate outside, articulation inside. Fillers is the innermost arc.")
+                            text: qsTr("One pace, or both: speech rate outside, articulation inside.")
                         }
 
                         FieldLabel {
@@ -620,15 +620,6 @@ Page {
                             text: qsTr("Unavailable while on the gauge.")
                         }
 
-                        FieldLabel {
-                            text: qsTr("Show Fillers tile")
-                            help: qsTr("Shows or hides this card after Stop, after Open File, and on a saved result. Display only: the value is the same either way.")
-                        }
-                        Switch {
-                            checked: settingsApi ? settingsApi.showFillersTile : false
-                            onToggled: if (settingsApi)
-                                settingsApi.showFillersTile = checked
-                        }
                         FieldLabel {
                             text: qsTr("Show Pauses tile")
                             help: qsTr("Shows or hides this card after Stop, after Open File, and on a saved result. Display only: the value is the same either way.")
@@ -980,7 +971,7 @@ Page {
 
                     FieldLabel {
                         text: qsTr("Long-sound weight")
-                        help: qsTr("Exponent of the power mean used for the average vowel and gap lengths. 1 gives the plain average, where every sound counts equally. Higher values give long sounds more weight. Default 3. It feeds the Filler score (vowel lengths) and the Legacy pause score (gap lengths) only. Speech rate, Direct articulation, and Window articulation do not use it.")
+                        help: qsTr("Exponent of the power mean used for the average vowel and gap lengths. 1 gives the plain average, where every sound counts equally. Higher values give long sounds more weight. Default 3. It feeds the Legacy pause score (gap lengths) only. Speech rate, Direct articulation, and Window articulation do not use it.")
                         formula: "M_d(L) = (mean(L_k^d))^(1/d), then truncated to seconds"
                     }
                     SpinBox {
@@ -1028,7 +1019,7 @@ Page {
 
                     FieldLabel {
                         text: qsTr("Window scale")
-                        help: qsTr("Scales the Window articulation rate. It converts vowels per minute into words per minute for that method, the same role K1 has for Direct. Default 0.71. Raising it raises only the Window rate. K4 stays the filler scale.")
+                        help: qsTr("Scales the Window articulation rate. It converts vowels per minute into words per minute for that method, the same role K1 has for Direct. Default 0.71. Raising it raises only the Window rate.")
                         formula: "Ra_window = K5 × Nv × 60 / (T_window − ΣTp)"
                     }
                     DecimalSpinBox {
@@ -1050,46 +1041,6 @@ Page {
                         Layout.fillWidth: true
                     }
                     Hint { text: qsTr("Legacy pause score only. Higher raises it.") }
-
-                    SubHeader { text: qsTr("Fillers"); Layout.columnSpan: root.singleColumnForm ? 1 : 2 }
-                    FieldLabel {
-                        text: qsTr("Filler scale")
-                        help: qsTr("Scales the filler score. The score measures how much longer the average vowel is than the typical (median) vowel, so drawn-out sounds push it up. A higher value raises the score for the same vowels. The score is then turned into a percent between the Low and High filler scores. Default 100.")
-                        formula: "F = K4 × (Tv_mean − Tv_med) / Tv_med, or 0 when Tv_mean < Tv_med"
-                    }
-                    DecimalSpinBox {
-                        value: settingsApi ? Math.round(settingsApi.k4 * 100) : 10000
-                        onRealValueEdited: function(v) { if (settingsApi) settingsApi.k4 = v }
-                        Layout.fillWidth: true
-                    }
-                    Hint { text: qsTr("Higher raises the filler score.") }
-                    FieldLabel {
-                        text: qsTr("Low filler score")
-                        help: qsTr("Filler score at or below this value shows 0 percent. Default 120.")
-                        formula: "F_c = clamp(F, Low, High)\npercent = (F_c − Low) / (High − Low) × 100"
-                    }
-                    SpinBox {
-                        from: 0
-                        to: 10000
-                        value: settingsApi ? settingsApi.fillerMin : 120
-                        onValueModified: if (settingsApi)
-                            settingsApi.fillerMin = value
-                        Layout.fillWidth: true
-                    }
-                    Hint { text: qsTr("A score at or below this is shown as 0%.") }
-                    FieldLabel {
-                        text: qsTr("High filler score")
-                        help: qsTr("Filler score at or above this value shows 100 percent. Default 240.")
-                    }
-                    SpinBox {
-                        from: 0
-                        to: 10000
-                        value: settingsApi ? settingsApi.fillerMax : 240
-                        onValueModified: if (settingsApi)
-                            settingsApi.fillerMax = value
-                        Layout.fillWidth: true
-                    }
-                    Hint { text: qsTr("At or above this is 100%. In between fills 0–100%.") }
                 }
             }
         }

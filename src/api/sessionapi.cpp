@@ -19,6 +19,9 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QHash>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QIODevice>
 #include <QMediaDevices>
 #include <QMetaObject>
@@ -120,7 +123,8 @@ speechrate::Config configFrom(const AppSettings& settings)
     config.k1 = settings.speechRateK1;
     config.k2 = settings.articulationK2;
     config.k3 = settings.pausesK3;
-    config.k4 = settings.fillerK4;
+    // k4 used to scale the filler score. It stays at the Config default so
+    // sameMeasurement still matches a segment that stored the old default.
     config.k5 = settings.windowK5;
     config.pauseThresholdMs = settings.phrasalPauseMs;
     config.articulationMethod = speechrate::articulationMethodOf(settings.articulationMethod);
@@ -131,8 +135,6 @@ speechrate::Config configFrom(const AppSettings& settings)
 }
 
 QVariantMap metricsToMap(const speechrate::Metrics& metrics,
-    double fillerMin,
-    double fillerMax,
     bool live,
     int phraseEpoch,
     bool stored)
@@ -146,9 +148,6 @@ QVariantMap metricsToMap(const speechrate::Metrics& metrics,
     map.insert(QStringLiteral("articulationRate"), metrics.articulationRate);
     map.insert(QStringLiteral("phrasePauses"), metrics.phrasePauses);
     map.insert(QStringLiteral("speechDuration"), metrics.speechDuration);
-    map.insert(QStringLiteral("fillerScore"), metrics.fillerScore);
-    map.insert(QStringLiteral("fillerPercent"),
-        roundHalfAway(speechrate::fillerPercent(metrics.fillerScore, fillerMin, fillerMax)));
     map.insert(QStringLiteral("gapLength"), metrics.gapLength);
     map.insert(QStringLiteral("gapCount"), metrics.gapCount);
     map.insert(QStringLiteral("gapMax"), metrics.gapMax);
@@ -198,11 +197,47 @@ QString localPathFromUrl(const QUrl& url)
     return {};
 }
 
+// A manifest name is a single wav file. Reject separators so a row cannot
+// point outside the bundled examples directory.
+bool exampleNameAllowed(const QString& name)
+{
+    if (name.isEmpty() || name.size() > 180)
+        return false;
+    if (!name.endsWith(QLatin1String(".wav"), Qt::CaseInsensitive))
+        return false;
+    if (name.contains(QLatin1Char('/')) || name.contains(QLatin1Char('\\'))
+        || name.contains(QLatin1String("..")) || name.startsWith(QLatin1Char('.')))
+        return false;
+    return true;
+}
+
+QVariantList loadExampleManifest()
+{
+    QVariantList items;
+    QFile file(QStringLiteral(":/examples/manifest.json"));
+    if (!file.open(QIODevice::ReadOnly))
+        return items;
+    const QJsonArray array = QJsonDocument::fromJson(file.readAll()).object()
+                                 .value(QStringLiteral("items"))
+                                 .toArray();
+    for (const QJsonValue& value : array) {
+        const QJsonObject object = value.toObject();
+        const QString name = object.value(QStringLiteral("file")).toString();
+        if (!exampleNameAllowed(name))
+            continue;
+        QVariantMap row;
+        row.insert(QStringLiteral("file"), name);
+        row.insert(QStringLiteral("group"), object.value(QStringLiteral("group")).toString());
+        row.insert(QStringLiteral("title"), object.value(QStringLiteral("title")).toString());
+        row.insert(QStringLiteral("placeholder"), object.value(QStringLiteral("placeholder")).toBool(false));
+        items.append(row);
+    }
+    return items;
+}
+
 QString analysisCacheKey(const QString& path,
     const speechrate::Config& cfg,
-    int pauseThresholdMs,
-    double fillerMin,
-    double fillerMax)
+    int pauseThresholdMs)
 {
     const auto number = [](double value) {
         return QString::number(value, 'g', 12);
@@ -226,9 +261,7 @@ QString analysisCacheKey(const QString& path,
         + QString::number(cfg.pauseThresholdMs) + QLatin1Char('|')
         + QString::number(static_cast<int>(cfg.articulationMethod)) + QLatin1Char('|')
         + QString::number(static_cast<int>(cfg.speechRateMethod)) + QLatin1Char('|')
-        + QString::number(pauseThresholdMs) + QLatin1Char('|')
-        + number(fillerMin) + QLatin1Char('|')
-        + number(fillerMax);
+        + QString::number(pauseThresholdMs);
 }
 
 QVariantList histogramToList(const std::vector<speechrate::HistogramBin>& bins)
@@ -297,8 +330,6 @@ struct Job {
     JobKind kind = JobKind::Live;
     std::vector<float> samples;
     speechrate::Config config;
-    double fillerMin = 120;
-    double fillerMax = 240;
     int pauseThresholdMs = speechrate::kDefaultPhrasalPauseMs;
     int phraseEpoch = 0;
     double openSeconds = 0;
@@ -454,7 +485,7 @@ protected:
                     openFileNotice = QCoreApplication::translate("SessionApi",
                         "The file was measured, but it could not be prepared for playback.");
                 }
-                const QString key = analysisCacheKey(filePath, job.config, job.pauseThresholdMs, job.fillerMin, job.fillerMax);
+                const QString key = analysisCacheKey(filePath, job.config, job.pauseThresholdMs);
                 const auto cached = m_cache.constFind(key);
                 if (cached != m_cache.cend()) {
                     map = cached.value();
@@ -480,9 +511,9 @@ protected:
                             Q_ARG(QString, error));
                         continue;
                     }
-                    map = metricsToMap(measured.metrics, job.fillerMin, job.fillerMax, false, 0, false);
+                    map = metricsToMap(measured.metrics, false, 0, false);
                     map.insert(QStringLiteral("recordingSummary"), summaryMap);
-                    SessionStore::insertMeasurement(map, measured.parts, job.config, job.fillerMin, job.fillerMax);
+                    SessionStore::insertMeasurement(map, measured.parts, job.config);
                     m_cache.insert(key, map);
                 }
                 const AppSettings chartSettings = Settings::loadSettings();
@@ -522,7 +553,7 @@ protected:
 
                 bool stored = false;
                 if (job.kind == JobKind::Final) {
-                    map = metricsToMap(measured.metrics, job.fillerMin, job.fillerMax, false, job.phraseEpoch, true);
+                    map = metricsToMap(measured.metrics, false, job.phraseEpoch, true);
                     QVariantMap segment;
                     segment.insert(QStringLiteral("startedAt"), job.segmentStartedAt);
                     segment.insert(QStringLiteral("endedAt"), job.segmentEndedAt);
@@ -530,8 +561,7 @@ protected:
                     segment.insert(QStringLiteral("articulationRate"), measured.metrics.articulationRate);
                     segment.insert(QStringLiteral("phrasePauses"), measured.metrics.phrasePauses);
                     segment.insert(QStringLiteral("speechDuration"), measured.metrics.speechDuration);
-                    segment.insert(QStringLiteral("fillerPercent"), map.value(QStringLiteral("fillerPercent")).toInt());
-                    SessionStore::insertMeasurement(segment, measured.parts, job.config, job.fillerMin, job.fillerMax);
+                    SessionStore::insertMeasurement(segment, measured.parts, job.config);
                     QString wavPath;
                     stored = SessionStore::commitSegment(job.sessionId,
                         job.sessionStartedAt,
@@ -546,12 +576,12 @@ protected:
                     if (stored)
                         LOG_INFO() << "Stored phrase" << job.segmentStartedAt << "rate" << measured.metrics.speechRate;
                 } else {
-                    map = metricsToMap(measured.metrics, job.fillerMin, job.fillerMax, true, job.phraseEpoch, false);
+                    map = metricsToMap(measured.metrics, true, job.phraseEpoch, false);
                     map.insert(QStringLiteral("openSeconds"), job.openSeconds);
                 }
                 map.insert(QStringLiteral("stored"), stored);
                 if (job.kind == JobKind::Final)
-                    SessionStore::insertMeasurement(map, measured.parts, job.config, job.fillerMin, job.fillerMax);
+                    SessionStore::insertMeasurement(map, measured.parts, job.config);
                 stampJob(map);
             }
 
@@ -932,8 +962,6 @@ private:
         job.kind = JobKind::Final;
         job.samples = samples;
         job.config = configFrom(m_settings);
-        job.fillerMin = m_settings.fillerMin;
-        job.fillerMax = m_settings.fillerMax;
         job.phraseEpoch = epoch;
         job.generation = m_generation;
         job.sessionId = m_sessionId;
@@ -961,8 +989,6 @@ private:
         job.samples = reading.samples;
         job.openSeconds = reading.openSeconds;
         job.config = configFrom(m_settings);
-        job.fillerMin = m_settings.fillerMin;
-        job.fillerMax = m_settings.fillerMax;
         job.phraseEpoch = reading.epoch;
         job.generation = m_generation;
         job.sessionId = m_sessionId;
@@ -1020,8 +1046,6 @@ struct SessionApi::SessionAccumulator {
     speechrate::Parts parts;
     speechrate::Config config;
     speechrate::Metrics metrics;
-    double fillerMin = 120;
-    double fillerMax = 240;
     bool ready = false;
     bool pooled = true;
     struct Phrase {
@@ -1029,7 +1053,6 @@ struct SessionApi::SessionAccumulator {
         double speechRate = 0;
         double articulationRate = 0;
         double phrasePauses = 0;
-        double fillerScore = 0;
     };
     std::vector<Phrase> phrases;
 
@@ -1040,7 +1063,6 @@ struct SessionApi::SessionAccumulator {
         sample.speechRate = phrase.speechRate;
         sample.articulationRate = phrase.articulationRate;
         sample.phrasePauses = phrase.phrasePauses;
-        sample.fillerScore = phrase.fillerScore;
         phrases.push_back(sample);
     }
 
@@ -1063,7 +1085,6 @@ struct SessionApi::SessionAccumulator {
         out.speechRate = reduce(&Phrase::speechRate);
         out.articulationRate = reduce(&Phrase::articulationRate);
         out.phrasePauses = reduce(&Phrase::phrasePauses);
-        out.fillerScore = reduce(&Phrase::fillerScore);
         return out;
     }
 };
@@ -1234,7 +1255,6 @@ void SessionApi::resetResultState()
     m_phrasePauses = 0;
     m_speechDuration = 0;
     m_useSpeechClock = false;
-    m_fillerScore = 0;
     m_details.clear();
     clearRecordingSummary();
     if (!m_tempoPoints.isEmpty()) {
@@ -1267,15 +1287,72 @@ void SessionApi::stopSession()
 
 void SessionApi::openWavFile(const QUrl& url)
 {
-    if (m_sessionActive || m_startPending || m_stopPending || m_openFileBusy || m_clearPending || !openFileAvailable())
+    if (!openFileAvailable())
         return;
-    const QString path = localPathFromUrl(url);
+    beginOpenFile(localPathFromUrl(url));
+}
+
+QVariantList SessionApi::exampleTempos() const
+{
+    static const QVariantList items = loadExampleManifest();
+    return items;
+}
+
+QString SessionApi::materializeExample(const QString& fileName)
+{
+    bool listed = false;
+    for (const QVariant& item : exampleTempos()) {
+        if (item.toMap().value(QStringLiteral("file")).toString() == fileName) {
+            listed = true;
+            break;
+        }
+    }
+    const QString resource = QStringLiteral(":/examples/") + fileName;
+    if (!listed || !exampleNameAllowed(fileName) || !QFile::exists(resource)) {
+        const QString error = QCoreApplication::translate("SessionApi", "The selected file cannot be opened.");
+        setOpenFileError(error);
+        return {};
+    }
+    const QString dir = Settings::getAppDataDir() + QStringLiteral("/data/examples");
+    if (!QDir().mkpath(dir)) {
+        const QString error = QCoreApplication::translate("SessionApi", "The selected file cannot be opened.");
+        setOpenFileError(error);
+        return {};
+    }
+    const QString dest = QFileInfo(dir + QLatin1Char('/') + fileName).absoluteFilePath();
+    QFile::remove(dest);
+    if (!QFile::copy(resource, dest)) {
+        const QString error = QCoreApplication::translate("SessionApi", "The selected file cannot be opened.");
+        setOpenFileError(error);
+        return {};
+    }
+    QFile::setPermissions(dest,
+        QFileDevice::ReadOwner | QFileDevice::WriteOwner
+            | QFileDevice::ReadUser | QFileDevice::WriteUser);
+    setOpenFileError({});
+    return dest;
+}
+
+void SessionApi::openExample(const QString& fileName)
+{
+    const QString path = materializeExample(fileName);
+    if (path.isEmpty()) {
+        emit openFileFinished(false, m_openFileError);
+        return;
+    }
+    beginOpenFile(path);
+}
+
+bool SessionApi::beginOpenFile(const QString& path)
+{
+    if (m_sessionActive || m_startPending || m_stopPending || m_openFileBusy || m_clearPending)
+        return false;
     const QFileInfo info(path);
     if (path.isEmpty() || !info.exists() || !info.isFile() || !info.isReadable()) {
         const QString error = QCoreApplication::translate("SessionApi", "The selected file cannot be opened.");
         setOpenFileError(error);
         emit openFileFinished(false, error);
-        return;
+        return false;
     }
     ++m_captureGeneration;
     m_listenGeneration = m_captureGeneration;
@@ -1289,11 +1366,10 @@ void SessionApi::openWavFile(const QUrl& url)
     job.kind = JobKind::OpenFile;
     job.path = path;
     job.config = configFrom(settings);
-    job.fillerMin = settings.fillerMin;
-    job.fillerMax = settings.fillerMax;
     job.pauseThresholdMs = settings.phrasalPauseMs;
     job.generation = m_captureGeneration;
     m_queue->pushOrdered(std::move(job));
+    return true;
 }
 
 void SessionApi::reportMicrophoneDenied()
@@ -1435,9 +1511,7 @@ void SessionApi::applyMetrics(const QVariantMap& metrics)
 
     speechrate::Parts parts;
     speechrate::Config config;
-    double fillerMin = 0;
-    double fillerMax = 0;
-    if (!SessionStore::takeMeasurement(metrics, parts, config, fillerMin, fillerMax))
+    if (!SessionStore::takeMeasurement(metrics, parts, config))
         return;
 
     speechrate::Metrics phrase = speechrate::metricsFromLengths(parts.vowelLengths,
@@ -1455,8 +1529,6 @@ void SessionApi::applyMetrics(const QVariantMap& metrics)
             speechrate::appendParts(acc.parts, parts);
         acc.config = acc.ready ? acc.config : config;
         acc.pooled = true;
-        acc.fillerMin = fillerMin;
-        acc.fillerMax = fillerMax;
         acc.metrics = speechrate::metricsFromLengths(acc.parts.vowelLengths,
             acc.parts.gapLengths,
             acc.parts.speechDuration,
@@ -1471,8 +1543,6 @@ void SessionApi::applyMetrics(const QVariantMap& metrics)
         acc.ready = acc.metrics.valid;
     } else {
         acc.pooled = false;
-        acc.fillerMin = fillerMin;
-        acc.fillerMax = fillerMax;
         acc.metrics = speechrate::blendMetrics(acc.metrics, phrase);
         acc.ready = acc.metrics.valid;
     }
@@ -1487,7 +1557,7 @@ void SessionApi::applyMetrics(const QVariantMap& metrics)
     if (!segmentClosePaintsScreen(m_sessionActive, m_stopPending))
         return;
     if (!m_hasResult) {
-        showMetrics(metricsToMap(acc.metrics, acc.fillerMin, acc.fillerMax, false, 0, true),
+        showMetrics(metricsToMap(acc.metrics, false, 0, true),
             m_useSpeechClock ? m_speechDuration : acc.metrics.speechDuration);
     }
 }
@@ -1510,7 +1580,7 @@ void SessionApi::showSessionMean()
     // Vowel and gap statistics stay those of the joined collection.
     const speechrate::Metrics mean = acc.meanHeadlines(
         speechrate::summaryMethodOf(Settings::loadSettings().summaryMethod));
-    QVariantMap shown = metricsToMap(mean, acc.fillerMin, acc.fillerMax, false, 0, true);
+    QVariantMap shown = metricsToMap(mean, false, 0, true);
     shown.insert(QStringLiteral("speechDuration"), m_useSpeechClock ? m_speechDuration : acc.metrics.speechDuration);
     m_shownSessionId.clear();
     showMetrics(shown, m_useSpeechClock ? m_speechDuration : acc.metrics.speechDuration);
@@ -1586,7 +1656,6 @@ void SessionApi::showMetrics(const QVariantMap& shown, double speechSeconds)
     m_phrasePauses = shown.value(QStringLiteral("phrasePauses")).toDouble();
     if (!m_useSpeechClock)
         m_speechDuration = speechSeconds;
-    m_fillerScore = shown.value(QStringLiteral("fillerScore")).toDouble();
     QVariantMap details = shown;
     details.insert(QStringLiteral("speechDuration"), m_speechDuration);
     m_details = details;
@@ -1710,13 +1779,10 @@ void SessionApi::rememberShown(const QVariantMap& shown, double speechSeconds)
         : m_gaugeArticulationRate);
     const int pauses = roundHalfAway(shown.value(QStringLiteral("phrasePauses")).toDouble() * 100.0);
     const int duration = roundHalfAway(speechSeconds);
-    const int fillers = roundHalfAway(speechrate::fillerPercent(
-        shown.value(QStringLiteral("fillerScore")).toDouble(), settings.fillerMin, settings.fillerMax));
     const QString key = QString::number(speechRate) + QLatin1Char('|')
         + QString::number(articulation) + QLatin1Char('|')
         + QString::number(pauses) + QLatin1Char('|')
-        + QString::number(duration) + QLatin1Char('|')
-        + QString::number(fillers);
+        + QString::number(duration);
     if (key == m_lastShownKey)
         return;
 
@@ -1726,7 +1792,6 @@ void SessionApi::rememberShown(const QVariantMap& shown, double speechSeconds)
     sample.insert(QStringLiteral("articulationRate"), articulation);
     sample.insert(QStringLiteral("phrasePauses"), pauses / 100.0);
     sample.insert(QStringLiteral("speechDuration"), duration);
-    sample.insert(QStringLiteral("fillerPercent"), fillers);
     if (!SessionStore::appendShown(m_shownSessionId, m_shownSessionStartedAt, sample))
         return;
     m_lastShownKey = key;
@@ -1818,6 +1883,10 @@ void SessionApi::notifySessions()
 
 void SessionApi::loadPreview(const QString& mode)
 {
+    if (mode == QLatin1String("ready")) {
+        resetResultState();
+        return;
+    }
     QVariantList points;
     constexpr int count = 150;
     for (int i = 0; i < count; ++i) {
@@ -1836,8 +1905,6 @@ void SessionApi::loadPreview(const QString& mode)
     m_gaugeArticulationRate = 178.0;
     m_phrasePauses = 0.53;
     m_speechDuration = 313.0;
-    // fillerMin 120 … fillerMax 240 maps 180 to 50 percent on the fillers arc.
-    m_fillerScore = 180.0;
     m_hasResult = true;
     const bool early = mode == QLatin1String("early");
     const bool live = mode == QLatin1String("live") || early;
@@ -1848,7 +1915,6 @@ void SessionApi::loadPreview(const QString& mode)
         // and not the full estimate or the neutral line.
         m_speechDuration = 1.0;
         m_hasResult = false;
-        m_fillerScore = 0.0;
     }
     m_audioLevel = live ? 0.45 : 0.0;
     m_sessionActive = live;
