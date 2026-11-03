@@ -302,17 +302,13 @@ Item {
                 return top + (1 - (value - yMin) / valueSpan) * plotHeight
             }
 
-            // Horizontal bands match the gauge scale. Each band is the hue
-            // at the middle of that third. Fast is a brighter yellow and a
-            // slightly stronger wash so it stays apart from the green band.
+            // Horizontal bands match the gauge. Slow is blue, medium is
+            // green, fast is gold, and each band is lighter than the one below.
             var bandH = plotHeight / 3
             for (var zone = 0; zone < 3; ++zone) {
                 var yTop = top + (2 - zone) * bandH
                 var yBot = zone === 0 ? top + plotHeight : yTop + bandH
-                var bandAlpha = zone === 2
-                                ? Theme.zoneFastBandAlpha(root.paintTheme)
-                                : Theme.zoneBandAlpha(root.paintTheme)
-                ctx.fillStyle = Qt.alpha(Theme.paceColor((zone + 0.5) / 3, root.paintTheme), bandAlpha)
+                ctx.fillStyle = Theme.paceColor((zone + 0.5) / 3, root.paintTheme)
                 ctx.fillRect(left, yTop, plotWidth, Math.max(1, yBot - yTop))
             }
 

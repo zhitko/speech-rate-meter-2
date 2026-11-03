@@ -156,9 +156,13 @@ Page {
     readonly property real gaugeContentWidth: Math.max(140, gaugeCardWidth - 32)
     readonly property real gaugeContentBody: Math.max(240, recordingCardHeight - 32)
     readonly property real chosenRadius: Theme.fitPaceRadius(gaugeContentWidth, gaugeContentBody, Theme.chartZoneGutter)
-    // Chart and pace arcs share this width, so the 180° ends meet the plot.
+    // Pace arcs are a quarter smaller than the semicircle that fits this card.
+    // The chart keeps that full width and takes the height the arcs give up.
+    readonly property real arcRadius: chosenRadius * 0.75
     readonly property real visualsWidth: Math.min(gaugeContentWidth,
                                                    Theme.chartZoneGutter + Theme.gaugePlotSpan(chosenRadius))
+    readonly property real arcVisualsWidth: Math.min(visualsWidth,
+                                                      Theme.chartZoneGutter + Theme.gaugePlotSpan(arcRadius))
     readonly property bool navigationLayoutFits: fitNavigation
             && layout.implicitHeight + AppScale.pagePadding * 2 <= viewportHeight + 1
 
@@ -828,8 +832,8 @@ Page {
                         Item {
                             id: gaugeSlot
                             Layout.alignment: Qt.AlignHCenter
-                            Layout.preferredWidth: root.visualsWidth
-                            Layout.maximumWidth: root.visualsWidth
+                            Layout.preferredWidth: root.arcVisualsWidth
+                            Layout.maximumWidth: root.arcVisualsWidth
                             Layout.fillHeight: false
                             readonly property real hintBlock: 4 + gaugeHint.implicitHeight + 2
                             Layout.preferredHeight: gauge.implicitHeight + hintBlock

@@ -159,18 +159,12 @@ Item {
         return (1 - Math.max(0, Math.min(1, f))) / 2
     }
 
-    // Pace colours along the whole scale, toned down onto the card.
+    // Pace colours along the whole scale. Same paints as the chart bands.
     component PaceGradient: ConicalGradient {
         id: pace
-        property real alpha: 0.4
         property var gauge: root
         function tone(f) {
-            // Fast is a brighter yellow than a single wash would show, on the
-            // scale as well as on the chart. Slow and medium stay faint.
-            var a = pace.alpha
-            if (f >= 0.70)
-                a = pace.gauge.paintTheme === Material.Dark ? 0.88 : 0.72
-            return pace.gauge.paintOnCard(Theme.paceColor(f, pace.gauge.paintTheme), a)
+            return Theme.paceColor(f, pace.gauge.paintTheme)
         }
         centerX: gauge.cx
         centerY: gauge.cy
@@ -221,9 +215,7 @@ Item {
         strokeWidth: live ? gauge.stroke : 0
         strokeColor: "transparent"
         capStyle: ShapePath.RoundCap
-        strokeGradient: PaceGradient {
-            alpha: track.gauge.paintTheme === Material.Dark ? 0.36 : 0.42
-        }
+        strokeGradient: PaceGradient { }
 
         PathAngleArc {
             centerX: track.gauge.cx

@@ -436,24 +436,19 @@ Item {
     }
 
     // Speech-rate zones: 0 = Slow, 1 = Average, 2 = Fast.
-    // These inks are for the zone name and other small text. Fast is a dark
-    // gold on a light page and a light gold on a dark page, so it stays
-    // readable and is not the green of Average.
-    readonly property var zoneColorsLight: ["#1A4FE0", "#0E7C36", "#8F5A00"]
-    readonly property var zoneColorsDark: ["#6B96FF", "#3DDE6A", "#FFE08A"]
-    // Tracks and chart bands. Medium is a clear green and fast is a bright
-    // yellow, so the two zones stay apart. The chart paints slow and medium
-    // as a light wash (zoneBandAlpha) and fast a step stronger
-    // (zoneFastBandAlpha). The gauge scale uses the same hues.
-    readonly property var zoneTracksLight: ["#2E5BDE", "#149446", "#FFD400"]
-    readonly property var zoneTracksDark: ["#8AABFF", "#3DDE6A", "#FFE03A"]
+    // Inks for the zone name and other small text. Each clears 4.5:1 on the
+    // card. Fast is gold, so it stays readable and is not the green of Average.
+    readonly property var zoneColorsLight: ["#305C8A", "#4A5C00", "#7A4E00"]
+    readonly property var zoneColorsDark: ["#6B96FF", "#C6E070", "#FFE08A"]
     // Pace curves. The chart line and the arc that follows it use the same
-    // colour: articulation blue, speech rate green. They do not change
-    // with the zone.
-    readonly property color speechSeriesLight: "#1BB34A"
-    readonly property color speechSeriesDark: "#3DDE6A"
-    readonly property color articulationSeriesLight: "#1A4FE0"
-    readonly property color articulationSeriesDark: "#6B96FF"
+    // colour: articulation blue, speech rate green. They do not change with
+    // the zone. On a light page the lines are dark, and on a dark page they
+    // are light, so they stay apart from the blue, green, and gold bands
+    // and from the zone names.
+    readonly property color speechSeriesLight: "#146C2E"
+    readonly property color speechSeriesDark: "#7DFFA8"
+    readonly property color articulationSeriesLight: "#1A3FBF"
+    readonly property color articulationSeriesDark: "#D6E4FF"
     // Left inset of the tempo plot. Zone words sit here. The pace arc ends
     // line up with the coloured plot, not with this gutter.
     readonly property real chartZoneGutter: AppScale.fs(11) + 16
@@ -463,27 +458,20 @@ Item {
         return colors[Math.max(0, Math.min(2, zone))];
     }
     function zoneTrackColor(zone, theme) {
-        let colors = theme === Material.Dark ? zoneTracksDark : zoneTracksLight;
-        return colors[Math.max(0, Math.min(2, zone))];
+        return paceColor((Math.max(0, Math.min(2, zone)) + 0.5) / 3, theme);
     }
-    // Gauge scale and chart bands share these hues. Each third holds its own
-    // colour: blue, then a clear green, then a bright yellow. Fast is lighter
-    // and more yellow than the green middle, on both themes.
-    readonly property color paceSlowLight: "#2E5BDE"
-    readonly property color paceMidLight: "#149446"
-    readonly property color paceFastLight: "#FFD400"
-    readonly property color paceSlowDark: "#8AABFF"
-    readonly property color paceMidDark: "#3DDE6A"
-    readonly property color paceFastDark: "#FFE03A"
-    // Chart zone wash. Slow and medium stay faint. Fast is a stronger, purer
-    // yellow so it stays yellow on a gray card and on a near-black card,
-    // and stays apart from the green band. The curves stay in front.
-    function zoneBandAlpha(theme) {
-        return theme === Material.Dark ? 0.26 : 0.20;
-    }
-    function zoneFastBandAlpha(theme) {
-        return theme === Material.Dark ? 0.80 : 0.52;
-    }
+    // Backgrounds of the three zones, shared by the tempo chart and the arcs.
+    // Slow is blue, Average is green, Fast is gold: cool, then the normal
+    // pace, then warm. Fast is not red. Each zone is lighter than the one
+    // before it. Hue and lightness both change, so the three stay apart
+    // under protanopia, deuteranopia, and tritanopia, and the pace lines
+    // stay in front of the bands.
+    readonly property color paceSlowLight: "#95CDF8"
+    readonly property color paceMidLight: "#BDE0BF"
+    readonly property color paceFastLight: "#FDE674"
+    readonly property color paceSlowDark: "#4D5F8E"
+    readonly property color paceMidDark: "#267B3E"
+    readonly property color paceFastDark: "#A78109"
     function mixColor(c1, c2, t) {
         let u = Math.max(0, Math.min(1, t));
         return Qt.rgba(c1.r + (c2.r - c1.r) * u,
