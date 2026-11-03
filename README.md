@@ -20,7 +20,7 @@ Package id: `by.intoncore.SpeechRateMeter2`. Version name `1.0.0`, version code 
 2. With **Detect speech automatically** on, a pause ends the current phrase, the phrase is measured, and the next one starts when you speak again. With it off, measuring starts when you press Start, a pause does not end the phrase, and the take is split into 15-second parts.
 3. While you speak, speech rate, articulation, and pauses follow the **analysis window** — the most recent kept speech (10 seconds by default) — so a change of pace shows within a few seconds. Direct speech rate, direct articulation, and the pause length use that same window. They are not a running total from Start. **Speech** is the total time measured since Start.
 4. Press **Stop**. Home and History then show the selected summary of speech rate, articulation, and pauses for every phrase kept from Start to Stop. Speech is the total time. The screen names that summary. A phrase shorter than one second is dropped.
-5. The scratch WAV stays after that phrase’s numbers are stored, so **Listen** can play it after **Stop**. Unless **Keep recording files** is on, those files are deleted when you leave the app. There is no waveform.
+5. The scratch WAV stays after that phrase’s numbers are stored, so **Listen** can play it after **Stop**. With **Keep recording files** on, Stop joins those phrase files into one WAV. Off, the phrase files are deleted when you leave the app. There is no waveform.
 
 All processing is local. The Android package requests only microphone access (`RECORD_AUDIO`).
 
@@ -71,7 +71,7 @@ An **Additional** switch under General is not saved and turns off when you leave
 
 **Detect speech automatically** measures background noise after Start, then waits for speech. A pause ends the phrase. When it is off, measuring starts when you press Start, a pause does not end the phrase, and the recording is saved in 15-second parts.
 
-**Keep recording files** (Additional, off by default) leaves each phrase as a WAV in `data/records` after you leave the app. Off deletes those files when you leave the app. Until then, **Listen** on Home can play them.
+**Keep recording files** (Additional, off by default on desktop and on Android) joins the session’s phrase files into one WAV in `data/records` when you press Stop, and leaves that file after you leave the app. Off deletes the phrase files when you leave the app. Until then, **Listen** on Home can play the recording.
 
 **Delete user data** removes saved sessions and any recording files still kept in `data/records`. Settings are kept.
 
@@ -96,7 +96,7 @@ Settings take effect on the next phrase. The in-app [User Guide](docs/user_guide
 | **Pause cutting** | With autodetection on, a silence of Silence Duration (default 2 s) closes a phrase. Speech longer than 15 s is cut and continued in the next phrase. Phrases under 1 s are dropped. |
 | **Voice activity detection** | Energy, autocorrelation, or hybrid (both). Optional calibration measures background noise before the session listens for speech. |
 | **Session file** | One JSON file per session under `data/sessions/`: every on-screen change and every kept phrase, including the vowel and gap lengths needed to recompute the joined result. No audio path. |
-| **Recording files** | A WAV under `data/records/` is written while a phrase is stored and can be played with **Listen** after Stop. It is deleted when the app closes unless **Keep recording files** is on. |
+| **Recording files** | A WAV under `data/records/` is written while a phrase is stored. After Stop, **Listen** plays it. With **Keep recording files** on, Stop joins the phrase files into one WAV and removes them. Off, the phrase files are deleted when the app closes. |
 | **Speech gate** | A buffer whose nuclei do not rise above the noise floor is not published and not stored, so silence does not read as fast speech. |
 | **Open File** | Whole-file analysis on a computer and on Android. PCM and float WAV files are converted to 8000 Hz mono, then measured. The result is not cut into phrases and is not written to History. Listen plays the converted file. On Android a document-picker URI is copied into app data first. |
 | **i18n** | English and Russian UI via Qt Linguist. |
@@ -264,14 +264,14 @@ The project already sets:
 
 ### Tests
 
-Desktop builds register two checks:
+Desktop builds register these checks:
 
 ```bash
 cd build
 ctest --output-on-failure
 ```
 
-`speechrate-analysis-test` checks the tempo formulas. `sessionstore-test` checks session files.
+`speechrate-analysis-test` checks the tempo formulas. `sessionstore-test` checks session files. `wavloader-test` checks WAV loading. `wavmerge-test` checks that phrase files join into one WAV. `livecadence-test` checks the live reading cadence.
 
 ### Run the Application
 

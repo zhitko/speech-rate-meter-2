@@ -172,6 +172,7 @@ private slots:
     void applyRecordingSummary(quint64 generation, QVariantMap summary);
     void notifySessions();
     void noteListenFile(quint64 generation, const QString& path);
+    void replaceListenFile(quint64 generation, const QString& path);
     void noteOpenedPlayback(quint64 generation, const QString& path);
 
 private:

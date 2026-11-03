@@ -1,5 +1,6 @@
 #include "src/api/helpers/settings.h"
 #include "src/services/sessionstore.h"
+#include "src/services/wavloader.h"
 
 #include <QCoreApplication>
 #include <QDir>
@@ -197,6 +198,94 @@ void testCommitKeepsWavWhenEnabled()
     SessionStore::clearAll();
     expect(fileCount(QStringLiteral("*.wav")) == 0, "delete user data removes kept wavs");
     setKeepRecordingFiles(false);
+}
+
+void testMergeSessionRecording()
+{
+    setKeepRecordingFiles(true);
+    SessionStore::clearAll();
+    const QString id = QStringLiteral("20261103-120000-000");
+    const QString started = QStringLiteral("2026-11-03T12:00:00.000");
+    const std::vector<float> firstSamples { 1.f, -2.f, 300.f };
+    const std::vector<float> secondSamples { 4.f, 5.f };
+    QVariantMap first = measuredSegment();
+    first.insert(QStringLiteral("startedAt"), QStringLiteral("2026-11-03T12:00:01.000"));
+    first.insert(QStringLiteral("endedAt"), QStringLiteral("2026-11-03T12:00:02.000"));
+    QVariantMap second = first;
+    second.insert(QStringLiteral("endedAt"), QStringLiteral("2026-11-03T12:00:04.000"));
+    QString firstPath;
+    QString secondPath;
+    expect(SessionStore::commitSegment(id, started, first, firstSamples, &firstPath),
+        "merge commit first");
+    expect(SessionStore::commitSegment(id, started, second, secondSamples, &secondPath),
+        "merge commit second");
+    expect(fileCount(QStringLiteral("*.wav")) == 2, "two phrase files before merge");
+
+    // A phrase that is still waiting to be stored must survive the merge.
+    const QString pendingWav = SessionStore::recordsDir() + QStringLiteral("/pending-phrase.wav");
+    expect(QFile::copy(firstPath, pendingWav), "copy pending phrase");
+    QFile side(pendingWav + QStringLiteral(".pending.json"));
+    expect(side.open(QIODevice::WriteOnly), "write pending sidecar");
+    side.write("{}");
+    side.close();
+
+    const QString merged = SessionStore::mergeSessionRecording(id,
+        { firstPath, secondPath, pendingWav });
+    expect(!merged.isEmpty(), "merge returns a path");
+    expect(QFileInfo(merged).fileName() == id + QStringLiteral(".wav"),
+        "merged file uses the session id");
+    expect(!QFileInfo::exists(firstPath), "first phrase file is removed");
+    expect(!QFileInfo::exists(secondPath), "second phrase file is removed");
+    expect(QFileInfo::exists(pendingWav), "pending phrase file stays");
+    expect(fileCount(QStringLiteral("*.wav")) == 2, "merged file and the pending phrase remain");
+
+    const WavLoadResult loaded = loadAnalysisWav(merged);
+    expect(loaded.ok, "merged wav loads");
+    const std::vector<float> expected { 1.f, -2.f, 300.f, 4.f, 5.f, 1.f, -2.f, 300.f };
+    expect(loaded.samples.size() == expected.size(), "merged sample count");
+    bool samplesMatch = loaded.samples.size() == expected.size();
+    for (std::size_t index = 0; samplesMatch && index < expected.size(); ++index)
+        samplesMatch = loaded.samples[index] == expected[index];
+    expect(samplesMatch, "merged samples are the phrase files in order");
+
+    const QString bad = SessionStore::recordsDir() + QStringLiteral("/bad.wav");
+    QFile badFile(bad);
+    expect(badFile.open(QIODevice::WriteOnly), "write bad wav");
+    badFile.write("not a wav");
+    badFile.close();
+    expect(SessionStore::mergeSessionRecording(id, { merged, bad }).isEmpty(),
+        "a bad chunk does not merge");
+    expect(QFileInfo::exists(merged), "a failed merge leaves the recording");
+    expect(QFileInfo::exists(bad), "a failed merge leaves the bad file");
+    expect(SessionStore::mergeSessionRecording(id, {}).isEmpty(), "zero chunks write nothing");
+
+    SessionStore::clearAll();
+    setKeepRecordingFiles(false);
+}
+
+void testKeepRecordingFilesDefault()
+{
+    expect(!Settings::getDefaultSettings().keepRecordingFiles, "in-code keep default is off");
+    const QString path = Settings::getAppDataDir() + QStringLiteral("/settings.ini");
+    QFile::remove(path);
+    expect(!Settings::loadSettings().keepRecordingFiles, "a missing settings file keeps recordings off");
+
+    AppSettings settings = Settings::getDefaultSettings();
+    settings.keepRecordingFiles = true;
+    settings.language = "en";
+    Settings::saveSettings(settings);
+    expect(Settings::loadSettings().keepRecordingFiles, "a stored on value stays on");
+    expect(Settings::loadSettings().language == "en", "a stored language stays");
+
+    {
+        QSettings stored(path, QSettings::IniFormat);
+        stored.beginGroup(QStringLiteral("General"));
+        stored.remove(QStringLiteral("keepRecordingFiles"));
+        stored.endGroup();
+        stored.sync();
+    }
+    expect(!Settings::loadSettings().keepRecordingFiles, "a missing keep flag uses the off default");
+    expect(Settings::loadSettings().language == "en", "dropping the keep flag leaves other settings");
 }
 
 void testDiscardSkipsUnsavedWav()
@@ -512,6 +601,8 @@ int main(int argc, char** argv)
     testSpeechClockReplacesBufferSum();
     testCommitKeepsWavUntilClose();
     testCommitKeepsWavWhenEnabled();
+    testMergeSessionRecording();
+    testKeepRecordingFilesDefault();
     testDiscardSkipsUnsavedWav();
     testLegacyFillerFieldsAreIgnored();
     testMalformedJsonIsQuarantined();

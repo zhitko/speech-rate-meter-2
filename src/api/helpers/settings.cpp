@@ -143,7 +143,10 @@ bool readSettingsFile(QSettings& qsettings, AppSettings* out, bool writeMigratio
     settings.preset = qsettings.value(QStringLiteral("preset"), 0).toInt() == 1 ? 1 : 0;
     settings.autoStopRecording = qsettings.value("autoStopRecording", true).toBool();
     settings.autoCalibrate = qsettings.value("autoCalibrate", false).toBool();
-    settings.keepRecordingFiles = qsettings.value("keepRecordingFiles", false).toBool();
+    // A stored value is kept. The build default applies only when the key is absent.
+    settings.keepRecordingFiles = qsettings.value(
+        QStringLiteral("keepRecordingFiles"),
+        SRM_DEFAULT_KEEP_RECORDING_FILES != 0).toBool();
     settings.vadCalibrationDurationMs = qsettings.value("vadCalibrationDurationMs", 2000).toInt();
     settings.autoStopSilenceDuration = qsettings.value("autoStopSilenceDuration", 2000).toInt();
     settings.phrasalPauseMs = std::clamp(

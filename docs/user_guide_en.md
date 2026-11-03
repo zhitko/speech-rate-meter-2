@@ -32,7 +32,7 @@ On any page except Settings, a red **Recording** chip in the toolbar shows the s
 
 After **Stop**: a number in the arc, the chip naming the summary (by default **Median**), the value cards that are switched on, and the **Whole recording** card.
 
-After **Stop** the arc shows the summary of the phrases that were kept. The chip names that summary. The default is **Median**. The cards you left on in Settings appear beside it, and the tempo chart stays above the arcs. **Listen**, to the left of **Start**, plays the recording. Press it again to stop playback. The audio is deleted when you leave the app, unless **Keep recording files** is on.
+After **Stop** the arc shows the summary of the phrases that were kept. The chip names that summary. The default is **Median**. The cards you left on in Settings appear beside it, and the tempo chart stays above the arcs. **Listen**, to the left of **Start**, plays the recording. Press it again to stop playback. With **Keep recording files** on, that recording is one WAV for the session. The audio is deleted when you leave the app, unless **Keep recording files** is on.
 
 ## Open a recording
 
@@ -138,7 +138,7 @@ An opened file is not listed here, because **Open File** does not save a session
 - **Use all readings** is on by default. Each tempo-chart point is then the middle of every live reading since **Start**, and **Gauge median** cannot be changed. The arcs still use **Gauge median**. Turn it off and each chart point matches the arcs, with the tip at zero while the arcs are at rest.
 - **Gauge median** is how many latest readings the gauge takes the middle of. The default is 3, so one jump moves the arc less. Set it to 1 to show the current reading. After **Stop** the gauge shows the session summary, not this median.
 
-Under the same **Additional** switch, the detection and formula controls follow **Measurement**, including **Keep recording files** and **Shortest vowel**. Leave them as they are unless you are comparing methods. **Keep recording files** stays as you set it. On, each phrase is left as a WAV file in `data/records`. Off, those files are deleted when you leave the app.
+Under the same **Additional** switch, the detection and formula controls follow **Measurement**, including **Keep recording files** and **Shortest vowel**. Leave them as they are unless you are comparing methods. **Keep recording files** stays as you set it. On, Stop leaves one WAV for the session in `data/records`. Off, the phrase files are deleted when you leave the app.
 
 A change applies to the next phrase.
 
