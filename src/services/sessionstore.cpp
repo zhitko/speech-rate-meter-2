@@ -3,6 +3,7 @@
 #include "src/api/helpers/logger.h"
 #include "src/api/helpers/settings.h"
 #include "src/services/wavfileservice.h"
+#include "src/services/wavmerge.h"
 
 #include <QDateTime>
 #include <QDir>
@@ -303,6 +304,83 @@ bool SessionStore::commitSegment(const QString& sessionId,
     remember();
     LOG_WARNING() << "Session file was not written; scratch kept at" << scratch;
     return false;
+}
+
+QString SessionStore::mergeSessionRecording(const QString& sessionId, const QStringList& chunkPaths)
+{
+    const QMutexLocker locker(&fileMutex());
+    QStringList chunks;
+    for (const QString& path : chunkPaths) {
+        const QString absolute = QFileInfo(path).absoluteFilePath();
+        if (absolute.isEmpty() || chunks.contains(absolute))
+            continue;
+        const QFileInfo info(absolute);
+        if (!info.exists() || !info.isFile())
+            continue;
+        chunks.append(absolute);
+    }
+    if (chunks.isEmpty())
+        return {};
+
+    QString stem = sessionId;
+    stem.replace(QLatin1Char('/'), QLatin1Char('-'));
+    stem.replace(QLatin1Char('\\'), QLatin1Char('-'));
+    if (stem.isEmpty())
+        stem = QStringLiteral("recording");
+
+    QDir records(recordsDir());
+    if (!records.mkpath(QStringLiteral("."))) {
+        LOG_WARNING() << "Could not create the records directory";
+        return {};
+    }
+
+    QString finalPath;
+    for (int extra = 0; extra < 1000; ++extra) {
+        const QString name = extra == 0
+            ? stem + QStringLiteral(".wav")
+            : stem + QLatin1Char('-') + QString::number(extra + 1) + QStringLiteral(".wav");
+        const QString candidate = QFileInfo(records.filePath(name)).absoluteFilePath();
+        if (chunks.contains(candidate))
+            continue;
+        if (QFileInfo::exists(pendingPath(candidate)))
+            continue;
+        finalPath = candidate;
+        break;
+    }
+    if (finalPath.isEmpty()) {
+        LOG_WARNING() << "Could not choose a path for the merged recording";
+        return {};
+    }
+
+    // Write beside the destination. A failed copy leaves the phrase files.
+    const QString tempPath = finalPath + QStringLiteral(".merging.wav");
+    const WavMergeResult merged = mergePcm16MonoWavs(chunks, tempPath);
+    if (!merged.ok) {
+        LOG_WARNING() << "Could not merge recording files:" << merged.error;
+        QFile::remove(tempPath);
+        return {};
+    }
+
+    for (const QString& chunk : chunks) {
+        if (QFileInfo::exists(pendingPath(chunk)))
+            continue;
+        if (QFileInfo(chunk).absoluteFilePath() == finalPath)
+            continue;
+        removeFile(chunk);
+    }
+
+    if (QFileInfo::exists(finalPath)) {
+        if (QFileInfo::exists(pendingPath(finalPath))) {
+            LOG_WARNING() << "Merged recording left at" << tempPath;
+            return QFileInfo(tempPath).absoluteFilePath();
+        }
+        QFile::remove(finalPath);
+    }
+    if (!QFile::rename(tempPath, finalPath)) {
+        LOG_WARNING() << "Merged recording could not be moved into place:" << finalPath;
+        return QFileInfo::exists(tempPath) ? QFileInfo(tempPath).absoluteFilePath() : QString();
+    }
+    return QFileInfo(finalPath).absoluteFilePath();
 }
 
 void SessionStore::discardUnkeptRecordings()

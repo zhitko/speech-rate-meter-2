@@ -444,12 +444,27 @@ protected:
             if (job.kind == JobKind::ClearAll) {
                 SessionStore::clearAll();
                 m_cache.clear();
+                m_sessionWavs.clear();
+                m_sessionWavId.clear();
                 QMetaObject::invokeMethod(m_api, "applyUserDataCleared", Qt::QueuedConnection);
                 continue;
             }
             if (job.kind == JobKind::EndSession) {
                 SessionStore::setEndedAt(job.sessionId, job.sessionEndedAt, job.speechCountedSec);
                 SessionStore::recoverPending();
+                // Phrase files are written as each segment is stored. With
+                // Keep recording files on, Stop replaces them with one WAV.
+                // Off leaves the phrase files for Listen and deletes them on exit.
+                if (Settings::loadSettings().keepRecordingFiles && m_sessionWavId == job.sessionId) {
+                    const QString merged = SessionStore::mergeSessionRecording(job.sessionId, m_sessionWavs);
+                    if (!merged.isEmpty()) {
+                        QMetaObject::invokeMethod(m_api, "replaceListenFile", Qt::QueuedConnection,
+                            Q_ARG(quint64, job.generation),
+                            Q_ARG(QString, merged));
+                    }
+                }
+                m_sessionWavs.clear();
+                m_sessionWavId.clear();
                 QMetaObject::invokeMethod(m_api, "notifySessions", Qt::QueuedConnection);
                 QMetaObject::invokeMethod(m_api, "applySessionEnded", Qt::QueuedConnection,
                     Q_ARG(quint64, job.generation));
@@ -581,6 +596,11 @@ protected:
                         job.samples,
                         &wavPath);
                     if (!wavPath.isEmpty()) {
+                        if (!m_sessionWavId.isEmpty() && m_sessionWavId != job.sessionId) {
+                            m_sessionWavs.clear();
+                        }
+                        m_sessionWavId = job.sessionId;
+                        m_sessionWavs.append(wavPath);
                         QMetaObject::invokeMethod(m_api, "noteListenFile", Qt::QueuedConnection,
                             Q_ARG(quint64, job.generation),
                             Q_ARG(QString, wavPath));
@@ -613,6 +633,8 @@ private:
     SessionApi* m_api = nullptr;
     JobQueue* m_queue = nullptr;
     QHash<QString, QVariantMap> m_cache;
+    QStringList m_sessionWavs;
+    QString m_sessionWavId;
 };
 
 class StreamResampler {
@@ -1196,6 +1218,20 @@ void SessionApi::noteListenFile(quint64 generation, const QString& path)
         return;
     if (m_listenFiles.contains(path) || !QFileInfo::exists(path))
         return;
+    m_listenFiles.append(path);
+    emit listenFilesChanged();
+}
+
+void SessionApi::replaceListenFile(quint64 generation, const QString& path)
+{
+    if (!m_alive.load() || generation != m_listenGeneration || path.isEmpty() || !QFileInfo::exists(path))
+        return;
+    if (m_listenFiles.size() == 1 && m_listenFiles.first() == path)
+        return;
+    // Clearing first stops playback of the phrase files, which are removed
+    // once the merged recording is in place.
+    m_listenFiles.clear();
+    emit listenFilesChanged();
     m_listenFiles.append(path);
     emit listenFilesChanged();
 }

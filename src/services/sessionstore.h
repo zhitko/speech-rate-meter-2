@@ -4,6 +4,7 @@
 #include "speechrateanalysis.h"
 
 #include <QString>
+#include <QStringList>
 #include <QVariantList>
 #include <QVariantMap>
 #include <vector>
@@ -13,6 +14,7 @@
  * Scratch WAV files live under data/records/. They stay after the segment's
  * metrics are stored so the recording can be played. When Keep recording
  * files is off, those WAV files are deleted when the application closes.
+ * When it is on, Stop joins that session's phrase files into one WAV.
  */
 class SessionStore {
 public:
@@ -69,6 +71,15 @@ public:
     static bool takeMeasurement(const QVariantMap& source,
         speechrate::Parts& parts,
         speechrate::Config& config);
+
+    /**
+     * Joins phrase WAVs into one 8000 Hz mono 16-bit file named with the
+     * session id. Copies the PCM without loading it. On success, removes
+     * phrase files that have no pending sidecar and returns the merged path.
+     * An empty list writes nothing and returns an empty path. On failure the
+     * phrase files stay and the path is empty.
+     */
+    static QString mergeSessionRecording(const QString& sessionId, const QStringList& chunkPaths);
 
     /** Writes one scratch WAV. Returns the absolute path, or empty on failure. */
     static QString writeScratch(const std::vector<float>& samples);

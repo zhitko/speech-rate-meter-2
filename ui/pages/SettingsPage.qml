@@ -761,7 +761,7 @@ Page {
                 Label {
                     Layout.fillWidth: true
                     wrapMode: Text.Wrap
-                    text: qsTr("Keep each phrase as WAV in data/records. Off deletes them on exit.")
+                    text: qsTr("On: one WAV for the session in data/records after Stop. Off deletes the phrase files on exit.")
                     color: Theme.onSurfaceVariant(Material.theme)
                     font.pixelSize: AppScale.fs(12)
                 }

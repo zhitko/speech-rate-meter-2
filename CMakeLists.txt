@@ -6,6 +6,19 @@ project(speech-rate-meter-2 VERSION 1.0.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 17)
 
+# General/keepRecordingFiles when settings.ini has no stored value.
+# 0 is off, 1 is on. Desktop stays off: that is the value in settings.ini
+# and the historical in-code default. Android is set here as well (also off)
+# so the default is a build choice, not a platform branch in application code.
+# A key already written in settings.ini is never rewritten.
+if(ANDROID)
+    set(SRM_DEFAULT_KEEP_RECORDING_FILES 0)
+else()
+    set(SRM_DEFAULT_KEEP_RECORDING_FILES 0)
+endif()
+message(STATUS "Default keepRecordingFiles: ${SRM_DEFAULT_KEEP_RECORDING_FILES} (0 = off)")
+add_compile_definitions(SRM_DEFAULT_KEEP_RECORDING_FILES=${SRM_DEFAULT_KEEP_RECORDING_FILES})
+
 find_package(Qt6 6.12 REQUIRED COMPONENTS Quick Multimedia LinguistTools)
 
 # ---------------------------------------------------------------------------
@@ -83,6 +96,8 @@ qt_add_executable(appspeech-rate-meter-2
     src/services/wavfileservice.cpp
     src/services/wavloader.h
     src/services/wavloader.cpp
+    src/services/wavmerge.h
+    src/services/wavmerge.cpp
     src/services/vadenergryservice.h
     src/services/vadenergryservice.cpp
     src/services/vadautocorrelationservice.h
@@ -305,16 +320,22 @@ if(ANDROID)
 
     # Copy runtime resources into android/assets/ so androiddeployqt bundles
     # them into the APK (extracted to AppDataLocation on device).
+    # Android assets get their own copy with Keep recording files forced off.
+    # The desktop settings.ini beside the executable is not modified.
+    # Startup extracts an asset only when that file is not already on the device,
+    # so a setting the user already saved is left alone.
     add_custom_target(copy_runtime_resources ALL
         COMMAND ${CMAKE_COMMAND} -E make_directory
             "${CMAKE_SOURCE_DIR}/android/assets"
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "${CMAKE_SOURCE_DIR}/settings.ini"
-            "${CMAKE_SOURCE_DIR}/android/assets/settings.ini"
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "${CMAKE_SOURCE_DIR}/settings_fast.ini"
-            "${CMAKE_SOURCE_DIR}/android/assets/settings_fast.ini"
-        COMMENT "Copying settings.ini and settings_fast.ini to APK assets"
+        COMMAND ${CMAKE_COMMAND}
+            -DINPUT=${CMAKE_SOURCE_DIR}/settings.ini
+            -DOUTPUT=${CMAKE_SOURCE_DIR}/android/assets/settings.ini
+            -P ${CMAKE_SOURCE_DIR}/cmake/force_keep_recording_off.cmake
+        COMMAND ${CMAKE_COMMAND}
+            -DINPUT=${CMAKE_SOURCE_DIR}/settings_fast.ini
+            -DOUTPUT=${CMAKE_SOURCE_DIR}/android/assets/settings_fast.ini
+            -P ${CMAKE_SOURCE_DIR}/cmake/force_keep_recording_off.cmake
+        COMMENT "Preparing Android settings with keepRecordingFiles off"
     )
 else()
     target_link_libraries(appspeech-rate-meter-2
@@ -413,6 +434,8 @@ if(NOT ANDROID)
         src/services/sessionstore.cpp
         src/services/speechrateanalysis.cpp
         src/services/wavfileservice.cpp
+        src/services/wavloader.cpp
+        src/services/wavmerge.cpp
         src/services/helpers/wavFile.cpp
         src/api/helpers/settings.cpp
     )
@@ -435,6 +458,18 @@ if(NOT ANDROID)
     target_link_libraries(wavloader-test PRIVATE Qt6::Core)
     target_compile_definitions(wavloader-test PRIVATE "SRM_SOURCE_DIR=\"${CMAKE_SOURCE_DIR}\"")
     add_test(NAME wavloader COMMAND wavloader-test)
+
+    add_executable(wavmerge-test
+        tests/wavmerge_test.cpp
+        src/services/wavmerge.cpp
+        src/services/wavloader.cpp
+    )
+    target_include_directories(wavmerge-test PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/services
+    )
+    target_link_libraries(wavmerge-test PRIVATE Qt6::Core)
+    add_test(NAME wavmerge COMMAND wavmerge-test)
 
     add_executable(livecadence-test
         tests/livecadence_test.cpp

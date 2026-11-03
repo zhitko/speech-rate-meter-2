@@ -4,6 +4,14 @@
 #include <QString>
 #include <string>
 
+// 0 leaves phrase recordings only until the app closes. 1 keeps them.
+// CMake sets this. Desktop stays 0, the historical default. Android is also
+// 0, chosen in CMakeLists.txt rather than a Q_OS_ANDROID branch. A value
+// already stored in settings.ini is used instead of this default.
+#ifndef SRM_DEFAULT_KEEP_RECORDING_FILES
+#define SRM_DEFAULT_KEEP_RECORDING_FILES 0
+#endif
+
 /*
  * AppSettings holds the preferences used by the shell and the recorder.
  * DSP services keep their own parameters; they are not configured from here.
@@ -21,9 +29,10 @@ struct AppSettings {
 
     bool autoStopRecording = true;
     bool autoCalibrate = false;
-    // When true, each phrase WAV stays in data/records after the app closes.
-    // When false, the WAV stays until the app closes so it can be played.
-    bool keepRecordingFiles = false;
+    // When true, Stop joins the session's phrase WAVs into one file under
+    // data/records and that file stays after the app closes.
+    // When false, each phrase WAV stays until the app closes so it can be played.
+    bool keepRecordingFiles = (SRM_DEFAULT_KEEP_RECORDING_FILES != 0);
     int vadCalibrationDurationMs = 2000;
     int autoStopSilenceDuration = 2000;
     // Whole-recording phrasal pauses: silent/unvoiced runs at least this long.

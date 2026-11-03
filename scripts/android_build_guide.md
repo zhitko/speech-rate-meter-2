@@ -252,7 +252,7 @@ Expect every `arm64-v8a` / `x86_64` `.so` to report `ALIGNED (2**14)`, `zipalign
 
 ## Runtime assets
 
-On Android, `CMakeLists.txt` copies `settings.ini` into `android/assets/` so `androiddeployqt` packs it into the APK (extracted under `AppDataLocation` on device). `android/assets/` is gitignored. Session files are written to app-private storage. Phrase WAV files stay so Listen can play them, and are deleted when the app closes unless **Keep recording files** is on.
+On Android, `CMakeLists.txt` prepares `settings.ini` into `android/assets/` so `androiddeployqt` packs it into the APK (extracted under `AppDataLocation` on device). That copy forces **Keep recording files** off (`keepRecordingFiles=false`). The desktop `settings.ini` is not changed. `android/assets/` is gitignored. The same off default is the compile definition `SRM_DEFAULT_KEEP_RECORDING_FILES=0`, used only when the key is missing. A value already stored on the device is left as it was, because startup copies an asset only when the file is not already there. Session files are written to app-private storage. Phrase WAV files stay so Listen can play them, and are deleted when the app closes unless **Keep recording files** is on. When it is on, Stop joins them into one WAV.
 
 ---
 
