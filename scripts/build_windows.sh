@@ -4,7 +4,7 @@
 #
 # The zip contains SpeechRateMeter2.exe, the Qt runtime, QML modules,
 # multimedia plugins, the OpenMP runtime, compiler runtime libraries,
-# settings.ini, and the license texts.
+# settings.ini, the data/ folder (test recordings), and the license texts.
 #
 # Usage:
 #   ./scripts/build_windows.sh [release|debug]
@@ -72,7 +72,7 @@ usage() {
 Usage: ./scripts/build_windows.sh [release|debug]
 
 Builds a 64-bit Windows folder with Qt, QML modules, multimedia plugins,
-the OpenMP runtime, and settings.ini, then zips it.
+the OpenMP runtime, settings.ini, and data/, then zips it.
 
 Output:
   build_windows/SpeechRateMeter2-<version>-win64.zip
@@ -569,6 +569,9 @@ check_sources() {
         die "3rdparty/alglib-cpp is missing. Unpack ALGLIB as described in README.md."
     [[ -f "$PROJECT_ROOT/settings.ini" ]] || die "settings.ini is missing from the project root"
     [[ -f "$PROJECT_ROOT/settings_fast.ini" ]] || die "settings_fast.ini is missing from the project root"
+    [[ -d "$PROJECT_ROOT/data/tests" ]] || die "data/tests is missing from the project root"
+    compgen -G "$PROJECT_ROOT/data/tests/*.wav" >/dev/null || \
+        die "data/tests contains no WAV files"
     [[ -f "$PROJECT_ROOT/res/icons/speechratemeter.ico" ]] || \
         die "res/icons/speechratemeter.ico is missing"
     if [[ ! -f "$PROJECT_ROOT/res/icons/speechratemeter.rc" ]]; then
@@ -1069,6 +1072,13 @@ require_qml() {
         die "Package is missing QML module $rel. See $BUILD_DIR/windeployqt.log"
 }
 
+copy_app_data() {
+    local src="$PROJECT_ROOT/data"
+    [[ -d "$src/tests" ]] || die "data/tests is missing from the project root"
+    mkdir -p "$PACKAGE_DIR/data"
+    cp -a "$src/." "$PACKAGE_DIR/data/"
+}
+
 write_package_readme() {
     local runtime_note
     if [[ "$TOOLCHAIN" == "mingw" ]]; then
@@ -1082,6 +1092,7 @@ Version $VERSION
 
 Run SpeechRateMeter2.exe in this folder.
 Keep the folder writable: settings.ini and data/sessions are stored here.
+Sample recordings for Open File are in data/tests.
 Leave the DLL files and the qml, platforms, imageformats, and multimedia
 folders next to the program.
 
@@ -1123,6 +1134,7 @@ package_app() {
     cp -a "$PROJECT_ROOT/licenses/." "$PACKAGE_DIR/licenses/"
     cp -a "$PROJECT_ROOT/settings.ini" "$PACKAGE_DIR/settings.ini"
     cp -a "$PROJECT_ROOT/settings_fast.ini" "$PACKAGE_DIR/settings_fast.ini"
+    copy_app_data
     write_package_readme
 
     # SettingsApi loads speech-rate-meter-2_<lang>.qm from the executable's
@@ -1210,6 +1222,10 @@ package_app() {
     [[ -f "$PACKAGE_DIR/settings_fast.ini" ]] || die "settings_fast.ini was not copied into the package"
     cp -a "$PROJECT_ROOT/settings.ini" "$PACKAGE_DIR/settings.ini"
     cp -a "$PROJECT_ROOT/settings_fast.ini" "$PACKAGE_DIR/settings_fast.ini"
+    # windeployqt rewrites the package folder. Put data/ back afterwards.
+    copy_app_data
+    compgen -G "$PACKAGE_DIR/data/tests/*.wav" >/dev/null || \
+        die "data/tests was not copied into the package"
 
     if [[ "$BUILD_TYPE" == "debug" ]]; then
         suffix="-debug"

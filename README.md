@@ -205,7 +205,7 @@ Keep that file in a writable directory. `settings.ini` and `data/sessions` are s
 
 #### Windows
 
-`scripts/build_windows.sh` builds a 64-bit folder and zip that includes the program, Qt, QML modules, multimedia plugins, the OpenMP runtime, and `settings.ini`.
+`scripts/build_windows.sh` builds a 64-bit folder and zip that includes the program, Qt, QML modules, multimedia plugins, the OpenMP runtime, `settings.ini`, and `data/` (the sample recordings in `data/tests`).
 
 On Windows, run it from Git Bash with the Qt **MSVC 2022 64-bit** or **MinGW 13.1 64-bit** kit installed. On Linux it cross-compiles. 64-bit Wine (`wine64`) must be installed, and the Qt MinGW kit must sit next to the matching `gcc_64` kit.
 
