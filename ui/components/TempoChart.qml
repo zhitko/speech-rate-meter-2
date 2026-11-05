@@ -46,9 +46,8 @@ Item {
     readonly property color lineColor: gaugeMode === 1 ? articulationColor : speechColor
     readonly property color axisColor: Theme.outlineVariant(paintTheme)
     readonly property color labelColor: Theme.onSurfaceVariant(paintTheme)
-    readonly property color boundaryColor: paintTheme === Material.Dark
-                                           ? Qt.rgba(0.93, 0.94, 0.96, 0.62)
-                                           : Qt.rgba(0.13, 0.16, 0.22, 0.55)
+    // Same edge as the pace-arc zones, so gold stays off the gray card.
+    readonly property color boundaryColor: Theme.zoneBoundaryColor(paintTheme)
     readonly property string slowLabel: qsTr("slow")
     readonly property string mediumLabel: qsTr("medium")
     readonly property string fastLabel: qsTr("fast")
@@ -313,8 +312,9 @@ Item {
             }
 
             // Thin lines at both ends and at the two borders between zones.
+            // Same ink and weight as the outline on the pace arcs.
             ctx.strokeStyle = root.boundaryColor
-            ctx.lineWidth = 1
+            ctx.lineWidth = Theme.zoneEdgeWidth
             ctx.globalAlpha = 1
             for (var g = 0; g <= 3; ++g) {
                 var gy = Math.round(top + g / 3 * plotHeight) + 0.5
