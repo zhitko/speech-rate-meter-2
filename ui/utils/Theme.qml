@@ -506,29 +506,45 @@ Item {
     function articulationSeriesColor(theme) {
         return theme === Material.Dark ? articulationSeriesDark : articulationSeriesLight;
     }
-    // 180° pace arc. The stroke is centred on the radius, so the painted
-    // width is radius * 2 + stroke. stroke is 15% of the radius, and at
-    // least 10 px.
+    // Thin edge of a tempo zone, shared by the chart bands and the pace arcs.
+    // Dark on a light page and light on a dark page, so the gold fast zone
+    // stays off the gray card. The weight matches the chart's border lines.
+    function zoneBoundaryColor(theme) {
+        return theme === Material.Dark
+                ? Qt.rgba(0.93, 0.94, 0.96, 0.62)
+                : Qt.rgba(0.13, 0.16, 0.22, 0.55);
+    }
+    readonly property real zoneEdgeWidth: 1
+    // 180° pace arc. The stroke is centred on the radius. The zone outline
+    // adds zoneEdgeWidth outside the stroke on both sides, so the painted
+    // width is radius * 2 + stroke + zoneEdgeWidth * 2. stroke is 18.75% of
+    // the radius (the previous 15%, times 1.25), and at least 12.5 px.
+    readonly property real gaugeStrokeRatio: 0.1875
+    readonly property real gaugeStrokeMin: 12.5
     function gaugeStroke(radius) {
-        return Math.max(10, radius * 0.15);
+        return Math.max(gaugeStrokeMin, radius * gaugeStrokeRatio);
     }
     function gaugeRadiusForSpan(span) {
         let s = Math.max(48, span);
-        let r = s / 2.15;
-        if (r * 0.15 < 10)
-            r = s / 2 - 5;
+        let edge = zoneEdgeWidth * 2;
+        let r = (s - edge) / (2 + gaugeStrokeRatio);
+        if (r * gaugeStrokeRatio < gaugeStrokeMin)
+            r = (s - edge - gaugeStrokeMin) / 2;
         return Math.max(24, r);
     }
     function gaugePlotSpan(radius) {
-        return radius * 2 + gaugeStroke(radius);
+        return radius * 2 + gaugeStroke(radius) + zoneEdgeWidth * 2;
     }
     function paceCy(radius) {
-        return gaugeStroke(radius) * 0.55 + radius;
+        // 0.55 leaves a sliver above the stroke. The zone outline uses it,
+        // so the thicker band still starts inside the item.
+        return gaugeStroke(radius) * 0.55 + zoneEdgeWidth + radius;
     }
     // The 22 px is the Min/Max captions under the shared diameter. The value
-    // and name blocks sit inside the rings and do not add height.
+    // and name blocks sit inside the rings and do not add height. The edge
+    // width keeps those captions clear of the outline.
     function gaugeBlockHeight(radius) {
-        return paceCy(radius) + gaugeStroke(radius) * 0.5 + 22;
+        return paceCy(radius) + gaugeStroke(radius) * 0.5 + zoneEdgeWidth + 22;
     }
     // Shrink the semicircle until the chart above it still has room.
     // The caller then gives the chart and the arcs that same width.

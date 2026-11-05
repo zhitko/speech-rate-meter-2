@@ -85,6 +85,10 @@ Item {
     readonly property real plotSpan: Math.max(48, width - plotInset)
     readonly property real radius: Theme.gaugeRadiusForSpan(plotSpan)
     readonly property real stroke: Theme.gaugeStroke(radius)
+    // Same edge as the tempo-chart zone bands: a thin line around each zone
+    // so the gold fast band stays off the gray card in both themes.
+    readonly property color zoneEdgeColor: Theme.zoneBoundaryColor(paintTheme)
+    readonly property real zoneEdgeWidth: Theme.zoneEdgeWidth
     readonly property real valueStroke: Math.max(4, stroke * 0.46)
     // Same stroke on every ring. The gap keeps the round caps from touching.
     readonly property real ringGap: Math.max(8, stroke * 0.28)
@@ -205,6 +209,30 @@ Item {
         GradientStop { position: 1.0; color: trail.ink }
     }
 
+    // Edge of the scale, drawn under the coloured band. Round caps so the
+    // outline follows the ends. The band covers the middle and leaves
+    // zoneEdgeWidth of this stroke visible on the outside, the inside, and
+    // the caps.
+    component TrackOutline: ShapePath {
+        id: edge
+        property int ring: 0
+        property var gauge: root
+        readonly property bool live: ring === 1 ? gauge.dual : true
+        fillColor: "transparent"
+        strokeWidth: live ? gauge.stroke + gauge.zoneEdgeWidth * 2 : 0
+        strokeColor: gauge.zoneEdgeColor
+        capStyle: ShapePath.RoundCap
+
+        PathAngleArc {
+            centerX: edge.gauge.cx
+            centerY: edge.gauge.cy
+            radiusX: edge.gauge.ringRadius(edge.ring)
+            radiusY: edge.gauge.ringRadius(edge.ring)
+            startAngle: edge.gauge.startAngle
+            sweepAngle: edge.gauge.sweepAngle
+        }
+    }
+
     // One continuous ring of the scale.
     component TrackArc: ShapePath {
         id: track
@@ -227,14 +255,15 @@ Item {
         }
     }
 
-    // Thin cuts in the card colour at the slow/average and average/fast borders.
+    // Borders between slow/average and average/fast. Same ink and weight as
+    // the chart lines, and long enough to meet the outline on both edges.
     component ZoneNotches: ShapePath {
         id: notches
         property int ring: 0
         property var gauge: root
         readonly property bool live: ring === 1 ? gauge.dual : true
         readonly property real r: gauge.ringRadius(ring)
-        readonly property real half: gauge.stroke / 2 + 1
+        readonly property real half: gauge.stroke / 2 + gauge.zoneEdgeWidth
         readonly property real a1: gauge.startAngle + gauge.sweepAngle / 3
         readonly property real a2: gauge.startAngle + gauge.sweepAngle * 2 / 3
         readonly property point p1: gauge.pointAt(a1, r - half)
@@ -242,8 +271,8 @@ Item {
         readonly property point p2: gauge.pointAt(a2, r - half)
         readonly property point q2: gauge.pointAt(a2, r + half)
         fillColor: "transparent"
-        strokeWidth: live ? Math.max(2, gauge.stroke * 0.09) : 0
-        strokeColor: gauge.cardColor
+        strokeWidth: live ? gauge.zoneEdgeWidth : 0
+        strokeColor: gauge.zoneEdgeColor
         capStyle: ShapePath.FlatCap
 
         PathMove { x: notches.p1.x; y: notches.p1.y }
@@ -283,6 +312,8 @@ Item {
         anchors.fill: parent
         preferredRendererType: Shape.CurveRenderer
 
+        TrackOutline { ring: 0 }
+        TrackOutline { ring: 1 }
         TrackArc { ring: 0 }
         TrackArc { ring: 1 }
         ZoneNotches { ring: 0 }
@@ -544,7 +575,7 @@ Item {
         id: minLabel
         readonly property point tip: root.pointAt(root.startAngle, root.radius)
         x: tip.x - width / 2
-        y: tip.y + root.stroke / 2 + 2
+        y: tip.y + root.stroke / 2 + root.zoneEdgeWidth + 2
         text: root.minimum.toFixed(0)
         font.pixelSize: AppScale.fs(12)
         color: Theme.onSurfaceVariant(Material.theme)
@@ -554,7 +585,7 @@ Item {
         id: maxLabel
         readonly property point tip: root.pointAt(root.startAngle + root.sweepAngle, root.radius)
         x: tip.x - width / 2
-        y: tip.y + root.stroke / 2 + 2
+        y: tip.y + root.stroke / 2 + root.zoneEdgeWidth + 2
         text: root.maximum.toFixed(0)
         font.pixelSize: AppScale.fs(12)
         color: Theme.onSurfaceVariant(Material.theme)
