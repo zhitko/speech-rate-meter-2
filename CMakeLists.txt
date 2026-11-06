@@ -485,6 +485,21 @@ if(NOT ANDROID)
     target_link_libraries(livecadence-test PRIVATE Qt6::Core)
     target_compile_definitions(livecadence-test PRIVATE "SRM_SOURCE_DIR=\"${CMAKE_SOURCE_DIR}\"")
     add_test(NAME livecadence COMMAND livecadence-test)
+
+    add_executable(signal-level-diagnostic-test
+        tests/signal_level_diagnostic_test.cpp
+        src/api/livecadence.cpp
+        src/api/helpers/settings.cpp
+        src/services/speechrateanalysis.cpp
+        src/services/wavloader.cpp
+    )
+    target_include_directories(signal-level-diagnostic-test PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/api
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/services
+    )
+    target_link_libraries(signal-level-diagnostic-test PRIVATE Qt6::Core)
+    target_compile_definitions(signal-level-diagnostic-test PRIVATE "SRM_SOURCE_DIR=\"${CMAKE_SOURCE_DIR}\"")
+    add_test(NAME signal-level-diagnostic COMMAND signal-level-diagnostic-test)
 endif()
 
 include(GNUInstallDirs)
