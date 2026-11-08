@@ -1,0 +1,19 @@
+Speech Rate Meter shows how fast you are speaking. The pace is given in words per minute. The app does not recognize words. It measures the rhythm of your speech. Your recording stays on your device and is never sent anywhere.
+
+To begin, open the home page and press the Start button. Speak the way you normally do, as if you were telling something to a friend. When you are done, press Stop. The app then shows a summary of the whole session.
+
+While you speak, a chart and two arcs stay on the screen. The app needs a few readings at first, and during that time a message blinks over the chart to say that it is calculating. Once there are enough readings, the message goes away, and the chart starts to follow your speech.
+
+The arcs show two values. The outer arc shows your speech rate. It includes the pauses between words. The inner arc shows your articulation rate. This is how fast you talk while you are actually saying words. For that reason, articulation is usually a little higher than speech rate.
+
+The scale is split into three equal zones. The blue zone means a slow pace. The green zone means an average pace. The gold zone means a fast pace. A marker on the arc moves between these zones as your speech changes. The number above the name shows the real value, even when it falls outside the scale.
+
+The app also takes pauses into account. Silence and background noise do not count as speech. When you stop talking, the pause closes the current phrase. The next phrase begins when you speak again. A phrase that is too short is not saved.
+
+The chart shows how your pace changed over time. Each point is one measurement. By default the chart shows the last five minutes. You can change that in the settings. If you speak evenly, the line stays almost flat. If you speed up and slow down, the line rises and falls.
+
+In the settings you can choose between a fast mode and a standard mode. The standard mode updates less often, but it gives a more accurate result, because every number is based on a longer piece of speech. The fast mode updates often and reacts sooner to your pace, but its numbers jump around more.
+
+You can also record speech in advance and open the finished file. The app measures the whole file and shows the result on the arcs and on the chart. This is handy for checking talks, readings aloud, and speech exercises.
+
+After you stop, the app shows the average over all saved phrases. If you want to look at earlier sessions, open the history. There you can see the results and charts, and listen to the recordings if saving recording files is turned on.
