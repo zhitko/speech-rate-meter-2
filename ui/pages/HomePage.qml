@@ -291,6 +291,39 @@ Page {
             sessionApi.openWavFile(selectedFile)
     }
 
+    Popup {
+        id: fileLoadingPopup
+        parent: Overlay.overlay
+        anchors.centerIn: parent
+        width: Math.min(parent ? parent.width - 32 : 280, 320)
+        padding: 24
+        modal: true
+        dim: true
+        closePolicy: Popup.NoAutoClose
+        visible: !!sessionApi && sessionApi.openFileBusy
+
+        contentItem: ColumnLayout {
+            spacing: 16
+
+            BusyIndicator {
+                Layout.alignment: Qt.AlignHCenter
+                Layout.preferredWidth: 48
+                Layout.preferredHeight: 48
+                running: fileLoadingPopup.visible
+                Accessible.name: qsTr("Analyzing audio")
+            }
+
+            Label {
+                Layout.fillWidth: true
+                text: qsTr("Analyzing audio…")
+                horizontalAlignment: Text.AlignHCenter
+                wrapMode: Text.Wrap
+                color: Theme.onSurface(Material.theme)
+                font.pixelSize: AppScale.fs(16)
+            }
+        }
+    }
+
     TestExampleDialog {
         id: testExampleDialog
         language: root.settingsApi ? root.settingsApi.language : "ru"
@@ -991,7 +1024,7 @@ Page {
 
                     Rectangle {
                         Layout.fillWidth: true
-                        visible: sessionApi && (sessionApi.busy || root.fileError.length > 0)
+                        visible: sessionApi && ((sessionApi.busy && !sessionApi.openFileBusy) || root.fileError.length > 0)
                         implicitHeight: bannerRow.implicitHeight + 24
                         radius: Theme.shapeLarge
                         color: root.fileError.length > 0
