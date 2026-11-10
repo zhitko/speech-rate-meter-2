@@ -11,8 +11,8 @@ emojis, or decorative symbols. Keep the default listing in English; add Russian
 as a translation.
 
 **What’s new** is written per Play upload / git tag (`MAJOR.MINOR.PATCH`).
-Keep an EN+RU block for each tag. The first upload is **1.0.0**
-(`versionCode` 1, from `CMakeLists.txt`). When a later tag is uploaded, add a
+Keep an EN+RU block for each tag. The current release is **1.0.1**
+(`versionCode` 19, from `CMakeLists.txt`). When a later tag is uploaded, add a
 new What’s new section and paste it into the Console release notes for that AAB.
 
 | Field | EN | RU |
@@ -20,7 +20,8 @@ new What’s new section and paste it into the Console release notes for that AA
 | App name | 19 / 30 | 23 / 30 |
 | Short description | 77 / 80 | 77 / 80 |
 | Full description | 2,236 / 4,000 | 2,285 / 4,000 |
-| What’s new (1.0.0) | 165 / 500 | 188 / 500 |
+| What’s new (1.0.1) | 285 / 500 | 296 / 500 |
+| What’s new (1.0.0) | 165 / 500 | 175 / 500 |
 
 ---
 
@@ -106,6 +107,12 @@ Privacy policy: https://intontrainer.by/speechratemeter2policy.html
 Open-source licences and source notices are available in the app.
 ```
 
+### What’s new (version 1.0.1)
+
+```
+Added English and Russian test examples on Android and a loading indicator when opening audio files. Improved translations, gauge layout, and user guide display. Recording file retention is off by default; audio is deleted when you leave the app unless Keep recording files is enabled.
+```
+
 ### What’s new (version 1.0.0)
 
 ```
@@ -187,6 +194,12 @@ device remains **Speech Rate Meter 2**.
 Политика конфиденциальности: https://intontrainer.by/speechratemeter2policy.html
 
 Лицензии открытого ПО и сведения об исходном коде доступны в приложении.
+```
+
+### What’s new (version 1.0.1)
+
+```
+Добавлены английские и русские примеры для проверки на Android и индикатор загрузки при открытии аудиофайлов. Улучшены переводы, расположение шкалы и отображение руководства. Сохранение файлов записи по умолчанию выключено: звук удаляется при выходе из приложения, если эта настройка не включена.
 ```
 
 ### What’s new (version 1.0.0)
