@@ -150,7 +150,7 @@ Page {
     readonly property real metricColumnWidth: wideLayout ? controlsColumnWidth
                                                : Math.max(1, sideColumn.implicitWidth)
     readonly property real gaugeCardWidth: wideLayout
-                                            ? Math.max(160, layoutWidth - metricColumnWidth)
+                                            ? Math.max(160, layoutWidth - metricColumnWidth - AppScale.pageSpacing)
                                             : Math.max(160, layoutWidth)
     // Card padding around the column that holds the chart and the arcs.
     readonly property real gaugeContentWidth: Math.max(140, gaugeCardWidth - 32)
@@ -706,7 +706,7 @@ Page {
                     id: gaugeCard
                     Layout.fillWidth: true
                     Layout.preferredWidth: root.wideLayout && sideColumn.visible
-                                            ? Math.max(1, root.layoutWidth - root.metricColumnWidth)
+                                            ? Math.max(1, root.gaugeCardWidth)
                                             : 1
                     Layout.fillHeight: root.cardFills
                     Layout.alignment: Qt.AlignTop
@@ -904,7 +904,7 @@ Page {
                                 width: parent.width
                                 horizontalAlignment: Text.AlignHCenter
                                 font.family: Icons.familySolid
-                                font.weight: Font.Normal
+                                font.weight: Font.Black
                                 font.pixelSize: AppScale.fs(18)
                                 text: Icons.faMicrophone
                                 color: Theme.primary(Material.theme)

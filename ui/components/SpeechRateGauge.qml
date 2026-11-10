@@ -123,13 +123,33 @@ Item {
         var r = Math.max(28, holeRadius)
         // "Articulation" / "Артикуляция" is the long caption.
         var byWidth = blockWidth / (12 * 0.56)
-        var byHeight = r / (dual ? 5.4 : 3.8)
-        return Math.max(8, Math.min(AppScale.fs(11), Math.floor(Math.min(byWidth, byHeight))))
+        var byHeight = r / (dual ? 4.8 : 3.4)
+        return Math.max(8, Math.min(AppScale.fs(12), Math.floor(Math.min(byWidth, byHeight))))
     }
+    readonly property real unitPx: Math.min(AppScale.fs(12), captionPx + 1)
+    // Text line height per pixel size, with headroom for platform fonts
+    // (Android's Roboto is taller than the desktop fallback).
+    readonly property real lineFactor: 1.2
+    // Gap between the unit line and the diameter of the semicircle.
+    readonly property real readoutBottomGap: 2
+    // Caption, unit and the column spacing: everything below the figures.
+    readonly property real readoutBaseHeight: (captionPx + unitPx) * lineFactor + 1
+    // The figures are the top row of the readout, where the disc is the
+    // narrowest. Pick the largest size whose outer edge still clears the
+    // innermost ring at that height. A three-digit bold figure is about
+    // 1.7 em wide.
     readonly property real numberPx: {
-        var unit = Math.min(AppScale.fs(11), captionPx + 1)
-        var room = holeRadius * 0.78 - captionPx - unit - (dual ? 10 : 6)
-        return Math.max(12, Math.min(dual ? 32 : 42, Math.floor(room)))
+        var r = Math.max(28, holeRadius)
+        var center = dual ? pairGap / 2 + blockWidth / 2 : 0
+        for (var px = dual ? 36 : 46; px > 12; --px) {
+            var top = readoutBottomGap + readoutBaseHeight + px * lineFactor
+            if (top >= r)
+                continue
+            var half = Math.sqrt(r * r - top * top)
+            if (center + px * 0.85 + 2 <= half)
+                return px
+        }
+        return 12
     }
 
     function captionInk(active, series) {
@@ -462,7 +482,7 @@ Item {
             // Sit on the open bottom of the semicircle. The diameter is the
             // lower edge of the arcs; a few pixels keep the unit above it.
             var ceiling = root.cy - root.holeRadius + 2
-            var floor = root.cy - 8 - height
+            var floor = root.cy - root.readoutBottomGap - height
             return Math.max(ceiling, floor)
         }
 
@@ -494,7 +514,7 @@ Item {
                 width: parent.width
                 horizontalAlignment: Text.AlignHCenter
                 text: root.unit
-                font.pixelSize: Math.min(AppScale.fs(11), root.captionPx + 1)
+                font.pixelSize: root.unitPx
                 color: Theme.onSurfaceVariant(root.paintTheme)
             }
         }
@@ -516,7 +536,7 @@ Item {
                 width: parent.width
                 horizontalAlignment: Text.AlignHCenter
                 text: root.unit
-                font.pixelSize: Math.min(AppScale.fs(11), root.captionPx + 1)
+                font.pixelSize: root.unitPx
                 color: Theme.onSurfaceVariant(root.paintTheme)
             }
         }
@@ -544,6 +564,7 @@ Item {
             Text {
                 anchors.verticalCenter: parent.verticalCenter
                 font.family: Icons.familySolid
+                font.weight: Font.Black
                 font.pixelSize: AppScale.fs(12)
                 text: Icons.faMicrophone
                 color: root.micShown > 0.04
