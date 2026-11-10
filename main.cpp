@@ -54,7 +54,7 @@ static void extractAndroidAssets()
         const QString dstPath = dstDir + QLatin1Char('/') + root;
 
         QFileInfo dstInfo(dstPath);
-        if (dstInfo.exists()) {
+        if (dstInfo.isFile()) {
             // Already extracted — skip
             continue;
         }
@@ -83,7 +83,7 @@ static void extractAndroidAssets()
                 }
             } else {
                 // It's a file — copy it
-                if (QFile::exists(e.src)) {
+                if (QFile::exists(e.src) && !QFile::exists(e.dst)) {
                     QDir().mkpath(QFileInfo(e.dst).absolutePath());
                     QFile::copy(e.src, e.dst);
                 }

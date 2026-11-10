@@ -2,6 +2,17 @@
 <!DOCTYPE TS>
 <TS version="2.1" language="ru">
 <context>
+    <name>TestExampleDialog</name>
+    <message>
+        <source>Open test example</source>
+        <translation>Открыть тестовый пример</translation>
+    </message>
+    <message>
+        <source>No test examples found.</source>
+        <translation>Тестовые примеры не найдены.</translation>
+    </message>
+</context>
+<context>
     <name>AudioApi</name>
     <message>
         <location filename="../src/api/audioapi.cpp" line="69"/>
@@ -158,6 +169,10 @@
 </context>
 <context>
     <name>HomePage</name>
+    <message>
+        <source>Open test example</source>
+        <translation>Открыть тестовый пример</translation>
+    </message>
     <message>
         <location filename="../ui/pages/HomePage.qml" line="14"/>
         <source>Home</source>

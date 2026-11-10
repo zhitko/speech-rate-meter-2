@@ -203,6 +203,7 @@ qt_add_qml_module(appspeech-rate-meter-2
         ui/components/MetricChart.qml
         ui/components/MetricTile.qml
         ui/components/DetailsDialog.qml
+        ui/components/TestExampleDialog.qml
         ui/components/RecordingSummaryCard.qml
         ui/components/DecimalSpinBox.qml
         ui/components/VadCalibrationDialog.qml
@@ -327,6 +328,9 @@ if(ANDROID)
     add_custom_target(copy_runtime_resources ALL
         COMMAND ${CMAKE_COMMAND} -E make_directory
             "${CMAKE_SOURCE_DIR}/android/assets"
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${CMAKE_SOURCE_DIR}/data/tests"
+            "${CMAKE_SOURCE_DIR}/android/assets/data/tests"
         COMMAND ${CMAKE_COMMAND}
             -DINPUT=${CMAKE_SOURCE_DIR}/settings.ini
             -DOUTPUT=${CMAKE_SOURCE_DIR}/android/assets/settings.ini
