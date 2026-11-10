@@ -90,6 +90,32 @@ static void extractAndroidAssets()
             }
         }
     }
+
+    // APK updates preserve app data, including examples extracted by older
+    // versions. Retire the old names only after their replacements are present.
+    const QDir testsDir(dstDir + QStringLiteral("/data/tests"));
+    const QStringList oldNames = {
+        QStringLiteral("ru_count_fast.wav"),
+        QStringLiteral("ru_count_medium.wav"),
+        QStringLiteral("ru_count_slow.wav"),
+        QStringLiteral("ru_guide_fast.wav"),
+        QStringLiteral("ru_guide_medium.wav"),
+        QStringLiteral("ru_guide_slow.wav"),
+        QStringLiteral("ru_guide_text.txt")
+    };
+    const QStringList newNames = {
+        QStringLiteral("ru_Счёт_быстро.wav"),
+        QStringLiteral("ru_Счёт_средне.wav"),
+        QStringLiteral("ru_Счёт_медленно.wav"),
+        QStringLiteral("ru_Руководство_быстро.wav"),
+        QStringLiteral("ru_Руководство_средне.wav"),
+        QStringLiteral("ru_Руководство_медленно.wav"),
+        QStringLiteral("ru_Руководство_текст.txt")
+    };
+    for (qsizetype i = 0; i < oldNames.size(); ++i) {
+        if (QFile::exists(testsDir.filePath(newNames.at(i))))
+            QFile::remove(testsDir.filePath(oldNames.at(i)));
+    }
 }
 #endif // Q_OS_ANDROID
 

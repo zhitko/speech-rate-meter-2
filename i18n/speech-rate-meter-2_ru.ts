@@ -4,8 +4,8 @@
 <context>
     <name>TestExampleDialog</name>
     <message>
-        <source>Open test example</source>
-        <translation>Открыть тестовый пример</translation>
+        <source>Tests</source>
+        <translation>Примеры</translation>
     </message>
     <message>
         <source>No test examples found.</source>
@@ -170,8 +170,8 @@
 <context>
     <name>HomePage</name>
     <message>
-        <source>Open test example</source>
-        <translation>Открыть тестовый пример</translation>
+        <source>Tests</source>
+        <translation>Примеры</translation>
     </message>
     <message>
         <location filename="../ui/pages/HomePage.qml" line="14"/>

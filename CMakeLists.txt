@@ -258,8 +258,7 @@ qt_add_translations(appspeech-rate-meter-2
     TS_FILES
         i18n/speech-rate-meter-2_en.ts
         i18n/speech-rate-meter-2_ru.ts
-    QM_FILES_OUTPUT_VARIABLE
-        qm_files
+    RESOURCE_PREFIX "/i18n"
 )
 
 if(WIN32)
@@ -328,6 +327,8 @@ if(ANDROID)
     add_custom_target(copy_runtime_resources ALL
         COMMAND ${CMAKE_COMMAND} -E make_directory
             "${CMAKE_SOURCE_DIR}/android/assets"
+        COMMAND ${CMAKE_COMMAND} -E rm -rf
+            "${CMAKE_SOURCE_DIR}/android/assets/data/tests"
         COMMAND ${CMAKE_COMMAND} -E copy_directory
             "${CMAKE_SOURCE_DIR}/data/tests"
             "${CMAKE_SOURCE_DIR}/android/assets/data/tests"

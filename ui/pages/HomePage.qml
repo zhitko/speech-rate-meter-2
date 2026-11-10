@@ -404,7 +404,7 @@ Page {
                     font.pixelSize: openFileLabel.font.pixelSize
                     font.weight: openFileLabel.font.weight
                     font.family: openFileLabel.font.family
-                    text: Qt.platform.os === "android" ? qsTr("Open test example") : qsTr("Open File")
+                    text: Qt.platform.os === "android" ? qsTr("Tests") : qsTr("Open File")
                 }
                 Label {
                     id: playCaptionWrapped
@@ -636,7 +636,7 @@ Page {
                         hoverEnabled: true
                         focusPolicy: Qt.StrongFocus
                         Accessible.role: Accessible.Button
-                        Accessible.name: Qt.platform.os === "android" ? qsTr("Open test example") : qsTr("Open File")
+                        Accessible.name: Qt.platform.os === "android" ? qsTr("Tests") : qsTr("Open File")
                         onClicked: root.openRecording()
                         scale: pressed ? 0.94 : 1
                         Behavior on scale { NumberAnimation { duration: 120 } }
@@ -672,7 +672,7 @@ Page {
                     Layout.fillWidth: true
                     horizontalAlignment: Text.AlignHCenter
                     wrapMode: Text.WordWrap
-                    text: Qt.platform.os === "android" ? qsTr("Open test example") : qsTr("Open File")
+                    text: Qt.platform.os === "android" ? qsTr("Tests") : qsTr("Open File")
                     font.pixelSize: AppScale.fs(root.wideLayout ? 16 : 14)
                     font.weight: Font.DemiBold
                     color: Theme.onSurface(Material.theme)

@@ -10,7 +10,7 @@ Dialog {
     parent: Overlay.overlay
     anchors.centerIn: parent
     modal: true
-    title: qsTr("Open test example")
+    title: qsTr("Tests")
     width: Math.min(parent ? parent.width - 24 : 360, 480)
     height: Math.min(parent ? parent.height - 24 : 480, 520)
     standardButtons: Dialog.Cancel
@@ -18,6 +18,13 @@ Dialog {
     property string language: "ru"
     property var examples: []
     signal fileSelected(url file)
+
+    function exampleLabel(fileName) {
+        const name = fileName.replace(/^(ru|en)_/, "")
+                             .replace(/\.wav$/i, "")
+                             .replace(/_/g, " ")
+        return name.charAt(0).toUpperCase() + name.slice(1)
+    }
 
     function refresh() {
         examples = files.getFilesList("data/tests", [languages.currentIndex === 0 ? "ru_*.wav" : "en_*.wav"])
@@ -54,7 +61,7 @@ Dialog {
             delegate: ItemDelegate {
                 required property var modelData
                 width: exampleList.width
-                text: modelData.fileName
+                text: root.exampleLabel(modelData.fileName)
                 onClicked: {
                     var file = files.getUrlFromPath(files.getApplicationDirPath() + "/data/tests/" + modelData.filePath)
                     root.accept()

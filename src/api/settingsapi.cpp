@@ -735,11 +735,12 @@ void SettingsApi::updateTranslator()
     QCoreApplication::removeTranslator(&m_translator);
     const QString lang = QString::fromStdString(m_settings.language);
     if (m_translator.load(QStringLiteral("speech-rate-meter-2_") + lang,
-            QCoreApplication::applicationDirPath())) {
+            QStringLiteral(":/i18n"))) {
         QCoreApplication::installTranslator(&m_translator);
-        if (QQmlEngine* engine = qmlEngine(this))
-            engine->retranslate();
     } else {
         LOG_WARNING() << "Failed to load translation for" << lang;
     }
+    // Also refresh source-language strings when no catalog was installed.
+    if (QQmlEngine* engine = qmlEngine(this))
+        engine->retranslate();
 }

@@ -91,7 +91,11 @@ logs.txt
 .*/
 stories/
 build_appimage/
-data/
+data/*
+!data/tests/
+data/tests/*
+!data/tests/ru_*.wav
+!data/tests/ru_*.txt
 android/assets/
 *.log
 docs/*.docx
