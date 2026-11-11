@@ -22,8 +22,8 @@ Page {
     function loadGuide() {
         const lang = (settingsApi && settingsApi.language === "ru") ? "ru" : "en";
         const relativePath = lang === "ru"
-                ? "../../docs/user_guide_ru.md"
-                : "../../docs/user_guide_en.md";
+                ? "../../docs/SpeechRateMeter2_UserGuide_ru.md"
+                : "../../docs/SpeechRateMeter2_UserGuilde_en.md";
         const text = fileApi.readTextResource(Qt.resolvedUrl(relativePath));
         guideText = text.length > 0
                 ? text

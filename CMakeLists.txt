@@ -215,8 +215,8 @@ qt_add_qml_module(appspeech-rate-meter-2
         res/icons/speechratemeter.png
         res/images/wave.png
         LICENSE
-        docs/user_guide_en.md
-        docs/user_guide_ru.md
+        docs/SpeechRateMeter2_UserGuilde_en.md
+        docs/SpeechRateMeter2_UserGuide_ru.md
         docs/images/en/01-home-ready.png
         docs/images/en/02-home-recording.png
         docs/images/en/03-home-result.png

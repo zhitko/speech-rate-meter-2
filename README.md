@@ -77,7 +77,7 @@ An **Additional** switch under General is not saved and turns off when you leave
 
 **Open File** (to the right of Start, on a computer and on Android) measures one WAV without saving a session. PCM and 32-bit float files are converted to 8000 Hz mono before analysis, including other sample rates, stereo, and files with extra header chunks. **Listen to test** plays that converted file. A file that cannot be read shows an error. On a computer the dialog starts in `data/tests`. On Android it is the system document picker, and a content URI is copied into app data before it is read.
 
-Settings take effect on the next phrase. The in-app [User Guide](docs/user_guide_en.md) describes the same flow for someone using the app.
+Settings take effect on the next phrase. The in-app [User Guide](docs/SpeechRateMeter2_UserGuilde_en.md) describes the same flow for someone using the app.
 
 ### 4. Other pages
 
