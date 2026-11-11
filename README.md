@@ -187,7 +187,7 @@ cmake --build . --target appspeech-rate-meter-2 -- -j2
 
 #### Linux AppImage
 
-`scripts/build_appimage.sh` builds an x86_64 AppImage with the program, Qt, QML modules, the FFmpeg multimedia plugin, the OpenMP runtime, and `settings.ini`.
+`scripts/build_appimage.sh` builds an x86_64 AppImage with the program, Qt, QML modules, the FFmpeg multimedia plugin, the OpenMP runtime, `settings.ini`, `settings_fast.ini`, and the sample recordings and texts in `data/tests`.
 
 It needs the Qt **gcc_64** kit. The image runs on systems whose glibc is at least as new as the machine that built it. The microphone uses the host PulseAudio or PipeWire library.
 
@@ -201,7 +201,7 @@ The image is written to:
 build_appimage/SpeechRateMeter2-<version>-x86_64.AppImage
 ```
 
-Keep that file in a writable directory. `settings.ini` and `data/sessions` are stored beside it.
+Keep that file in a writable directory. On launch, bundled settings and missing `data/tests` files are copied beside it; recordings are stored in `data/sessions`. Existing files are preserved, so rebuilding the AppImage does not reset saved settings. To try the shipped defaults, launch the image from a fresh writable directory or move aside the existing `settings.ini` while the app is closed. If the image's directory is not writable, the app uses its standard application-data directory instead.
 
 #### Windows
 

@@ -6,6 +6,7 @@
 #include <QCoreApplication>
 #include <QDate>
 #include <QDir>
+#include <QDirIterator>
 #include <QFile>
 #include <QFileInfo>
 #include <QMutex>
@@ -63,10 +64,18 @@ void seedBundledFile(const QString& fileName)
         QFile::permissions(dest) | QFileDevice::ReadOwner | QFileDevice::WriteOwner);
 }
 
-void seedBundledSettings()
+void seedBundledResources()
 {
     seedBundledFile(QStringLiteral("settings.ini"));
     seedBundledFile(QStringLiteral("settings_fast.ini"));
+    if (qgetenv("APPIMAGE").isEmpty())
+        return;
+
+    const QDir bundledDir(QCoreApplication::applicationDirPath());
+    QDirIterator files(bundledDir.filePath(QStringLiteral("data/tests")),
+        QDir::Files, QDirIterator::Subdirectories);
+    while (files.hasNext())
+        seedBundledFile(bundledDir.relativeFilePath(files.next()));
 }
 
 } // namespace
@@ -260,7 +269,7 @@ AppSettings
 Settings::loadSettings()
 {
     QMutexLocker lock(&settingsMutex());
-    seedBundledSettings();
+    seedBundledResources();
     AppSettings settings;
     const QString absolutePath = QFileInfo(getSettingsFilePath()).absoluteFilePath();
     QSettings qsettings(absolutePath, QSettings::IniFormat);

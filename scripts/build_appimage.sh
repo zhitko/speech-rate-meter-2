@@ -3,7 +3,7 @@
 # build_appimage.sh — Build an x86_64 Linux AppImage
 #
 # The image contains the program, Qt, QML modules, the FFmpeg multimedia
-# plugin, the OpenMP runtime, translations, and settings.ini.
+# plugin, the OpenMP runtime, translations, settings, and test recordings.
 #
 # Usage:
 #   ./scripts/build_appimage.sh [release|debug]
@@ -20,8 +20,8 @@
 # otherwise the copy bundled inside linuxdeploy is used.
 #
 # The image runs on systems whose glibc is at least as new as the build
-# machine. Keep the file in a writable directory: settings.ini and
-# data/sessions are stored beside it. The microphone uses the host
+# machine. Keep the file in a writable directory: settings, data/tests,
+# and data/sessions are stored beside it. The microphone uses the host
 # PulseAudio or PipeWire library.
 #
 # Output:
@@ -56,7 +56,7 @@ usage() {
 Usage: ./scripts/build_appimage.sh [release|debug]
 
 Builds an x86_64 AppImage with Qt, QML modules, the FFmpeg multimedia
-plugin, the OpenMP runtime, and settings.ini.
+plugin, the OpenMP runtime, settings, and test recordings.
 
 Output:
   build_appimage/SpeechRateMeter2-<version>-x86_64.AppImage
@@ -102,6 +102,8 @@ check_sources() {
         die "3rdparty/alglib-cpp is missing. Unpack ALGLIB as described in README.md."
     [[ -f "$PROJECT_ROOT/settings.ini" ]] || die "settings.ini is missing from the project root"
     [[ -f "$PROJECT_ROOT/settings_fast.ini" ]] || die "settings_fast.ini is missing from the project root"
+    compgen -G "$PROJECT_ROOT/data/tests/*.wav" >/dev/null || \
+        die "Test recordings are missing from data/tests"
     [[ -f "$PROJECT_ROOT/packaging/$DESKTOP_ID.desktop" ]] || \
         die "packaging/$DESKTOP_ID.desktop is missing"
     [[ -f "$PROJECT_ROOT/res/icons/hicolor/256x256/apps/$DESKTOP_ID.png" ]] || \
@@ -123,8 +125,8 @@ configure_and_build() {
         -DCMAKE_INSTALL_PREFIX=/usr
         -DCMAKE_INSTALL_RPATH_USE_LINK_PATH=ON
         -DSPTK_INSTALL=OFF
-        # Test recordings stay on the build machine. Sessions are stored
-        # beside the AppImage file, not in this build directory.
+        # Stage only data/tests directly into AppDir below, rather than
+        # copying all data (including local sessions) into the build tree.
         -DSRM_COPY_DATA=OFF
     )
     if command -v ninja >/dev/null 2>&1; then
@@ -156,6 +158,8 @@ stage_appdir() {
 
     install -m 644 "$PROJECT_ROOT/settings.ini" "$APPDIR/usr/bin/settings.ini"
     install -m 644 "$PROJECT_ROOT/settings_fast.ini" "$APPDIR/usr/bin/settings_fast.ini"
+    mkdir -p "$APPDIR/usr/bin/data"
+    cp -a "$PROJECT_ROOT/data/tests" "$APPDIR/usr/bin/data/tests"
 
     local found=0
     for qm in "$BUILD_DIR"/speech-rate-meter-2_*.qm; do
@@ -288,6 +292,10 @@ verify_appdir() {
     require_tree "qt.conf" "*/usr/bin/qt.conf"
     require_tree "settings.ini" "*/usr/bin/settings.ini"
     require_tree "settings_fast.ini" "*/usr/bin/settings_fast.ini"
+    diff -qr "$PROJECT_ROOT/data/tests" "$APPDIR/usr/bin/data/tests" || \
+        die "Packaged test files differ from data/tests"
+    cmp -s "$PROJECT_ROOT/settings.ini" "$APPDIR/usr/bin/settings.ini" || \
+        die "Packaged settings.ini differs from the source"
     require_tree "English translations" "*/usr/bin/speech-rate-meter-2_en.qm"
     require_tree "Russian translations" "*/usr/bin/speech-rate-meter-2_ru.qm"
     require_tree "xcb platform plugin" "*/plugins/platforms/libqxcb.so"
@@ -372,7 +380,7 @@ main() {
 
     echo ""
     echo "AppImage: $FINAL_IMAGE"
-    echo "Keep this file in a writable directory. settings.ini and data/sessions are stored beside it."
+    echo "Keep this file in a writable directory. Settings, data/tests, and data/sessions are stored beside it."
 }
 
 main "$@"
