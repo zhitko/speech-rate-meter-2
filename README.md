@@ -12,6 +12,23 @@ Package id: `by.intoncore.SpeechRateMeter2`. Version name `1.0.1`, version code 
 
 ---
 
+## Download
+
+- **Windows and Linux:** [Download binaries](https://intontrainer.by/#download-srm2)
+- **Android:** [Get it on Google Play](https://play.google.com/store/apps/details?id=by.intoncore.SpeechRateMeter2)
+
+To build the app yourself, see the [build instructions](#build-instructions).
+
+## Screenshots
+
+Android screens showing the home page, session history, and session details:
+
+| Home | History | Session details |
+| --- | --- | --- |
+| <img src="packaging/google-play/screenshots/phone/1_home.png" alt="Home screen showing speech rate and articulation" width="240"> | <img src="packaging/google-play/screenshots/phone/2_history.png" alt="Session history screen" width="240"> | <img src="packaging/google-play/screenshots/phone/3_session.png" alt="Session details and charts" width="240"> |
+
+---
+
 ## What It Does
 
 ### Core Concept
