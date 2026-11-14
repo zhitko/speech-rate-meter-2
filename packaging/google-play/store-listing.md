@@ -11,8 +11,8 @@ emojis, or decorative symbols. Keep the default listing in English; add Russian
 as a translation.
 
 **What’s new** is written per Play upload / git tag (`MAJOR.MINOR.PATCH`).
-Keep an EN+RU block for each tag. The current release is **1.0.1**
-(`versionCode` 19, from `CMakeLists.txt`). When a later tag is uploaded, add a
+Keep an EN+RU block for each tag. The prepared release is **1.0.2**
+(`versionCode` 20, from `CMakeLists.txt`). When a later tag is uploaded, add a
 new What’s new section and paste it into the Console release notes for that AAB.
 
 | Field | EN | RU |
@@ -20,6 +20,7 @@ new What’s new section and paste it into the Console release notes for that AA
 | App name | 19 / 30 | 23 / 30 |
 | Short description | 77 / 80 | 77 / 80 |
 | Full description | 2,236 / 4,000 | 2,285 / 4,000 |
+| What’s new (1.0.2) | 74 / 500 | 89 / 500 |
 | What’s new (1.0.1) | 285 / 500 | 296 / 500 |
 | What’s new (1.0.0) | 165 / 500 | 175 / 500 |
 
@@ -105,6 +106,12 @@ Email: zhitko.vladimir@gmail.com
 Privacy policy: https://intontrainer.by/speechratemeter2policy.html
 
 Open-source licences and source notices are available in the app.
+```
+
+### What’s new (version 1.0.2)
+
+```
+Improved Android back navigation. The screen now stays on while recording.
 ```
 
 ### What’s new (version 1.0.1)
@@ -194,6 +201,12 @@ device remains **Speech Rate Meter 2**.
 Политика конфиденциальности: https://intontrainer.by/speechratemeter2policy.html
 
 Лицензии открытого ПО и сведения об исходном коде доступны в приложении.
+```
+
+### What’s new (version 1.0.2)
+
+```
+Улучшена навигация кнопкой «Назад» на Android. Экран остаётся включённым во время записи.
 ```
 
 ### What’s new (version 1.0.1)

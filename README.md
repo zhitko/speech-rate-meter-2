@@ -8,7 +8,7 @@ This repository is a rebuild of the earlier [Speech Rate Meter](https://github.c
 
 Designed for speakers, announcers, call-center operators, language learners, and clinicians who want an objective, repeatable reading of speaking tempo — for rehearsal, self-control, or observation of oral speech.
 
-Package id: `by.intoncore.SpeechRateMeter2`. Version name `1.0.1`, version code `19`.
+Package id: `by.intoncore.SpeechRateMeter2`. Version name `1.0.2`, version code `20`.
 
 ---
 
@@ -272,8 +272,8 @@ From the project root, with Qt 6.12.0, NDK r27, and JDK 17 (see [scripts/android
 The project already sets:
 
 - package name `by.intoncore.SpeechRateMeter2`
-- version name from `project(VERSION)` (currently `1.0.1`)
-- `QT_ANDROID_VERSION_CODE` `19` — increment this in `CMakeLists.txt` for every store upload
+- version name from `project(VERSION)` (currently `1.0.2`)
+- `QT_ANDROID_VERSION_CODE` `20` — increment this in `CMakeLists.txt` for every store upload
 - minSdk 26, target and compile SDK 36
 - 16 KB ELF page alignment for Play devices
 
