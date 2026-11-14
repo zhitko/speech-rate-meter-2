@@ -29,6 +29,7 @@
 #include <QWaitCondition>
 
 #ifdef Q_OS_ANDROID
+#include <QJniObject>
 #include <QPermission>
 #endif
 
@@ -47,6 +48,26 @@ constexpr int kHop = LiveCapture::kHop;
 constexpr int kVadFrame = LiveCapture::kVadFrame;
 // Live numbers need at least this much audio in the window.
 constexpr qint64 kMinWindowSamples = LiveCapture::kMinWindowSamples;
+
+#ifdef Q_OS_ANDROID
+void keepRecordingScreenOn(bool enabled)
+{
+    // Android window flags must be changed on the Android UI thread.
+    QNativeInterface::QAndroidApplication::runOnAndroidMainThread([enabled]() {
+        if (!QNativeInterface::QAndroidApplication::isActivityContext())
+            return QVariant();
+        const QJniObject activity = QNativeInterface::QAndroidApplication::context();
+        const QJniObject window = activity.callObjectMethod(
+            "getWindow", "()Landroid/view/Window;");
+        if (!window.isValid())
+            return QVariant();
+        const jint flag = QJniObject::getStaticField<jint>(
+            "android/view/WindowManager$LayoutParams", "FLAG_KEEP_SCREEN_ON");
+        window.callMethod<void>(enabled ? "addFlags" : "clearFlags", "(I)V", flag);
+        return QVariant();
+    });
+}
+#endif
 
 QString stamp(const QDateTime& time)
 {
@@ -1131,6 +1152,11 @@ SessionApi::SessionApi(QObject* parent)
     , m_worker(new CaptureWorker(m_queue))
     , m_analysisThread(new AnalysisThread(this, m_queue))
 {
+#ifdef Q_OS_ANDROID
+    connect(this, &SessionApi::sessionActiveChanged, this, [this]() {
+        keepRecordingScreenOn(m_sessionActive);
+    });
+#endif
     m_worker->moveToThread(m_captureThread);
     connect(m_captureThread, &QThread::finished, m_worker, &QObject::deleteLater);
     connect(m_worker, &CaptureWorker::phaseUpdated, this, &SessionApi::applyPhase, Qt::QueuedConnection);
@@ -1147,6 +1173,9 @@ SessionApi::SessionApi(QObject* parent)
 
 SessionApi::~SessionApi()
 {
+#ifdef Q_OS_ANDROID
+    keepRecordingScreenOn(false);
+#endif
     m_alive.store(false);
     disconnect(m_worker, nullptr, this, nullptr);
     QMetaObject::invokeMethod(m_worker, "shutdown", Qt::BlockingQueuedConnection);
