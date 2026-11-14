@@ -166,6 +166,19 @@ ApplicationWindow {
             yScale: AppScale.factor
         }
 
+        // Qt forwards Android's back button and edge gesture as Qt.Key_Back.
+        // A window shortcut also works while a page control has keyboard focus;
+        // Qt Quick Controls gives open popups priority over this shortcut.
+        Shortcut {
+            sequence: "Back"
+            enabled: Qt.platform.os === "android" && stackView.depth > 1
+            autoRepeat: false
+            onActivated: {
+                if (!stackView.busy)
+                    stackView.pop()
+            }
+        }
+
         ToolBar {
             id: toolbar
             width: parent.width
